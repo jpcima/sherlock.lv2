@@ -442,6 +442,13 @@ _item_contract_request(void *data, Evas_Object *obj, void *event_info)
 	elm_genlist_item_expanded_set(itm, EINA_FALSE);
 }
 
+#undef LV2_ATOM_TUPLE_FOREACH
+
+#define LV2_ATOM_TUPLE_FOREACH(tuple, iter) \
+	for (LV2_Atom* (iter) = lv2_atom_tuple_begin(tuple); \
+	     !lv2_atom_tuple_is_end(LV2_ATOM_BODY(tuple), (tuple)->atom.size, (iter)); \
+	     (iter) = lv2_atom_tuple_next(iter))
+
 static void
 _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 {
@@ -450,7 +457,7 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 	if(atom->type == ui->forge.Object)
 	{
 		const LV2_Atom_Object *atom_object = (const LV2_Atom_Object *)atom;
-		const LV2_Atom_Property_Body *prop;
+		//const LV2_Atom_Property_Body *prop;
 
 		LV2_ATOM_OBJECT_FOREACH(atom_object, prop)
 			elm_genlist_item_append(ui->list, ui->itc_prop, prop, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
@@ -460,9 +467,10 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 		const LV2_Atom_Tuple *atom_tuple = (const LV2_Atom_Tuple *)atom;
 		const LV2_Atom *elmnt;
 
-		for(elmnt = lv2_atom_tuple_begin(atom_tuple);
-			!lv2_atom_tuple_is_end(LV2_ATOM_BODY(atom_tuple), atom_tuple->atom.size, elmnt);
-			elmnt = lv2_atom_tuple_next(elmnt))
+		LV2_ATOM_TUPLE_FOREACH(atom_tuple, elmnt)
+		//for(elmnt = lv2_atom_tuple_begin(atom_tuple);
+		//	!lv2_atom_tuple_is_end(LV2_ATOM_BODY(atom_tuple), atom_tuple->atom.size, elmnt);
+		//	elmnt = lv2_atom_tuple_next(elmnt))
 		{
 			Elm_Genlist_Item_Type type = _is_expandable(ui, elmnt->type)
 				? ELM_GENLIST_ITEM_TREE
@@ -717,10 +725,13 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid, const 
 		};
 
 		lv2_atom_object_query(atom_object, query);
-	
+
+		/* TODO would be correct
 		Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
 			? ELM_GENLIST_ITEM_TREE
 			: ELM_GENLIST_ITEM_NONE;
+		*/
+		Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
 
 		itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL, type, NULL, NULL);
 		//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);

@@ -47,7 +47,6 @@ sherlock:atom_ui
 	ui:portNotification [
 		ui:plugin sherlock:atom ;
 		lv2:symbol "notify" ;
-		#ui:notifyType atom:Blank ;
 		ui:protocol atom:eventTransfer ;
 	] ;
 	lv2:requiredFeature ui:idleInterface ;
@@ -58,10 +57,9 @@ sherlock:atom_ui
 sherlock:atom
 	a lv2:Plugin,
 		lv2:AnalyserPlugin ;
-	doap:name "Atom Inspector" ;
+	doap:name "Sherlock Atom Inspector" ;
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
-	#lv2:requiredFeature atom:eventTransfer ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
 
 	lv2:port [
@@ -69,7 +67,7 @@ sherlock:atom
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ;
+		#atom:supports midi:MidiEvent ;
 		#atom:supports osc:OscEvent ;
 		lv2:designation lv2:control ;
 		lv2:index 0 ;
