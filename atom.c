@@ -31,8 +31,9 @@ struct _handle_t {
 		LV2_URID sherlock_event;
 	} uris;
 
-	const LV2_Atom_Sequence *event_in;
-	LV2_Atom_Sequence *event_out;
+	const LV2_Atom_Sequence *control_in;
+	LV2_Atom_Sequence *control_out;
+	LV2_Atom_Sequence *notify;
 	LV2_Atom_Forge forge;
 };
 
@@ -72,10 +73,13 @@ connect_port(LV2_Handle instance, uint32_t port, void *data)
 	switch(port)
 	{
 		case 0:
-			handle->event_in = (const LV2_Atom_Sequence *)data;
+			handle->control_in = (const LV2_Atom_Sequence *)data;
 			break;
 		case 1:
-			handle->event_out = (LV2_Atom_Sequence *)data;
+			handle->control_out = (LV2_Atom_Sequence *)data;
+			break;
+		case 2:
+			handle->notify = (LV2_Atom_Sequence *)data;
 			break;
 		default:
 			break;
@@ -94,25 +98,20 @@ run(LV2_Handle instance, uint32_t nsamples)
 {
 	handle_t *handle = (handle_t *)instance;
 
-	// prepare osc atom forge
-	const uint32_t capacity = handle->event_out->atom.size;
+	// prepare notify atom forge
 	LV2_Atom_Forge *forge = &handle->forge;
-	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->event_out, capacity);
 	LV2_Atom_Forge_Frame frame;
+
+	uint32_t capacity = handle->notify->atom.size;
+	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
 	lv2_atom_forge_sequence_head(forge, &frame, 0);
 	
 	LV2_Atom_Event *ev = NULL;
-	LV2_ATOM_SEQUENCE_FOREACH(handle->event_in, ev)
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
 	{
 		LV2_Atom_Forge_Frame obj;
 		int64_t frames = ev->time.frames;
 		size_t size = ev->body.size;
-
-		/*
-		lv2_atom_forge_frame_time(forge, frames);
-		lv2_atom_forge_raw(forge, &ev->body, size + sizeof(LV2_Atom));
-		lv2_atom_forge_pad(forge, size);
-		*/
 
 		lv2_atom_forge_frame_time(forge, frames);
 		lv2_atom_forge_object(forge, &obj, 0, handle->uris.sherlock_object);
@@ -126,6 +125,25 @@ run(LV2_Handle instance, uint32_t nsamples)
 			lv2_atom_forge_pad(forge, size);
 		}
 		lv2_atom_forge_pop(forge, &obj);
+	}
+
+	lv2_atom_forge_pop(forge, &frame);
+
+	//clone to control_out
+	capacity = handle->control_out->atom.size;
+	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
+	lv2_atom_forge_sequence_head(forge, &frame, 0);
+	
+	ev = NULL;
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
+	{
+		LV2_Atom_Forge_Frame obj;
+		int64_t frames = ev->time.frames;
+		size_t size = ev->body.size;
+
+		lv2_atom_forge_frame_time(forge, frames);
+		lv2_atom_forge_raw(forge, &ev->body, size + sizeof(LV2_Atom));
+		lv2_atom_forge_pad(forge, size);
 	}
 
 	lv2_atom_forge_pop(forge, &frame);

@@ -48,6 +48,7 @@ struct _UI {
 
 	Elm_Genlist_Item_Class *itc_sherlock;
 	Elm_Genlist_Item_Class *itc_prop;
+	Elm_Genlist_Item_Class *itc_vec;
 	Elm_Genlist_Item_Class *itc_atom;
 };
 
@@ -124,6 +125,8 @@ static inline int
 _is_expandable(UI *ui, const uint32_t type)
 {
 	return (type == ui->forge.Object)
+		|| (type == ui->forge.Blank)
+		|| (type == ui->forge.Resource)
 		|| (type == ui->forge.Tuple)
 		|| (type == ui->forge.Vector);
 }
@@ -147,7 +150,9 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char buf [512];
 
-		if(atom->type == ui->forge.Object)
+		if(  (atom->type == ui->forge.Object)
+			|| (atom->type == ui->forge.Blank)
+			|| (atom->type == ui->forge.Resource) )
 		{
 			const LV2_Atom_Object *atom_object = data;
 			const char *uri = ui->unmap->unmap(ui->unmap->handle, atom_object->body.otype);
@@ -454,7 +459,9 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 {
 	const LV2_Atom *atom = data;
 
-	if(atom->type == ui->forge.Object)
+	if(  (atom->type == ui->forge.Object)
+		|| (atom->type == ui->forge.Resource)
+		|| (atom->type == ui->forge.Blank) )
 	{
 		const LV2_Atom_Object *atom_object = (const LV2_Atom_Object *)atom;
 		//const LV2_Atom_Property_Body *prop;
@@ -483,12 +490,20 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 	{
 		const LV2_Atom_Vector *atom_vector = (const LV2_Atom_Vector *)atom;
 
-		Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
+		Elm_Genlist_Item_Type type = _is_expandable(ui, atom_vector->body.child_type)
 			? ELM_GENLIST_ITEM_TREE
 			: ELM_GENLIST_ITEM_NONE;
 
-		//TODO
-		//elm_genlist_item_append(ui->list, ui->itc_atom, elmnt, itm, type, NULL, NULL);
+		int num = (atom_vector->atom.size - sizeof(LV2_Atom_Vector_Body)) / atom_vector->body.child_size;
+		const uint8_t *body = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Vector, atom_vector);
+		for(int i=0; i<num; i++)
+		{
+			LV2_Atom *atom = malloc(sizeof(LV2_Atom) + atom_vector->body.child_size);
+			atom->size = atom_vector->body.child_size;
+			atom->type = atom_vector->body.child_type;
+			memcpy(LV2_ATOM_BODY(atom), body + i*atom->size, atom->size);
+			elm_genlist_item_append(ui->list, ui->itc_vec, atom, itm, type, NULL, NULL);
+		}
 	}
 	else
 		; // never reached
@@ -539,6 +554,8 @@ _item_expanded(void *data, Evas_Object *obj, void *event_info)
 			_sherlock_expand(ui, udata, obj, itm);
 		else if(class == ui->itc_prop)
 			_prop_expand(ui, udata, obj, itm);
+		else if(class == ui->itc_vec)
+			_atom_expand(ui, udata, obj, itm);
 		else if(class == ui->itc_atom)
 			_atom_expand(ui, udata, obj, itm);
 	}
@@ -634,6 +651,13 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 	ui->itc_prop->func.state_get = NULL;
 	ui->itc_prop->func.del = NULL;
 	
+	ui->itc_vec = elm_genlist_item_class_new();
+	ui->itc_vec->item_style = "double_label";
+	ui->itc_vec->func.text_get = _atom_item_label_get;
+	ui->itc_vec->func.content_get = _atom_item_content_get;
+	ui->itc_vec->func.state_get = NULL;
+	ui->itc_vec->func.del = _item_del;
+	
 	ui->itc_atom = elm_genlist_item_class_new();
 	ui->itc_atom->item_style = "double_label";
 	ui->itc_atom->func.text_get = _atom_item_label_get;
@@ -689,6 +713,7 @@ cleanup(LV2UI_Handle handle)
 		evas_object_del(ui->list);
 
 		elm_genlist_item_class_free(ui->itc_atom);
+		elm_genlist_item_class_free(ui->itc_vec);
 		elm_genlist_item_class_free(ui->itc_prop);
 		elm_genlist_item_class_free(ui->itc_sherlock);
 		
@@ -708,7 +733,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid, const 
 {
 	UI *ui = handle;
 
-	if( (i == 1) && (urid == ui->uris.event_transfer) )
+	if( (i == 2) && (urid == ui->uris.event_transfer) )
 	{
 		Elm_Object_Item *itm;
 		void *ev;

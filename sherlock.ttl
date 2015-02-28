@@ -21,12 +21,14 @@
 @prefix atom:	<http://lv2plug.in/ns/ext/atom#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
+@prefix time: <http://lv2plug.in/ns/ext/time#> .
 
 @prefix osc:	<http://opensoundcontrol.org#> .
 @prefix lic:	<http://opensource.org/licenses/> .
 @prefix omk:	<http://open-music-kontrollers.ch/ventosus#> .
 @prefix proj:	<http://open-music-kontrollers.ch/lv2/> .
 @prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
+@prefix chim:	<http://open-music-kontrollers.ch/lv2/chimaera#> .
 
 # Maintainer
 omk:me
@@ -67,18 +69,39 @@ sherlock:atom
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		#atom:supports midi:MidiEvent ;
-		#atom:supports osc:OscEvent ;
+		atom:supports atom:Blank ;
+		atom:supports atom:Object ;
+		atom:supports time:Position ;
+		atom:supports midi:MidiEvent ;
+		atom:supports osc:OscEvent ;
+		atom:supports chim:Event ;
+		atom:supports chim:Dump ;
 		lv2:designation lv2:control ;
 		lv2:index 0 ;
-		lv2:symbol "control" ;
-		lv2:name "Control" ;
+		lv2:symbol "control_in" ;
+		lv2:name "Control In" ;
+	] , [
+		# output event port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports atom:Blank ;
+		atom:supports atom:Object ;
+		atom:supports time:Position ;
+		atom:supports midi:MidiEvent ;
+		atom:supports osc:OscEvent ;
+		atom:supports chim:Event ;
+		atom:supports chim:Dump ;
+		lv2:designation lv2:control ;
+		lv2:index 1 ;
+		lv2:symbol "control_out" ;
+		lv2:name "Control Out" ;
 	] , [
 		# notify output port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		lv2:index 1 ;
+		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
 	] .
