@@ -121,7 +121,9 @@ resize_cb(LV2UI_Feature_Handle handle, int w, int h)
 		ecore_evas_resize(ui->ee, ui->w, ui->h);
 		evas_object_resize(ui->parent, ui->w, ui->h);
 	}
+
 	evas_object_resize(ui->vbox, ui->w, ui->h);
+	evas_object_size_hint_min_set(ui->vbox, ui->w, ui->h);
   
   return 0;
 }
@@ -583,6 +585,21 @@ _clear_clicked(void *data, Evas_Object *obj, void *event_info)
 	elm_genlist_clear(ui->list);
 }
 
+static void
+_delete(void *data, Evas *e, Evas_Object *obj, void *event_info)
+{
+	UI *ui = data;
+
+	evas_object_del(ui->clear);
+	elm_genlist_clear(ui->list);
+	evas_object_del(ui->list);
+
+	elm_genlist_item_class_free(ui->itc_atom);
+	elm_genlist_item_class_free(ui->itc_vec);
+	elm_genlist_item_class_free(ui->itc_prop);
+	elm_genlist_item_class_free(ui->itc_sherlock);
+}
+
 static LV2UI_Handle
 instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const char *bundle_path, LV2UI_Write_Function write_function, LV2UI_Controller controller, LV2UI_Widget *widget, const LV2_Feature *const *features)
 {
@@ -597,8 +614,8 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 	if(!ui)
 		return NULL;
 
-	ui->w = 500;
-	ui->h = 500;
+	ui->w = 400;
+	ui->h = 400;
 	ui->write_function = write_function;
 	ui->controller = controller;
 
@@ -647,6 +664,11 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 	elm_box_horizontal_set(ui->vbox, EINA_FALSE);
 	elm_box_homogeneous_set(ui->vbox, EINA_FALSE);
 	elm_box_padding_set(ui->vbox, 0, 10);
+	evas_object_event_callback_add(ui->vbox, EVAS_CALLBACK_DEL, _delete, ui);
+	evas_object_size_hint_weight_set(ui->vbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ui->vbox, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	evas_object_size_hint_min_set(ui->vbox, ui->w, ui->h);
+	evas_object_size_hint_aspect_set(ui->vbox, EVAS_ASPECT_CONTROL_BOTH, 1, 1);
 	evas_object_resize(ui->vbox, ui->w, ui->h);
 	evas_object_show(ui->vbox);
 	//edje_object_part_swallow(ui->theme, "content", ui->vbox);
@@ -725,23 +747,12 @@ cleanup(LV2UI_Handle handle)
 	if(ui)
 	{
 		if(ui->ee)
-			ecore_evas_hide(ui->ee);
-
-		evas_object_del(ui->clear);
-
-		elm_genlist_clear(ui->list);
-		evas_object_del(ui->list);
-
-		elm_genlist_item_class_free(ui->itc_atom);
-		elm_genlist_item_class_free(ui->itc_vec);
-		elm_genlist_item_class_free(ui->itc_prop);
-		elm_genlist_item_class_free(ui->itc_sherlock);
-		
-		evas_object_del(ui->vbox);
-
-		if(ui->ee)
 		{
+			ecore_evas_hide(ui->ee);
+			
+			evas_object_del(ui->vbox);
 			evas_object_del(ui->parent);
+
 			ecore_evas_free(ui->ee);
 		}
 		
