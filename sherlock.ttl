@@ -55,6 +55,14 @@ sherlock:atom_ui
   lv2:optionalFeature ui:noUserResize ;
   lv2:extensionData ui:idleInterface, ui:showInterface .
 
+sherlock:atom_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:atom ;
+		lv2:symbol "notify" ;
+		ui:protocol atom:eventTransfer ;
+	] .
+
 # Atom Inspector Plugin
 sherlock:atom
 	a lv2:Plugin,

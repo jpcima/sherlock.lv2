@@ -41,7 +41,7 @@ struct _UI {
 	int w, h;
 	Ecore_Evas *ee;
 	Evas *e;
-	Evas_Object *bg;
+	Evas_Object *parent;
 	Evas_Object *vbox;
 	Evas_Object *list;
 	Evas_Object *clear;
@@ -79,7 +79,8 @@ _show_cb(LV2UI_Handle handle)
 	if(!ui)
 		return -1;
 
-	ecore_evas_show(ui->ee);
+	if(ui->ee)
+		ecore_evas_show(ui->ee);
 
 	return 0;
 }
@@ -92,7 +93,8 @@ _hide_cb(LV2UI_Handle handle)
 	if(!ui)
 		return -1;
 
-	ecore_evas_hide(ui->ee);
+	if(ui->ee)
+		ecore_evas_hide(ui->ee);
 
 	return 0;
 }
@@ -114,8 +116,11 @@ resize_cb(LV2UI_Feature_Handle handle, int w, int h)
 	ui->w = w;
 	ui->h = h;
 
-	ecore_evas_resize(ui->ee, ui->w, ui->h);
-	evas_object_resize(ui->bg, ui->w, ui->h);
+	if(ui->ee)
+	{
+		ecore_evas_resize(ui->ee, ui->w, ui->h);
+		evas_object_resize(ui->parent, ui->w, ui->h);
+	}
 	evas_object_resize(ui->vbox, ui->w, ui->h);
   
   return 0;
@@ -613,23 +618,32 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 			ui->unmap = (LV2_URID_Unmap *)features[i]->data;
   }
 
-	ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
-	if(!ui->ee)
-		ui->ee = ecore_evas_software_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
-	if(!ui->ee)
-		printf("could not start evas\n");
-	ui->e = ecore_evas_get(ui->ee);
-	ecore_evas_show(ui->ee);
+	if(descriptor == &atom_ui)
+	{
+		ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
+		if(!ui->ee)
+			ui->ee = ecore_evas_software_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
+		if(!ui->ee)
+			printf("could not start evas\n");
+		ui->e = ecore_evas_get(ui->ee);
+		ecore_evas_show(ui->ee);
+
+		ui->parent = evas_object_rectangle_add(ui->e);
+		evas_object_color_set(ui->parent, 48, 48, 48, 255);
+		evas_object_resize(ui->parent, ui->w, ui->h);
+		evas_object_show(ui->parent);
+	}
+	else if(descriptor == &atom_eo)
+	{
+		ui->ee = NULL;
+		ui->parent = (Evas_Object *)parent;
+		ui->e = evas_object_evas_get((Evas_Object *)parent);
+	}
 
 	if(resize)
     resize->ui_resize(resize->handle, ui->w, ui->h);
 
-	ui->bg = evas_object_rectangle_add(ui->e);
-	evas_object_color_set(ui->bg, 48, 48, 48, 255);
-	evas_object_resize(ui->bg, ui->w, ui->h);
-	evas_object_show(ui->bg);
-
-	ui->vbox = elm_box_add(ui->bg);
+	ui->vbox = elm_box_add(ui->parent);
 	elm_box_horizontal_set(ui->vbox, EINA_FALSE);
 	elm_box_homogeneous_set(ui->vbox, EINA_FALSE);
 	elm_box_padding_set(ui->vbox, 0, 10);
@@ -695,6 +709,11 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 	
 	lv2_atom_forge_init(&ui->forge, ui->map);
 
+	if(ui->ee) // X11 UI
+		*(Evas_Object **)widget = NULL;
+	else // Eo UI
+		*(Evas_Object **)widget = ui->vbox;
+
 	return ui;
 }
 
@@ -705,7 +724,8 @@ cleanup(LV2UI_Handle handle)
 	
 	if(ui)
 	{
-		ecore_evas_hide(ui->ee);
+		if(ui->ee)
+			ecore_evas_hide(ui->ee);
 
 		evas_object_del(ui->clear);
 
@@ -718,9 +738,12 @@ cleanup(LV2UI_Handle handle)
 		elm_genlist_item_class_free(ui->itc_sherlock);
 		
 		evas_object_del(ui->vbox);
-		evas_object_del(ui->bg);
 
-		ecore_evas_free(ui->ee);
+		if(ui->ee)
+		{
+			evas_object_del(ui->parent);
+			ecore_evas_free(ui->ee);
+		}
 		
 		free(ui);
 	}
@@ -781,4 +804,12 @@ const LV2UI_Descriptor atom_ui = {
 	.cleanup				= cleanup,
 	.port_event			= port_event,
 	.extension_data	= extension_data
+};
+
+const LV2UI_Descriptor atom_eo = {
+	.URI						= SHERLOCK_ATOM_EO_URI,
+	.instantiate		= instantiate,
+	.cleanup				= cleanup,
+	.port_event			= port_event,
+	.extension_data	= NULL
 };

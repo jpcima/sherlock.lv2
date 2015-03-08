@@ -23,9 +23,15 @@ sherlock:atom
 	a lv2:Plugin ;
 	lv2:binary <sherlock@LIB_EXT@> ;
 	ui:ui sherlock:atom_ui ;
+	ui:ui sherlock:atom_eo ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:atom_ui
 	a ui:X11UI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+
+sherlock:atom_eo
+	a ui:EoUI ;
 	ui:binary <sherlock_ui@LIB_EXT@> ;
 	rdfs:seeAlso <sherlock.ttl> .

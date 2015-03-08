@@ -39,8 +39,10 @@
 
 #define SHERLOCK_ATOM_URI					SHERLOCK_URI"#atom"
 #define SHERLOCK_ATOM_UI_URI			SHERLOCK_URI"#atom_ui"
+#define SHERLOCK_ATOM_EO_URI			SHERLOCK_URI"#atom_eo"
 
 const LV2_Descriptor atom;
 const LV2UI_Descriptor atom_ui;
+const LV2UI_Descriptor atom_eo;
 
 #endif // _SHERLOCK_LV2_H
