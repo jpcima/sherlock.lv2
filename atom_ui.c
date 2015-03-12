@@ -162,8 +162,10 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 			|| (atom->type == ui->forge.Resource) )
 		{
 			const LV2_Atom_Object *atom_object = data;
-			const char *uri = ui->unmap->unmap(ui->unmap->handle, atom_object->body.otype);
-			const char *id = ui->unmap->unmap(ui->unmap->handle, atom_object->body.id);
+			const char *uri = ui->unmap->unmap(ui->unmap->handle,
+				atom_object->body.otype);
+			const char *id = ui->unmap->unmap(ui->unmap->handle,
+				atom_object->body.id);
 		
 			//TODO print id
 			sprintf(buf, "%s / %u", uri, atom_object->body.id);
@@ -177,7 +179,8 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 		else if(atom->type == ui->forge.Vector)
 		{
 			const LV2_Atom_Vector *atom_vector = data;
-			const char *uri = ui->unmap->unmap(ui->unmap->handle, atom_vector->body.child_type);
+			const char *uri = ui->unmap->unmap(ui->unmap->handle,
+				atom_vector->body.child_type);
 
 			sprintf(buf, "%s", uri);
 		}
@@ -474,7 +477,8 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 		//const LV2_Atom_Property_Body *prop;
 
 		LV2_ATOM_OBJECT_FOREACH(atom_object, prop)
-			elm_genlist_item_append(ui->list, ui->itc_prop, prop, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
+			elm_genlist_item_append(ui->list, ui->itc_prop, prop, itm,
+				ELM_GENLIST_ITEM_TREE, NULL, NULL);
 	}
 	else if(atom->type == ui->forge.Tuple)
 	{
@@ -490,7 +494,8 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 				? ELM_GENLIST_ITEM_TREE
 				: ELM_GENLIST_ITEM_NONE;
 
-			elm_genlist_item_append(ui->list, ui->itc_atom, elmnt, itm, type, NULL, NULL);
+			elm_genlist_item_append(ui->list, ui->itc_atom, elmnt, itm,
+				type, NULL, NULL);
 		}
 	}
 	else if(atom->type == ui->forge.Vector)
@@ -501,7 +506,8 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 			? ELM_GENLIST_ITEM_TREE
 			: ELM_GENLIST_ITEM_NONE;
 
-		int num = (atom_vector->atom.size - sizeof(LV2_Atom_Vector_Body)) / atom_vector->body.child_size;
+		int num = (atom_vector->atom.size - sizeof(LV2_Atom_Vector_Body))
+			/ atom_vector->body.child_size;
 		const uint8_t *body = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Vector, atom_vector);
 		for(int i=0; i<num; i++)
 		{
@@ -601,7 +607,10 @@ _delete(void *data, Evas *e, Evas_Object *obj, void *event_info)
 }
 
 static LV2UI_Handle
-instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const char *bundle_path, LV2UI_Write_Function write_function, LV2UI_Controller controller, LV2UI_Widget *widget, const LV2_Feature *const *features)
+instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
+	const char *bundle_path, LV2UI_Write_Function write_function,
+	LV2UI_Controller controller, LV2UI_Widget *widget,
+	const LV2_Feature *const *features)
 {
 	elm_init(1, (char **)&plugin_uri);
 
@@ -637,9 +646,11 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 
 	if(descriptor == &atom_ui)
 	{
-		ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
+		ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0,
+			ui->w, ui->h);
 		if(!ui->ee)
-			ui->ee = ecore_evas_software_x11_new(NULL, (Ecore_X_Window)parent, 0, 0, ui->w, ui->h);
+			ui->ee = ecore_evas_software_x11_new(NULL, (Ecore_X_Window)parent, 0, 0,
+				ui->w, ui->h);
 		if(!ui->ee)
 			printf("could not start evas\n");
 		ui->e = ecore_evas_get(ui->ee);
@@ -705,8 +716,10 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri, const ch
 	elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_NONE);
 	evas_object_data_set(ui->list, "ui", ui);
 	//evas_object_smart_callback_add(ui->list, "selected", _item_selected, ui);
-	evas_object_smart_callback_add(ui->list, "expand,request", _item_expand_request, ui);
-	evas_object_smart_callback_add(ui->list, "contract,request", _item_contract_request, ui);
+	evas_object_smart_callback_add(ui->list, "expand,request",
+		_item_expand_request, ui);
+	evas_object_smart_callback_add(ui->list, "contract,request",
+		_item_contract_request, ui);
 	evas_object_smart_callback_add(ui->list, "expanded", _item_expanded, ui);
 	evas_object_smart_callback_add(ui->list, "contracted", _item_contracted, ui);
 	evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -763,7 +776,8 @@ cleanup(LV2UI_Handle handle)
 }
 
 static void
-port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid, const void *buf)
+port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
+	const void *buf)
 {
 	UI *ui = handle;
 
@@ -792,7 +806,8 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid, const 
 		*/
 		Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
 
-		itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL, type, NULL, NULL);
+		itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
+			type, NULL, NULL);
 		//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 		//elm_genlist_item_bring_in(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 	}

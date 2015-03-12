@@ -38,7 +38,8 @@ struct _handle_t {
 };
 
 static LV2_Handle
-instantiate(const LV2_Descriptor* descriptor, double rate, const char *bundle_path, const LV2_Feature *const *features)
+instantiate(const LV2_Descriptor* descriptor, double rate,
+	const char *bundle_path, const LV2_Feature *const *features)
 {
 	int i;
 	handle_t *handle = calloc(1, sizeof(handle_t));
@@ -56,10 +57,14 @@ instantiate(const LV2_Descriptor* descriptor, double rate, const char *bundle_pa
 		return NULL;
 	}
 
-	handle->uris.event_transfer = handle->map->map(handle->map->handle, LV2_ATOM__eventTransfer);
-	handle->uris.sherlock_object = handle->map->map(handle->map->handle, SHERLOCK_OBJECT_URI);
-	handle->uris.sherlock_frametime = handle->map->map(handle->map->handle, SHERLOCK_FRAMETIME_URI);
-	handle->uris.sherlock_event = handle->map->map(handle->map->handle, SHERLOCK_EVENT_URI);
+	handle->uris.event_transfer = handle->map->map(handle->map->handle,
+		LV2_ATOM__eventTransfer);
+	handle->uris.sherlock_object = handle->map->map(handle->map->handle,
+		SHERLOCK_OBJECT_URI);
+	handle->uris.sherlock_frametime = handle->map->map(handle->map->handle,
+		SHERLOCK_FRAMETIME_URI);
+	handle->uris.sherlock_event = handle->map->map(handle->map->handle,
+		SHERLOCK_EVENT_URI);
 	lv2_atom_forge_init(&handle->forge, handle->map);
 
 	return handle;
@@ -105,7 +110,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	uint32_t capacity = handle->notify->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
 	lv2_atom_forge_sequence_head(forge, &frame, 0);
-	
+
 	LV2_Atom_Event *ev = NULL;
 	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
 	{
