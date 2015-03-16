@@ -21,28 +21,26 @@
 #include <stdint.h>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/state/state.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 	
-#define LV2_OSC__OscEvent					"http://opensoundcontrol.org#OscEvent"
+#define LV2_OSC__OscEvent								"http://opensoundcontrol.org#OscEvent"
 
-#define SHERLOCK_URI							"http://open-music-kontrollers.ch/lv2/sherlock"
+#define SHERLOCK_URI										"http://open-music-kontrollers.ch/lv2/sherlock"
 
-#define SHERLOCK_OBJECT_URI				SHERLOCK_URI"#object"
-#define SHERLOCK_EVENT_URI				SHERLOCK_URI"#frametime"
-#define SHERLOCK_FRAMETIME_URI		SHERLOCK_URI"#event"
+#define SHERLOCK_OBJECT_URI							SHERLOCK_URI"#object"
+#define SHERLOCK_EVENT_URI							SHERLOCK_URI"#frametime"
+#define SHERLOCK_FRAMETIME_URI					SHERLOCK_URI"#event"
 
-#define SHERLOCK_ATOM_URI					SHERLOCK_URI"#atom"
-#define SHERLOCK_ATOM_UI_URI			SHERLOCK_URI"#atom_ui"
-#define SHERLOCK_ATOM_EO_URI			SHERLOCK_URI"#atom_eo"
+#define SHERLOCK_ATOM_INSPECTOR_URI			SHERLOCK_URI"#atom_inspector"
+#define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_ui"
+#define SHERLOCK_ATOM_INSPECTOR_EO_URI	SHERLOCK_URI"#atom_inspector_eo"
 
-const LV2_Descriptor atom;
-const LV2UI_Descriptor atom_ui;
-const LV2UI_Descriptor atom_eo;
+extern const LV2_Descriptor atom_inspector;
+extern const LV2UI_Descriptor atom_inspector_ui;
+extern const LV2UI_Descriptor atom_inspector_eo;
 
 #endif // _SHERLOCK_LV2_H

@@ -23,7 +23,7 @@ lv2_descriptor(uint32_t index)
 	switch(index)
 	{
 		case 0:
-			return &atom;
+			return &atom_inspector;
 		default:
 			return NULL;
 	}

@@ -23,9 +23,9 @@ lv2ui_descriptor(uint32_t index)
 	switch(index)
 	{
 		case 0:
-			return &atom_ui;
+			return &atom_inspector_ui;
 		case 1:
-			return &atom_eo;
+			return &atom_inspector_eo;
 		default:
 			return NULL;
 	}

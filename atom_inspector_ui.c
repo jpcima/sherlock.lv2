@@ -19,6 +19,15 @@
 
 #include <Elementary.h>
 
+// Disable deprecation warnings for Blank and Resource
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 typedef struct _UI UI;
 
 struct _UI {
@@ -30,10 +39,7 @@ struct _UI {
 	struct {
 		LV2_URID midi_MidiEvent;
 		LV2_URID osc_OscEvent;
-		LV2_URID event_transfer;
-		LV2_URID sherlock_object;
-		LV2_URID sherlock_frametime;
-		LV2_URID sherlock_event;
+		LV2_URID atom_transfer;
 	} uris;
 	
 	LV2_Atom_Forge forge;
@@ -295,17 +301,8 @@ static char *
 _sherlock_item_label_get(void *data, Evas_Object *obj, const char *part)
 {
 	UI *ui = evas_object_data_get(obj, "ui");
-	const LV2_Atom_Object *sherlock = data;
-
-	const LV2_Atom_Long *frametime = NULL;
-	const LV2_Atom *atom = NULL;
-	LV2_Atom_Object_Query query [] = {
-		{ ui->uris.sherlock_frametime, (const LV2_Atom **)&frametime },
-		{ ui->uris.sherlock_event,  &atom },
-		LV2_ATOM_OBJECT_QUERY_END
-	};
-
-	lv2_atom_object_query(sherlock, query);
+	const LV2_Atom_Event *ev = data;
+	const LV2_Atom *atom = &ev->body;
 
 	if(!ui)
 		return NULL;
@@ -387,25 +384,16 @@ static Evas_Object *
 _sherlock_item_content_get(void *data, Evas_Object *obj, const char *part)
 {
 	UI *ui = evas_object_data_get(obj, "ui");
-	const LV2_Atom_Object *sherlock = data;
+	const LV2_Atom_Event *ev = data;
+	const LV2_Atom *atom = &ev->body;
 	char buf [512];
-
-	const LV2_Atom_Long *frametime = NULL;
-	const LV2_Atom *atom = NULL;
-	LV2_Atom_Object_Query query [] = {
-		{ ui->uris.sherlock_frametime, (const LV2_Atom **)&frametime },
-		{ ui->uris.sherlock_event, &atom },
-		LV2_ATOM_OBJECT_QUERY_END
-	};
-
-	lv2_atom_object_query(sherlock, query);
 
 	if(!ui)
 		return NULL;
 
 	if(!strcmp(part, "elm.swallow.icon"))
 	{
-		sprintf(buf, "%04ld", frametime->body);
+		sprintf(buf, "%04ld", ev->time.frames);
 
 		Evas_Object *label = elm_label_add(obj);
 		elm_object_part_text_set(label, "default", buf);
@@ -538,15 +526,8 @@ _prop_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 static void
 _sherlock_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 {
-	const LV2_Atom_Object *atom_object = data;
-
-	const LV2_Atom *atom = NULL;
-	LV2_Atom_Object_Query query [] = {
-		{ ui->uris.sherlock_event, &atom },
-		LV2_ATOM_OBJECT_QUERY_END
-	};
-
-	lv2_atom_object_query(atom_object, query);
+	const LV2_Atom_Event *ev = data;
+	const LV2_Atom *atom = &ev->body;
 
 	if(atom)
 		_atom_expand(ui, atom, obj, itm);
@@ -616,7 +597,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 
 	//edje_frametime_set(0.04);
 
-	if(strcmp(plugin_uri, SHERLOCK_ATOM_URI))
+	if(strcmp(plugin_uri, SHERLOCK_ATOM_INSPECTOR_URI))
 		return NULL;
 
 	UI *ui = calloc(1, sizeof(UI));
@@ -644,7 +625,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 			ui->unmap = (LV2_URID_Unmap *)features[i]->data;
   }
 
-	if(descriptor == &atom_ui)
+	if(descriptor == &atom_inspector_ui)
 	{
 		ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0,
 			ui->w, ui->h);
@@ -661,7 +642,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		evas_object_resize(ui->parent, ui->w, ui->h);
 		evas_object_show(ui->parent);
 	}
-	else if(descriptor == &atom_eo)
+	else if(descriptor == &atom_inspector_eo)
 	{
 		ui->ee = NULL;
 		ui->parent = (Evas_Object *)parent;
@@ -737,10 +718,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	
 	ui->uris.midi_MidiEvent = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
 	ui->uris.osc_OscEvent = ui->map->map(ui->map->handle, LV2_OSC__OscEvent);
-	ui->uris.event_transfer = ui->map->map(ui->map->handle, LV2_ATOM__eventTransfer);
-	ui->uris.sherlock_object = ui->map->map(ui->map->handle, SHERLOCK_OBJECT_URI);
-	ui->uris.sherlock_frametime = ui->map->map(ui->map->handle, SHERLOCK_FRAMETIME_URI);
-	ui->uris.sherlock_event = ui->map->map(ui->map->handle, SHERLOCK_EVENT_URI);
+	ui->uris.atom_transfer = ui->map->map(ui->map->handle, LV2_ATOM__atomTransfer);
 	
 	lv2_atom_forge_init(&ui->forge, ui->map);
 
@@ -781,35 +759,30 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 {
 	UI *ui = handle;
 
-	if( (i == 2) && (urid == ui->uris.event_transfer) )
+	if( (i == 0) && (urid == ui->uris.atom_transfer) )
 	{
 		Elm_Object_Item *itm;
-		void *ev;
-		
-		ev = malloc(size);
-		memcpy(ev, buf, size);
 
-		const LV2_Atom_Object *atom_object = buf;
+		const LV2_Atom_Sequence *seq = buf;
 
-		const LV2_Atom *atom = NULL;
-		LV2_Atom_Object_Query query [] = {
-			{ ui->uris.sherlock_event, &atom },
-			LV2_ATOM_OBJECT_QUERY_END
-		};
+		LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
+		{
+			size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
+			LV2_Atom_Event *ev = malloc(len);
+			memcpy(ev, elmnt, len);
+			
+			/* TODO would be correct
+			const LV2_Atom *atom = &elmnt->body;
+			Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
+				? ELM_GENLIST_ITEM_TREE
+				: ELM_GENLIST_ITEM_NONE;
+			*/
+			Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
 
-		lv2_atom_object_query(atom_object, query);
 
-		/* TODO would be correct
-		Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
-			? ELM_GENLIST_ITEM_TREE
-			: ELM_GENLIST_ITEM_NONE;
-		*/
-		Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
-
-		itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
-			type, NULL, NULL);
-		//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
-		//elm_genlist_item_bring_in(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
+			itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
+				type, NULL, NULL);
+		}
 	}
 }
 
@@ -824,16 +797,16 @@ extension_data(const char *uri)
 	return NULL;
 }
 
-const LV2UI_Descriptor atom_ui = {
-	.URI						= SHERLOCK_ATOM_UI_URI,
+const LV2UI_Descriptor atom_inspector_ui = {
+	.URI						= SHERLOCK_ATOM_INSPECTOR_UI_URI,
 	.instantiate		= instantiate,
 	.cleanup				= cleanup,
 	.port_event			= port_event,
 	.extension_data	= extension_data
 };
 
-const LV2UI_Descriptor atom_eo = {
-	.URI						= SHERLOCK_ATOM_EO_URI,
+const LV2UI_Descriptor atom_inspector_eo = {
+	.URI						= SHERLOCK_ATOM_INSPECTOR_EO_URI,
 	.instantiate		= instantiate,
 	.cleanup				= cleanup,
 	.port_event			= port_event,

@@ -19,19 +19,19 @@
 
 @prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
 
-sherlock:atom
+sherlock:atom_inspector
 	a lv2:Plugin ;
 	lv2:binary <sherlock@LIB_EXT@> ;
-	ui:ui sherlock:atom_ui ;
-	ui:ui sherlock:atom_eo ;
+	ui:ui sherlock:atom_inspector_ui ;
+	ui:ui sherlock:atom_inspector_eo ;
 	rdfs:seeAlso <sherlock.ttl> .
 
-sherlock:atom_ui
+sherlock:atom_inspector_ui
 	a ui:X11UI ;
 	ui:binary <sherlock_ui@LIB_EXT@> ;
 	rdfs:seeAlso <sherlock.ttl> .
 
-sherlock:atom_eo
+sherlock:atom_inspector_eo
 	a ui:EoUI ;
 	ui:binary <sherlock_ui@LIB_EXT@> ;
 	rdfs:seeAlso <sherlock.ttl> .

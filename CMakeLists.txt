@@ -20,14 +20,14 @@ set(LIBS_UI ${LIBS_UI} ${ELM_LDFLAGS})
 
 add_library(sherlock MODULE
 	sherlock.c
-	atom.c)
+	atom_inspector.c)
 target_link_libraries(sherlock ${LIBS})
 set_target_properties(sherlock PROPERTIES PREFIX "")
 install(TARGETS sherlock DESTINATION ${DEST})
 
 add_library(sherlock_ui MODULE
 	sherlock_ui.c
-	atom_ui.c)
+	atom_inspector_ui.c)
 target_link_libraries(sherlock_ui ${LIBS_UI})
 set_target_properties(sherlock_ui PROPERTIES PREFIX "")
 install(TARGETS sherlock_ui DESTINATION ${DEST})
