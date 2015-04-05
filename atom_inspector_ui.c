@@ -19,6 +19,8 @@
 
 #include <Elementary.h>
 
+#include <lv2_eo_ui.h>
+
 // Disable deprecation warnings for Blank and Resource
 #if defined(__clang__)
 #    pragma clang diagnostic push
@@ -31,6 +33,8 @@
 typedef struct _UI UI;
 
 struct _UI {
+	eo_ui_t eoui;
+
 	LV2UI_Write_Function write_function;
 	LV2UI_Controller controller;
 	
@@ -46,8 +50,8 @@ struct _UI {
 
 	int w, h;
 	Ecore_Evas *ee;
-	Evas *e;
 	Evas_Object *parent;
+	Evas_Object *bg;
 	Evas_Object *vbox;
 	Evas_Object *list;
 	Evas_Object *clear;
@@ -57,82 +61,6 @@ struct _UI {
 	Elm_Genlist_Item_Class *itc_vec;
 	Elm_Genlist_Item_Class *itc_atom;
 };
-
-// Idle interface
-static int
-idle_cb(LV2UI_Handle handle)
-{
-	UI *ui = handle;
-
-	if(!ui)
-		return -1;
-
-	ecore_main_loop_iterate();
-	
-	return 0;
-}
-
-static const LV2UI_Idle_Interface idle_ext = {
-	.idle = idle_cb
-};
-
-// Show Interface
-static int
-_show_cb(LV2UI_Handle handle)
-{
-	UI *ui = handle;
-
-	if(!ui)
-		return -1;
-
-	if(ui->ee)
-		ecore_evas_show(ui->ee);
-
-	return 0;
-}
-
-static int
-_hide_cb(LV2UI_Handle handle)
-{
-	UI *ui = handle;
-
-	if(!ui)
-		return -1;
-
-	if(ui->ee)
-		ecore_evas_hide(ui->ee);
-
-	return 0;
-}
-
-static const LV2UI_Show_Interface show_ext = {
-	.show = _show_cb,
-	.hide = _hide_cb
-};
-
-// Resize Interface
-static int
-resize_cb(LV2UI_Feature_Handle handle, int w, int h)
-{
-	UI *ui = handle;
-
-	if(!ui)
-		return -1;
-
-	ui->w = w;
-	ui->h = h;
-
-	if(ui->ee)
-	{
-		ecore_evas_resize(ui->ee, ui->w, ui->h);
-		evas_object_resize(ui->parent, ui->w, ui->h);
-	}
-
-	evas_object_resize(ui->vbox, ui->w, ui->h);
-	evas_object_size_hint_min_set(ui->vbox, ui->w, ui->h);
-  
-  return 0;
-}
 
 static inline int
 _is_expandable(UI *ui, const uint32_t type)
@@ -572,19 +500,41 @@ _clear_clicked(void *data, Evas_Object *obj, void *event_info)
 	elm_genlist_clear(ui->list);
 }
 
-static void
-_delete(void *data, Evas *e, Evas_Object *obj, void *event_info)
+static Evas_Object *
+_content_get(eo_ui_t *eoui)
 {
-	UI *ui = data;
+	UI *ui = (void *)eoui - offsetof(UI, eoui);
 
-	evas_object_del(ui->clear);
-	elm_genlist_clear(ui->list);
-	evas_object_del(ui->list);
+	ui->vbox = elm_box_add(eoui->win);
+	elm_box_horizontal_set(ui->vbox, EINA_FALSE);
+	elm_box_homogeneous_set(ui->vbox, EINA_FALSE);
+	elm_box_padding_set(ui->vbox, 0, 10);
 
-	elm_genlist_item_class_free(ui->itc_atom);
-	elm_genlist_item_class_free(ui->itc_vec);
-	elm_genlist_item_class_free(ui->itc_prop);
-	elm_genlist_item_class_free(ui->itc_sherlock);
+	ui->list = elm_genlist_add(ui->vbox);
+	elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_NONE);
+	elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // for lazy-loading
+	evas_object_data_set(ui->list, "ui", ui);
+	//evas_object_smart_callback_add(ui->list, "selected", _item_selected, ui);
+	evas_object_smart_callback_add(ui->list, "expand,request",
+		_item_expand_request, ui);
+	evas_object_smart_callback_add(ui->list, "contract,request",
+		_item_contract_request, ui);
+	evas_object_smart_callback_add(ui->list, "expanded", _item_expanded, ui);
+	evas_object_smart_callback_add(ui->list, "contracted", _item_contracted, ui);
+	evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	evas_object_show(ui->list);
+	elm_box_pack_end(ui->vbox, ui->list);
+
+	ui->clear = elm_button_add(ui->vbox);
+	elm_object_part_text_set(ui->clear, "default", "Clear");
+	evas_object_smart_callback_add(ui->clear, "clicked", _clear_clicked, ui);
+	//evas_object_size_hint_weight_set(ui->clear, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ui->clear, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	evas_object_show(ui->clear);
+	elm_box_pack_end(ui->vbox, ui->clear);
+
+	return ui->vbox;
 }
 
 static LV2UI_Handle
@@ -593,19 +543,31 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	LV2UI_Controller controller, LV2UI_Widget *widget,
 	const LV2_Feature *const *features)
 {
-	elm_init(1, (char **)&plugin_uri);
-
-	//edje_frametime_set(0.04);
-
 	if(strcmp(plugin_uri, SHERLOCK_ATOM_INSPECTOR_URI))
+		return NULL;
+
+	eo_ui_driver_t driver;
+	if(descriptor == &atom_inspector_eo)
+		driver = EO_UI_DRIVER_EO;
+	else if(descriptor == &atom_inspector_ui)
+		driver = EO_UI_DRIVER_UI;
+	else if(descriptor == &atom_inspector_x11)
+		driver = EO_UI_DRIVER_X11;
+	else if(descriptor == &atom_inspector_kx)
+		driver = EO_UI_DRIVER_KX;
+	else
 		return NULL;
 
 	UI *ui = calloc(1, sizeof(UI));
 	if(!ui)
 		return NULL;
 
-	ui->w = 400;
-	ui->h = 400;
+	eo_ui_t *eoui = &ui->eoui;
+	eoui->driver = driver;
+	eoui->content_get = _content_get;
+	eoui->w = 400,
+	eoui->h = 400;
+
 	ui->write_function = write_function;
 	ui->controller = controller;
 
@@ -615,55 +577,17 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	int i, j;
 	for(i=0; features[i]; i++)
 	{
-		if(!strcmp(features[i]->URI, LV2_UI__parent))
-			parent = features[i]->data;
-		else if (!strcmp(features[i]->URI, LV2_UI__resize))
-			resize = (LV2UI_Resize *)features[i]->data;
-		else if(!strcmp(features[i]->URI, LV2_URID__map))
+		if(!strcmp(features[i]->URI, LV2_URID__map))
 			ui->map = (LV2_URID_Map *)features[i]->data;
 		else if(!strcmp(features[i]->URI, LV2_URID__unmap))
 			ui->unmap = (LV2_URID_Unmap *)features[i]->data;
   }
-
-	if(descriptor == &atom_inspector_ui)
-	{
-		ui->ee = ecore_evas_gl_x11_new(NULL, (Ecore_X_Window)parent, 0, 0,
-			ui->w, ui->h);
-		if(!ui->ee)
-			ui->ee = ecore_evas_software_x11_new(NULL, (Ecore_X_Window)parent, 0, 0,
-				ui->w, ui->h);
-		if(!ui->ee)
-			printf("could not start evas\n");
-		ui->e = ecore_evas_get(ui->ee);
-		ecore_evas_show(ui->ee);
-
-		ui->parent = evas_object_rectangle_add(ui->e);
-		evas_object_color_set(ui->parent, 48, 48, 48, 255);
-		evas_object_resize(ui->parent, ui->w, ui->h);
-		evas_object_show(ui->parent);
-	}
-	else if(descriptor == &atom_inspector_eo)
-	{
-		ui->ee = NULL;
-		ui->parent = (Evas_Object *)parent;
-		ui->e = evas_object_evas_get((Evas_Object *)parent);
-	}
-
-	if(resize)
-    resize->ui_resize(resize->handle, ui->w, ui->h);
-
-	ui->vbox = elm_box_add(ui->parent);
-	elm_box_horizontal_set(ui->vbox, EINA_FALSE);
-	elm_box_homogeneous_set(ui->vbox, EINA_FALSE);
-	elm_box_padding_set(ui->vbox, 0, 10);
-	evas_object_event_callback_add(ui->vbox, EVAS_CALLBACK_DEL, _delete, ui);
-	evas_object_size_hint_weight_set(ui->vbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	evas_object_size_hint_align_set(ui->vbox, EVAS_HINT_FILL, EVAS_HINT_FILL);
-	evas_object_size_hint_min_set(ui->vbox, ui->w, ui->h);
-	evas_object_size_hint_aspect_set(ui->vbox, EVAS_ASPECT_CONTROL_BOTH, 1, 1);
-	evas_object_resize(ui->vbox, ui->w, ui->h);
-	evas_object_show(ui->vbox);
-	//edje_object_part_swallow(ui->theme, "content", ui->vbox);
+	
+	ui->uris.midi_MidiEvent = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
+	ui->uris.osc_OscEvent = ui->map->map(ui->map->handle, LV2_OSC__OscEvent);
+	ui->uris.atom_transfer = ui->map->map(ui->map->handle, LV2_ATOM__atomTransfer);
+	
+	lv2_atom_forge_init(&ui->forge, ui->map);
 
 	ui->itc_sherlock = elm_genlist_item_class_new();
 	ui->itc_sherlock->item_style = "double_label";
@@ -693,39 +617,12 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	ui->itc_atom->func.state_get = NULL;
 	ui->itc_atom->func.del = NULL;
 
-	ui->list = elm_genlist_add(ui->vbox);
-	elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_NONE);
-	evas_object_data_set(ui->list, "ui", ui);
-	//evas_object_smart_callback_add(ui->list, "selected", _item_selected, ui);
-	evas_object_smart_callback_add(ui->list, "expand,request",
-		_item_expand_request, ui);
-	evas_object_smart_callback_add(ui->list, "contract,request",
-		_item_contract_request, ui);
-	evas_object_smart_callback_add(ui->list, "expanded", _item_expanded, ui);
-	evas_object_smart_callback_add(ui->list, "contracted", _item_contracted, ui);
-	evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
-	evas_object_show(ui->list);
-	elm_box_pack_end(ui->vbox, ui->list);
-
-	ui->clear = elm_button_add(ui->vbox);
-	elm_object_part_text_set(ui->clear, "default", "Clear");
-	evas_object_smart_callback_add(ui->clear, "clicked", _clear_clicked, ui);
-	//evas_object_size_hint_weight_set(ui->clear, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	evas_object_size_hint_align_set(ui->clear, EVAS_HINT_FILL, EVAS_HINT_FILL);
-	evas_object_show(ui->clear);
-	elm_box_pack_end(ui->vbox, ui->clear);
-	
-	ui->uris.midi_MidiEvent = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
-	ui->uris.osc_OscEvent = ui->map->map(ui->map->handle, LV2_OSC__OscEvent);
-	ui->uris.atom_transfer = ui->map->map(ui->map->handle, LV2_ATOM__atomTransfer);
-	
-	lv2_atom_forge_init(&ui->forge, ui->map);
-
-	if(ui->ee) // X11 UI
-		*(Evas_Object **)widget = NULL;
-	else // Eo UI
-		*(Evas_Object **)widget = ui->vbox;
+	if(eoui_instantiate(eoui, descriptor, plugin_uri, bundle_path, write_function,
+		controller, widget, features))
+	{
+		free(ui);
+		return NULL;
+	}
 
 	return ui;
 }
@@ -734,23 +631,15 @@ static void
 cleanup(LV2UI_Handle handle)
 {
 	UI *ui = handle;
-	
-	if(ui)
-	{
-		if(ui->ee)
-		{
-			ecore_evas_hide(ui->ee);
-			
-			evas_object_del(ui->vbox);
-			evas_object_del(ui->parent);
 
-			ecore_evas_free(ui->ee);
-		}
-		
-		free(ui);
-	}
+	eoui_cleanup(&ui->eoui);
 
-	elm_shutdown();
+	elm_genlist_item_class_free(ui->itc_atom);
+	elm_genlist_item_class_free(ui->itc_vec);
+	elm_genlist_item_class_free(ui->itc_prop);
+	elm_genlist_item_class_free(ui->itc_sherlock);
+
+	free(ui);
 }
 
 static void
@@ -779,36 +668,40 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			*/
 			Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
 
-
 			itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
 				type, NULL, NULL);
 		}
 	}
 }
 
-static const void *
-extension_data(const char *uri)
-{
-	if(!strcmp(uri, LV2_UI__idleInterface))
-		return &idle_ext;
-	else if(!strcmp(uri, LV2_UI__showInterface))
-		return &show_ext;
-		
-	return NULL;
-}
+const LV2UI_Descriptor atom_inspector_eo = {
+	.URI						= SHERLOCK_ATOM_INSPECTOR_EO_URI,
+	.instantiate		= instantiate,
+	.cleanup				= cleanup,
+	.port_event			= port_event,
+	.extension_data	= eoui_eo_extension_data
+};
 
 const LV2UI_Descriptor atom_inspector_ui = {
 	.URI						= SHERLOCK_ATOM_INSPECTOR_UI_URI,
 	.instantiate		= instantiate,
 	.cleanup				= cleanup,
 	.port_event			= port_event,
-	.extension_data	= extension_data
+	.extension_data	= eoui_ui_extension_data
 };
 
-const LV2UI_Descriptor atom_inspector_eo = {
-	.URI						= SHERLOCK_ATOM_INSPECTOR_EO_URI,
+const LV2UI_Descriptor atom_inspector_x11 = {
+	.URI						= SHERLOCK_ATOM_INSPECTOR_X11_URI,
 	.instantiate		= instantiate,
 	.cleanup				= cleanup,
 	.port_event			= port_event,
-	.extension_data	= NULL
+	.extension_data	= eoui_x11_extension_data
+};
+
+const LV2UI_Descriptor atom_inspector_kx = {
+	.URI						= SHERLOCK_ATOM_INSPECTOR_KX_URI,
+	.instantiate		= instantiate,
+	.cleanup				= cleanup,
+	.port_event			= port_event,
+	.extension_data	= eoui_kx_extension_data
 };

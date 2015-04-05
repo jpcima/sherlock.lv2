@@ -4,6 +4,7 @@ project(sherlock.lv2)
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/libosc)
+include_directories(${PROJECT_SOURCE_DIR}/eo_ui.lv2)
 
 set(DEST lib/lv2/sherlock.lv2)
 set(LIB_EXT ".so")
@@ -17,6 +18,10 @@ set(LIBS ${LIBS} ${LV2_LDFLAGS})
 pkg_search_module(ELM REQUIRED elementary>=1.8)
 include_directories(${ELM_INCLUDE_DIRS})
 set(LIBS_UI ${LIBS_UI} ${ELM_LDFLAGS})
+
+if((${ELM_VERSION} VERSION_EQUAL "1.13.0") OR (${ELM_VERSION} VERSION_GREATER "1.13.0"))
+	add_definitions("-DELM_HAS_FAKE")
+endif()
 
 add_library(sherlock MODULE
 	sherlock.c

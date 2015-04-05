@@ -36,11 +36,15 @@
 #define SHERLOCK_FRAMETIME_URI					SHERLOCK_URI"#event"
 
 #define SHERLOCK_ATOM_INSPECTOR_URI			SHERLOCK_URI"#atom_inspector"
-#define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_ui"
 #define SHERLOCK_ATOM_INSPECTOR_EO_URI	SHERLOCK_URI"#atom_inspector_eo"
+#define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_ui"
+#define SHERLOCK_ATOM_INSPECTOR_X11_URI	SHERLOCK_URI"#atom_inspector_x11"
+#define SHERLOCK_ATOM_INSPECTOR_KX_URI	SHERLOCK_URI"#atom_inspector_kx"
 
 extern const LV2_Descriptor atom_inspector;
-extern const LV2UI_Descriptor atom_inspector_ui;
 extern const LV2UI_Descriptor atom_inspector_eo;
+extern const LV2UI_Descriptor atom_inspector_ui;
+extern const LV2UI_Descriptor atom_inspector_x11;
+extern const LV2UI_Descriptor atom_inspector_kx;
 
 #endif // _SHERLOCK_LV2_H
