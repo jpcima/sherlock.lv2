@@ -570,9 +570,6 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 
 	ui->write_function = write_function;
 	ui->controller = controller;
-
-	void *parent = NULL;
-	LV2UI_Resize *resize = NULL;
 	
 	int i, j;
 	for(i=0; features[i]; i++)

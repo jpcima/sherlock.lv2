@@ -50,14 +50,14 @@ sherlock:atom_inspector_eo
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "control_in" ;
-		ui:protocol atom:eventTransfer ;
+		ui:protocol atom:atomTransfer ;
 	] .
 sherlock:atom_inspector_ui
 	a ui:UI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "control_in" ;
-		ui:protocol atom:eventTransfer ;
+		ui:protocol atom:atomTransfer ;
 	] ;
 	lv2:requiredFeature ui:idleInterface ;
   lv2:extensionData ui:idleInterface, ui:showInterface .
@@ -66,7 +66,7 @@ sherlock:atom_inspector_x11
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "control_in" ;
-		ui:protocol atom:eventTransfer ;
+		ui:protocol atom:atomTransfer ;
 	] ;
 	lv2:requiredFeature ui:idleInterface ;
 	lv2:optionalFeature ui:resize ;
@@ -76,7 +76,7 @@ sherlock:atom_inspector_kx
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "control_in" ;
-		ui:protocol atom:eventTransfer ;
+		ui:protocol atom:atomTransfer ;
 	] ;
 	lv2:requiredFeature kx:Host .
 
