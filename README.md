@@ -21,7 +21,8 @@ Get more information at: [http://open-music-kontrollers.ch/lv2/sherlock](http://
 ### Dependencies
 
 * [LV2](http://lv2plug.in) (LV2 Plugin Standard)
-* [EFL](http://enlightenment.org) (Enlightenment Foundation Libraries)
+* [EFL](http://docs.enlightenment.org/stable/elementary/) (Enlightenment Foundation Libraries)
+* [Elementary](http://docs.enlightenment.org/stable/efl/) (Lightweight GUI Toolkit)
 
 ### Build / install
 
