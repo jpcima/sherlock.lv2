@@ -48,10 +48,6 @@ struct _UI {
 	
 	LV2_Atom_Forge forge;
 
-	int w, h;
-	Ecore_Evas *ee;
-	Evas_Object *parent;
-	Evas_Object *bg;
 	Evas_Object *vbox;
 	Evas_Object *list;
 	Evas_Object *clear;
@@ -667,6 +663,9 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 
 			itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
 				type, NULL, NULL);
+			
+			// scroll to last item
+			elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 		}
 	}
 }
