@@ -21,6 +21,8 @@
 
 #include <lv2_eo_ui.h>
 
+#define COUNT_MAX 2018 // maximal amount of events shown
+
 // Disable deprecation warnings for Blank and Resource
 #if defined(__clang__)
 #    pragma clang diagnostic push
@@ -652,6 +654,14 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
 			LV2_Atom_Event *ev = malloc(len);
 			memcpy(ev, elmnt, len);
+
+			// check item count 
+			if(elm_genlist_items_count(ui->list) >= COUNT_MAX)
+			{
+				// remove first item to free space for the most recent one
+				Elm_Object_Item *first = elm_genlist_first_item_get(ui->list);
+				elm_object_item_del(first);
+			}
 			
 			/* TODO would be correct
 			const LV2_Atom *atom = &elmnt->body;
