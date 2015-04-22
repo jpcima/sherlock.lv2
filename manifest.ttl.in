@@ -14,7 +14,7 @@
 # http://www.perlfoundation.org/artistic_license_2_0.
 
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
-@prefix owl:			<http://www.w3.org/2002/07/owl#> .
+@prefix owl:	<http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
