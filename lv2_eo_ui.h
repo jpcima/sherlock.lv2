@@ -298,7 +298,6 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 			eoui->win = eoui->eo.parent;
 
 			eoui->content = eoui->content_get(eoui);
-			evas_object_size_hint_min_set(eoui->content, eoui->w, eoui->h);
 
 			*(Evas_Object **)widget = eoui->content;
 
