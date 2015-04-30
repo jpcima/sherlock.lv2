@@ -657,11 +657,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 
 			// check item count 
 			if(elm_genlist_items_count(ui->list) >= COUNT_MAX)
-			{
-				// remove first item to free space for the most recent one
-				Elm_Object_Item *first = elm_genlist_first_item_get(ui->list);
-				elm_object_item_del(first);
-			}
+				break;
 			
 			/* TODO would be correct
 			const LV2_Atom *atom = &elmnt->body;
@@ -675,7 +671,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				type, NULL, NULL);
 			
 			// scroll to last item
-			elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
+			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 		}
 	}
 }
