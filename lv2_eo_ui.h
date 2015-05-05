@@ -321,8 +321,6 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 			_elm_startup_time = ecore_time_unix_get();
 			elm_init(0, NULL);
 
-			*widget = NULL;
-
 			break;
 		}
 
@@ -382,8 +380,6 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 
 			if(eoui->x11.resize)
 				eoui->x11.resize->ui_resize(eoui->x11.resize->handle, eoui->w, eoui->h);
-
-			*widget = NULL;
 
 			break;
 		}
