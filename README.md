@@ -28,6 +28,7 @@ Get more information at: [http://open-music-kontrollers.ch/lv2/sherlock](http://
 
 	git clone https://github.com/OpenMusicKontrollers/sherlock.lv2.git
 	cd sherlock.lv2
+	git submodule update --init
 	mkdir build
 	cd build
 	cmake -DCMAKE_C_FLAGS="-std=gnu99" ..
