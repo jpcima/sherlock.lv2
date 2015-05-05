@@ -23,6 +23,13 @@ if((${ELM_VERSION} VERSION_EQUAL "1.13.0") OR (${ELM_VERSION} VERSION_GREATER "1
 	add_definitions("-DELM_HAS_FAKE")
 endif()
 
+option(BUILD_X11_WRAPPER ON)
+if(${BUILD_X11_WRAPPER})
+	set(X11_UI_WRAP "")
+else()
+	set(X11_UI_WRAP "#")
+endif()
+
 add_library(sherlock MODULE
 	sherlock.c
 	atom_inspector.c)

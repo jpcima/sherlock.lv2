@@ -35,10 +35,10 @@ kx:Host
 sherlock:atom_inspector
 	a lv2:Plugin ;
 	lv2:binary <sherlock@LIB_EXT@> ;
-	ui:ui sherlock:atom_inspector_eo ;
-	ui:ui sherlock:atom_inspector_ui ;
-	ui:ui sherlock:atom_inspector_x11 ;
-	ui:ui sherlock:atom_inspector_kx ;
+	@EO_UI_WRAP@ui:ui sherlock:atom_inspector_eo ;
+	@UI_UI_WRAP@ui:ui sherlock:atom_inspector_ui ;
+	@KX_UI_WRAP@ui:ui sherlock:atom_inspector_kx ;
+	@X11_UI_WRAP@ui:ui sherlock:atom_inspector_x11 ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:atom_inspector_eo
