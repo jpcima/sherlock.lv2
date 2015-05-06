@@ -25,6 +25,7 @@ typedef struct _handle_t handle_t;
 struct _handle_t {
 	LV2_URID_Map *map;
 	const LV2_Atom_Sequence *control_in;
+	LV2_Atom_Sequence *control_out;
 };
 
 static LV2_Handle
@@ -60,6 +61,9 @@ connect_port(LV2_Handle instance, uint32_t port, void *data)
 		case 0:
 			handle->control_in = (const LV2_Atom_Sequence *)data;
 			break;
+		case 1:
+			handle->control_out = (LV2_Atom_Sequence *)data;
+			break;
 		default:
 			break;
 	}
@@ -76,7 +80,10 @@ static void
 run(LV2_Handle instance, uint32_t nsamples)
 {
 	handle_t *handle = (handle_t *)instance;
-	//nothing
+
+	// copy whole sequence
+	size_t size = sizeof(LV2_Atom) + handle->control_in->atom.size;
+	memcpy(handle->control_out, handle->control_in, size);
 }
 
 static void

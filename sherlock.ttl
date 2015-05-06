@@ -94,8 +94,21 @@ sherlock:atom_inspector
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		lv2:designation lv2:control ;
+		atom:supports midi:MidiEvent ;
+		atom:supports atom:Object ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
+		lv2:designation lv2:control ;
+	] , [
+		# output event port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports midi:MidiEvent ;
+		atom:supports atom:Object ;
+		lv2:index 1 ;
+		lv2:symbol "control_out" ;
+		lv2:name "Control Out" ;
+		lv2:designation lv2:control ;
 	] .
