@@ -44,7 +44,6 @@ struct _UI {
 	LV2_URID_Unmap *unmap;
 	struct {
 		LV2_URID midi_MidiEvent;
-		LV2_URID osc_OscEvent;
 		LV2_URID atom_transfer;
 	} uris;
 	
@@ -70,6 +69,12 @@ _is_expandable(UI *ui, const uint32_t type)
 		|| (type == ui->forge.Vector);
 }
 
+#define HIL_PRE(VAL) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#b00>")
+#define HIL_POST ("</color></br></br>")
+
+#define URI(VAL,TYP) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#fff>"TYP"</color>")
+#define HIL(VAL,TYP) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#b00>"TYP"</color>")
+
 static char * 
 _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 {
@@ -78,118 +83,137 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 
 	if(!ui)
 		return NULL;
-	
+
 	if(!strcmp(part, "elm.text"))
 	{
-		const char *uri = ui->unmap->unmap(ui->unmap->handle, atom->type);
-
-		return uri ? strdup(uri) : NULL;
-	}
-	else if(!strcmp(part, "elm.text.sub"))
-	{
-		char buf [512];
+		char buf [1024];
+		char *ptr = buf;
+		char *end = buf + 1024;
+		
+		const char *type = ui->unmap->unmap(ui->unmap->handle, atom->type);
+		
+		sprintf(ptr, URI("type    ", "%s</br>"), type);
+		ptr += strlen(ptr);
 
 		if(  (atom->type == ui->forge.Object)
 			|| (atom->type == ui->forge.Blank)
 			|| (atom->type == ui->forge.Resource) )
 		{
 			const LV2_Atom_Object *atom_object = data;
-			const char *uri = ui->unmap->unmap(ui->unmap->handle,
-				atom_object->body.otype);
 			const char *id = ui->unmap->unmap(ui->unmap->handle,
 				atom_object->body.id);
-		
-			//TODO print id
-			sprintf(buf, "%s / %u", uri, atom_object->body.id);
+			const char *otype = ui->unmap->unmap(ui->unmap->handle,
+				atom_object->body.otype);
+
+			sprintf(ptr, URI("id      ", "%s</br>"), id);
+			ptr += strlen(ptr);
+
+			sprintf(ptr, URI("otype   ", "%s</br>"), otype);
 		}
 		else if(atom->type == ui->forge.Tuple)
 		{
 			const LV2_Atom_Tuple *atom_tuple = data;
 
-			sprintf(buf, "");
+			sprintf(ptr, "</br></br>");
 		}
 		else if(atom->type == ui->forge.Vector)
 		{
 			const LV2_Atom_Vector *atom_vector = data;
-			const char *uri = ui->unmap->unmap(ui->unmap->handle,
+			const char *ctype = ui->unmap->unmap(ui->unmap->handle,
 				atom_vector->body.child_type);
 
-			sprintf(buf, "%s", uri);
+			sprintf(ptr, URI("type    ", "%s</br></br>"), ctype);
 		}
 		else if(atom->type == ui->forge.Int)
 		{
 			const LV2_Atom_Int *atom_int = data;
 
-			sprintf(buf, "%d", atom_int->body);
+			sprintf(ptr, HIL("val     ", "%d</br></br>"), atom_int->body);
 		}
 		else if(atom->type == ui->forge.Long)
 		{
 			const LV2_Atom_Long *atom_long = data;
 
-			sprintf(buf, "%ld", atom_long->body);
+			sprintf(ptr, HIL("val     ", "%ld</br></br>"), atom_long->body);
 		}
 		else if(atom->type == ui->forge.Float)
 		{
 			const LV2_Atom_Float *atom_float = data;
 
-			sprintf(buf, "%f", atom_float->body);
+			sprintf(ptr, HIL("val     ", "%f</br></br>"), atom_float->body);
 		}
 		else if(atom->type == ui->forge.Double)
 		{
 			const LV2_Atom_Double *atom_double = data;
 
-			sprintf(buf, "%lf", atom_double->body);
+			sprintf(ptr, HIL("val     ", "%lf</br></br>"), atom_double->body);
 		}
 		else if(atom->type == ui->forge.Bool)
 		{
 			const LV2_Atom_Int *atom_int = data;
 
-			sprintf(buf, "%s", atom_int->body ? "true" : "false");
+			sprintf(ptr, HIL("val     ", "%s</br></br>"), atom_int->body ? "true" : "false");
 		}
 		else if(atom->type == ui->forge.URID)
 		{
 			const LV2_Atom_URID *atom_urid = data;
 
-			sprintf(buf, "%u", atom_urid->body);
+			sprintf(ptr, HIL("val     ", "%u</br></br>"), atom_urid->body);
 		}
 		else if(atom->type == ui->forge.String)
 		{
 			const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_String, atom);
 
-			sprintf(buf, "%s", str);
+			sprintf(ptr, HIL("val     ", "%s</br></br>"), str);
+		}
+		else if(atom->type == ui->forge.Path)
+		{
+			const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_String, atom);
+
+			sprintf(ptr, HIL("val     ", "%s</br></br>"), str);
 		}
 		else if(atom->type == ui->forge.Literal)
 		{
-			const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, atom);
-			//FIXME report datatype and lang
+			const LV2_Atom_Literal *atom_lit = data;
 
-			sprintf(buf, "%s", str);
+			const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, atom);
+			const char *datatype = ui->unmap->unmap(ui->unmap->handle,
+				atom_lit->body.datatype);
+			const char *lang = ui->unmap->unmap(ui->unmap->handle,
+				atom_lit->body.lang);
+
+			sprintf(ptr, HIL("val     ", "%s</br>"), str);
+			ptr += strlen(ptr);
+			
+			sprintf(ptr, URI("datatype", "%s</br>"), datatype);
+			ptr += strlen(ptr);
+			
+			sprintf(ptr, URI("lang    ", "%s"), lang);
 		}
 		else if(atom->type == ui->forge.URI)
 		{
-			const char *str = LV2_ATOM_BODY_CONST(atom);
+			const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_String, atom);
 
-			sprintf(buf, "%s", str);
+			sprintf(ptr, HIL("val     ", "%s</br></br>"), str);
 		}
 		else if(atom->type == ui->uris.midi_MidiEvent)
 		{
 			const uint8_t *midi = LV2_ATOM_BODY_CONST(atom);
-			char *ptr = buf;
-			char *end = buf + 512;
 
-			for(int i=0; (i<atom->size) && (ptr<end); i++, ptr += 3)
-				sprintf(ptr, "%02X ", midi[i]);
-		}
-		else if(atom->type == ui->uris.osc_OscEvent)
-		{
-			const char *osc = LV2_ATOM_BODY_CONST(atom);
+			if(midi[0] == 0xf0)
+			{
+				sprintf(ptr, HIL("val     ", "%s</br></br>"), "Sysex");
+			}
+			else
+			{
+				sprintf(ptr, HIL_PRE("val     "));
+				ptr += strlen(ptr);
 
-			//TODO
-			sprintf(buf, "%s", osc);
-		}
-		else
-		{
-			sprintf(buf, "");
+				for(int i=0; (i<atom->size) && (ptr<end); i++, ptr += 3)
+					sprintf(ptr, "%02X ", midi[i]);
+				
+				sprintf(ptr, HIL_POST);
+			}
 		}
 
 		return strdup(buf);
@@ -209,15 +233,19 @@ _prop_item_label_get(void *data, Evas_Object *obj, const char *part)
 	
 	if(!strcmp(part, "elm.text"))
 	{
-		const char *uri = ui->unmap->unmap(ui->unmap->handle, prop->key);
+		char buf [1024];
+		char *ptr = buf;
 
-		return uri ? strdup(uri) : NULL;
-	}
-	else if(!strcmp(part, "elm.text.sub"))
-	{
-		const char *uri = ui->unmap->unmap(ui->unmap->handle, prop->context);
+		const char *key = ui->unmap->unmap(ui->unmap->handle, prop->key);
+		const char *context = ui->unmap->unmap(ui->unmap->handle, prop->context);
 
-		return uri ? strdup(uri) : NULL;
+		sprintf(ptr, URI("key     ", "%s</br>"), key);
+		ptr += strlen(ptr);
+		
+		sprintf(ptr, URI("context ", "%s</br></br>"), context);
+		ptr += strlen(ptr);
+
+		return strdup(buf);
 	}
 	else
 		return NULL;
@@ -233,25 +261,12 @@ _sherlock_item_label_get(void *data, Evas_Object *obj, const char *part)
 	if(!ui)
 		return NULL;
 
-	/*
-	char buf [512];
-	sprintf(buf, "%04ld", frametime->body);
-	sprintf(buf, "%u", event->size);
-	*/
-
 	if(!strcmp(part, "elm.text"))
-	{
-		const char *uri = ui->unmap->unmap(ui->unmap->handle, atom->type);
-
-		return uri ? strdup(uri) : NULL;
-	}
-	else if(!strcmp(part, "elm.text.sub"))
-	{
 		return _atom_item_label_get((void *)atom, obj, part);
-	}
 	else
 		return NULL;
 }
+
 
 static Evas_Object * 
 _atom_item_content_get(void *data, Evas_Object *obj, const char *part)
@@ -259,23 +274,21 @@ _atom_item_content_get(void *data, Evas_Object *obj, const char *part)
 	UI *ui = evas_object_data_get(obj, "ui");
 	const LV2_Atom *atom = data;
 	char buf [512];
-
+	
 	if(!ui)
 		return NULL;
-
+	
 	if(!strcmp(part, "elm.swallow.icon"))
 	{
-		return NULL; //TODO
+		return NULL;
 	}
 	else if(!strcmp(part, "elm.swallow.end"))
 	{
-		sprintf(buf, "%u", atom->size);
+		sprintf(buf, "<color=#0bb font=Mono>%4u</color>", atom->size);
 
 		Evas_Object *label = elm_label_add(obj);
 		elm_object_part_text_set(label, "default", buf);
-		evas_object_color_set(label, 0x00, 0xbb, 0xbb, 0xff);
-		evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-		evas_object_size_hint_align_set(label, 1.f, EVAS_HINT_FILL);
+		evas_object_size_hint_weight_set(label, 0.5, EVAS_HINT_EXPAND);
 		evas_object_show(label);
 
 		return label;
@@ -296,11 +309,11 @@ _prop_item_content_get(void *data, Evas_Object *obj, const char *part)
 
 	if(!strcmp(part, "elm.swallow.icon"))
 	{
-		return NULL; //TODO
+		return NULL;
 	}
 	else if(!strcmp(part, "elm.swallow.end"))
 	{
-		return NULL; //TODO
+		return NULL;
 	}
 	else
 		return NULL;
@@ -319,26 +332,22 @@ _sherlock_item_content_get(void *data, Evas_Object *obj, const char *part)
 
 	if(!strcmp(part, "elm.swallow.icon"))
 	{
-		sprintf(buf, "%04ld", ev->time.frames);
+		sprintf(buf, "<color=#bb0 font=Mono size=10>%4ld</color>", ev->time.frames);
 
 		Evas_Object *label = elm_label_add(obj);
 		elm_object_part_text_set(label, "default", buf);
-		evas_object_color_set(label, 0xbb, 0xbb, 0x00, 0xff);
-		evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-		evas_object_size_hint_align_set(label, 1.f, EVAS_HINT_FILL);
+		evas_object_size_hint_weight_set(label, 0.5, EVAS_HINT_EXPAND);
 		evas_object_show(label);
 
 		return label;
 	}
 	else if(!strcmp(part, "elm.swallow.end"))
 	{
-		sprintf(buf, "%u", atom->size);
+		sprintf(buf, "<color=#0bb font=Mono size=10>%4u</color>", atom->size);
 
 		Evas_Object *label = elm_label_add(obj);
 		elm_object_part_text_set(label, "default", buf);
-		evas_object_color_set(label, 0x00, 0xbb, 0xbb, 0xff);
-		evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-		evas_object_size_hint_align_set(label, 1.f, EVAS_HINT_FILL);
+		evas_object_size_hint_weight_set(label, 0.5, EVAS_HINT_EXPAND);
 		evas_object_show(label);
 
 		return label;
@@ -346,6 +355,7 @@ _sherlock_item_content_get(void *data, Evas_Object *obj, const char *part)
 	else
 		return NULL;
 }
+
 
 static void
 _item_del(void *data, Evas_Object *obj)
@@ -391,8 +401,12 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 		//const LV2_Atom_Property_Body *prop;
 
 		LV2_ATOM_OBJECT_FOREACH(atom_object, prop)
-			elm_genlist_item_append(ui->list, ui->itc_prop, prop, itm,
+		{
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_prop, prop, itm,
 				ELM_GENLIST_ITEM_TREE, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			elm_genlist_item_expanded_set(itm2, EINA_TRUE);
+		}
 	}
 	else if(atom->type == ui->forge.Tuple)
 	{
@@ -407,9 +421,12 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 			Elm_Genlist_Item_Type type = _is_expandable(ui, elmnt->type)
 				? ELM_GENLIST_ITEM_TREE
 				: ELM_GENLIST_ITEM_NONE;
+			type = ELM_GENLIST_ITEM_TREE; //XXX
 
-			elm_genlist_item_append(ui->list, ui->itc_atom, elmnt, itm,
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_atom, elmnt, itm,
 				type, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 		}
 	}
 	else if(atom->type == ui->forge.Vector)
@@ -419,6 +436,7 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 		Elm_Genlist_Item_Type type = _is_expandable(ui, atom_vector->body.child_type)
 			? ELM_GENLIST_ITEM_TREE
 			: ELM_GENLIST_ITEM_NONE;
+		type = ELM_GENLIST_ITEM_TREE; //XXX
 
 		int num = (atom_vector->atom.size - sizeof(LV2_Atom_Vector_Body))
 			/ atom_vector->body.child_size;
@@ -429,7 +447,10 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 			atom->size = atom_vector->body.child_size;
 			atom->type = atom_vector->body.child_type;
 			memcpy(LV2_ATOM_BODY(atom), body + i*atom->size, atom->size);
-			elm_genlist_item_append(ui->list, ui->itc_vec, atom, itm, type, NULL, NULL);
+
+			Elm_Genlist_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_vec, atom, itm, type, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 		}
 	}
 	else
@@ -445,8 +466,11 @@ _prop_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 	Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
 		? ELM_GENLIST_ITEM_TREE
 		: ELM_GENLIST_ITEM_NONE;
+	type = ELM_GENLIST_ITEM_TREE; //XXX
 
-	elm_genlist_item_append(ui->list, ui->itc_atom, atom, itm, type, NULL, NULL);
+	Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_atom, atom, itm, type, NULL, NULL);
+	elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+	elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 }
 
 static void
@@ -509,8 +533,9 @@ _content_get(eo_ui_t *eoui)
 	elm_box_padding_set(ui->vbox, 0, 10);
 
 	ui->list = elm_genlist_add(ui->vbox);
-	elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_NONE);
-	elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // for lazy-loading
+	elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
+	elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // TRUE for lazy-loading
+	//elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
 	evas_object_data_set(ui->list, "ui", ui);
 	//evas_object_smart_callback_add(ui->list, "selected", _item_selected, ui);
 	evas_object_smart_callback_add(ui->list, "expand,request",
@@ -579,34 +604,37 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
   }
 	
 	ui->uris.midi_MidiEvent = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
-	ui->uris.osc_OscEvent = ui->map->map(ui->map->handle, LV2_OSC__OscEvent);
 	ui->uris.atom_transfer = ui->map->map(ui->map->handle, LV2_ATOM__atomTransfer);
 	
 	lv2_atom_forge_init(&ui->forge, ui->map);
 
 	ui->itc_sherlock = elm_genlist_item_class_new();
-	ui->itc_sherlock->item_style = "double_label";
+	//ui->itc_sherlock->item_style = "double_label";
+	ui->itc_sherlock->item_style = "default_style";
 	ui->itc_sherlock->func.text_get = _sherlock_item_label_get;
 	ui->itc_sherlock->func.content_get = _sherlock_item_content_get;
 	ui->itc_sherlock->func.state_get = NULL;
 	ui->itc_sherlock->func.del = _item_del;
 	
 	ui->itc_prop = elm_genlist_item_class_new();
-	ui->itc_prop->item_style = "double_label";
+	//ui->itc_prop->item_style = "double_label";
+	ui->itc_prop->item_style = "default_style";
 	ui->itc_prop->func.text_get = _prop_item_label_get;
 	ui->itc_prop->func.content_get = _prop_item_content_get;
 	ui->itc_prop->func.state_get = NULL;
 	ui->itc_prop->func.del = NULL;
 	
 	ui->itc_vec = elm_genlist_item_class_new();
-	ui->itc_vec->item_style = "double_label";
+	//ui->itc_vec->item_style = "double_label";
+	ui->itc_vec->item_style = "default_style";
 	ui->itc_vec->func.text_get = _atom_item_label_get;
 	ui->itc_vec->func.content_get = _atom_item_content_get;
 	ui->itc_vec->func.state_get = NULL;
 	ui->itc_vec->func.del = _item_del;
 	
 	ui->itc_atom = elm_genlist_item_class_new();
-	ui->itc_atom->item_style = "double_label";
+	//ui->itc_atom->item_style = "double_label";
+	ui->itc_atom->item_style = "default_style";
 	ui->itc_atom->func.text_get = _atom_item_label_get;
 	ui->itc_atom->func.content_get = _atom_item_content_get;
 	ui->itc_atom->func.state_get = NULL;
@@ -645,8 +673,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 
 	if( (i == 0) && (urid == ui->uris.atom_transfer) )
 	{
-		Elm_Object_Item *itm;
-
 		const LV2_Atom_Sequence *seq = buf;
 
 		LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
@@ -667,8 +693,10 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			*/
 			Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_TREE; // TODO looks nicer
 
-			itm = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
+			Elm_Genlist_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_sherlock, ev, NULL,
 				type, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 			
 			// scroll to last item
 			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
