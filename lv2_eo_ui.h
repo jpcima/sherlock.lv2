@@ -506,7 +506,6 @@ eoui_ui_extension_data(const char *uri)
 	return NULL;
 }
 
-#if defined(X11_UI_WRAP)
 // extension data callback for X11UI
 static inline const void *
 eoui_x11_extension_data(const char *uri)
@@ -518,7 +517,6 @@ eoui_x11_extension_data(const char *uri)
 		
 	return NULL;
 }
-#endif
 
 // extension data callback for external-ui
 static inline const void *
