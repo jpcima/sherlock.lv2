@@ -279,7 +279,7 @@ static const LV2UI_Resize resize_ext = {
 
 #if defined(X11_UI_WRAP)
 static void
-_mouse_in(Ecore_Evas *ee)
+_x11_ui_wrap_mouse_in(Ecore_Evas *ee)
 {
 	eo_ui_t *eoui = ecore_evas_data_get(ee, "eoui");
 
@@ -373,7 +373,7 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 				return -1;
 			}
 			ecore_evas_data_set(eoui->x11.ee, "eoui", eoui);
-			ecore_evas_callback_mouse_in_set(eoui->x11.ee, _mouse_in);
+			ecore_evas_callback_mouse_in_set(eoui->x11.ee, _x11_ui_wrap_mouse_in);
 			ecore_evas_show(eoui->x11.ee);
 	
 			eoui->win = elm_win_fake_add(eoui->x11.ee);
