@@ -34,9 +34,7 @@ typedef Evas_Object *(*eo_ui_content_get)(eo_ui_t *eoui);
 enum _eo_ui_driver_t {
 	EO_UI_DRIVER_NONE	= 0,
 	EO_UI_DRIVER_EO,
-#if defined(X11_UI_WRAP)
 	EO_UI_DRIVER_X11,
-#endif
 	EO_UI_DRIVER_UI,
 	EO_UI_DRIVER_KX
 };
