@@ -20,6 +20,10 @@
 
 #include <Elementary.h>
 
+#if defined(X11_UI_WRAP)
+#	include <Ecore_X.h>
+#endif
+
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2_external_ui.h> // kxstudio external-ui extension
 
@@ -30,7 +34,9 @@ typedef Evas_Object *(*eo_ui_content_get)(eo_ui_t *eoui);
 enum _eo_ui_driver_t {
 	EO_UI_DRIVER_NONE	= 0,
 	EO_UI_DRIVER_EO,
+#if defined(X11_UI_WRAP)
 	EO_UI_DRIVER_X11,
+#endif
 	EO_UI_DRIVER_UI,
 	EO_UI_DRIVER_KX
 };
@@ -57,6 +63,7 @@ struct _eo_ui_t {
 			volatile int done;
 		} ui;
 
+#if defined(X11_UI_WRAP)
 		// X11 iface
 		struct {
 			Ecore_X_Window parent;
@@ -64,6 +71,7 @@ struct _eo_ui_t {
 
 			Ecore_Evas *ee;
 		} x11;
+#endif
 
 		// external-ui iface
 		struct {
@@ -271,6 +279,16 @@ static const LV2UI_Resize resize_ext = {
 	.ui_resize = _ui_resize_cb
 };
 
+#if defined(X11_UI_WRAP)
+static void
+_mouse_in(Ecore_Evas *ee)
+{
+	eo_ui_t *eoui = ecore_evas_data_get(ee, "eoui");
+
+	ecore_x_window_focus(eoui->x11.parent);
+}
+#endif
+
 static inline int
 eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 	const char *plugin_uri, const char *bundle_path,
@@ -324,6 +342,7 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 			break;
 		}
 
+#if defined(X11_UI_WRAP)
 		case EO_UI_DRIVER_X11:
 		{
 			eoui->x11.parent = 0; // mandatory
@@ -355,15 +374,13 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 				//elm_shutdown();
 				return -1;
 			}
+			ecore_evas_data_set(eoui->x11.ee, "eoui", eoui);
+			ecore_evas_callback_mouse_in_set(eoui->x11.ee, _mouse_in);
 			ecore_evas_show(eoui->x11.ee);
 	
-#if defined(ELM_HAS_FAKE)
 			eoui->win = elm_win_fake_add(eoui->x11.ee);
 			evas_object_resize(eoui->win, eoui->w, eoui->h);
 			evas_object_show(eoui->win);
-#else
-			eoui->win = evas_object_rectangle_add(ecore_evas_get(eoui->x11.ee));
-#endif
 
 			eoui->bg = elm_bg_add(eoui->win);
 			elm_bg_color_set(eoui->bg, 64, 64, 64);
@@ -383,6 +400,7 @@ eoui_instantiate(eo_ui_t *eoui, const LV2UI_Descriptor *descriptor,
 
 			break;
 		}
+#endif
 
 		case EO_UI_DRIVER_KX:
 		{
@@ -433,6 +451,7 @@ eoui_cleanup(eo_ui_t *eoui)
 			break;
 		}
 
+#if defined(X11_UI_WRAP)
 		case EO_UI_DRIVER_X11:
 		{
 			if(eoui->content)
@@ -447,10 +466,6 @@ eoui_cleanup(eo_ui_t *eoui)
 			}
 			if(eoui->win)
 				evas_object_del(eoui->win);
-#if !defined(ELM_HAS_FAKE)
-			if(eoui->x11.ee)
-				ecore_evas_free(eoui->x11.ee);
-#endif
 			eoui->content = NULL;
 			eoui->bg = NULL;
 			eoui->win = NULL;
@@ -458,6 +473,7 @@ eoui_cleanup(eo_ui_t *eoui)
 			//elm_shutdown();
 			break;
 		}
+#endif
 
 		case EO_UI_DRIVER_KX:
 		{
@@ -492,6 +508,7 @@ eoui_ui_extension_data(const char *uri)
 	return NULL;
 }
 
+#if defined(X11_UI_WRAP)
 // extension data callback for X11UI
 static inline const void *
 eoui_x11_extension_data(const char *uri)
@@ -503,6 +520,7 @@ eoui_x11_extension_data(const char *uri)
 		
 	return NULL;
 }
+#endif
 
 // extension data callback for external-ui
 static inline const void *
