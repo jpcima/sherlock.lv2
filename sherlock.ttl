@@ -22,7 +22,7 @@
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
 @prefix time: <http://lv2plug.in/ns/ext/time#> .
-@prefix kx:				<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
+@prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 @prefix osc:	<http://opensoundcontrol.org#> .
 @prefix lic:	<http://opensource.org/licenses/> .
@@ -49,15 +49,15 @@ sherlock:atom_inspector_eo
 	a ui:EoUI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "control_in" ;
-		ui:protocol atom:atomTransfer ;
+		lv2:symbol "notify" ;
+		ui:protocol atom:eventTransfer ;
 	] .
 sherlock:atom_inspector_ui
 	a ui:UI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "control_in" ;
-		ui:protocol atom:atomTransfer ;
+		lv2:symbol "notify" ;
+		ui:protocol atom:eventTransfer ;
 	] ;
 	lv2:requiredFeature ui:idleInterface ;
   lv2:extensionData ui:idleInterface, ui:showInterface .
@@ -65,8 +65,8 @@ sherlock:atom_inspector_x11
 	a ui:X11UI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "control_in" ;
-		ui:protocol atom:atomTransfer ;
+		lv2:symbol "notify" ;
+		ui:protocol atom:eventTransfer ;
 	] ;
 	lv2:requiredFeature ui:idleInterface ;
 	lv2:optionalFeature ui:resize ;
@@ -75,8 +75,8 @@ sherlock:atom_inspector_kx
 	a kx:Widget ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "control_in" ;
-		ui:protocol atom:atomTransfer ;
+		lv2:symbol "notify" ;
+		ui:protocol atom:eventTransfer ;
 	] ;
 	lv2:requiredFeature kx:Host .
 
@@ -95,7 +95,25 @@ sherlock:atom_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ;
+		atom:supports time:Position ;
+		atom:supports atom:Blank ;
+		atom:supports atom:Bool ;
+		atom:supports atom:Chunk ;
+		atom:supports atom:Double ;
+		atom:supports atom:Float ;
+		atom:supports atom:Int ;
+		atom:supports atom:Long ;
+		atom:supports atom:Literal ;
 		atom:supports atom:Object ;
+		atom:supports atom:Path ;
+		atom:supports atom:Property ;
+		atom:supports atom:Resource ;
+		atom:supports atom:Sequence ;
+		atom:supports atom:String ;
+		atom:supports atom:Tuple ;
+		atom:supports atom:URI ;
+		atom:supports atom:URID ;
+		atom:supports atom:Vector ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
@@ -106,9 +124,36 @@ sherlock:atom_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ;
+		atom:supports time:Position ;
+		atom:supports atom:Blank ;
+		atom:supports atom:Bool ;
+		atom:supports atom:Chunk ;
+		atom:supports atom:Double ;
+		atom:supports atom:Float ;
+		atom:supports atom:Int ;
+		atom:supports atom:Long ;
+		atom:supports atom:Literal ;
 		atom:supports atom:Object ;
+		atom:supports atom:Path ;
+		atom:supports atom:Property ;
+		atom:supports atom:Resource ;
+		atom:supports atom:Sequence ;
+		atom:supports atom:String ;
+		atom:supports atom:Tuple ;
+		atom:supports atom:URI ;
+		atom:supports atom:URID ;
+		atom:supports atom:Vector ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;
 		lv2:designation lv2:control ;
+	] , [
+		# output notify port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports atom:Sequence ;
+		lv2:index 2 ;
+		lv2:symbol "notify" ;
+		lv2:name "Notify" ;
 	] .

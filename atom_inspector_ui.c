@@ -44,7 +44,7 @@ struct _UI {
 	LV2_URID_Unmap *unmap;
 	struct {
 		LV2_URID midi_MidiEvent;
-		LV2_URID atom_transfer;
+		LV2_URID event_transfer;
 	} uris;
 	
 	LV2_Atom_Forge forge;
@@ -62,9 +62,7 @@ struct _UI {
 static inline int
 _is_expandable(UI *ui, const uint32_t type)
 {
-	return (type == ui->forge.Object)
-		|| (type == ui->forge.Blank)
-		|| (type == ui->forge.Resource)
+	return lv2_atom_forge_is_object_type(&ui->forge, type)
 		|| (type == ui->forge.Tuple)
 		|| (type == ui->forge.Vector);
 }
@@ -89,19 +87,18 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 		char buf [1024];
 		char *ptr = buf;
 		char *end = buf + 1024;
-		
+	
 		const char *type = ui->unmap->unmap(ui->unmap->handle, atom->type);
 		
 		sprintf(ptr, URI("type    ", "%s</br>"), type);
 		ptr += strlen(ptr);
 
-		if(  (atom->type == ui->forge.Object)
-			|| (atom->type == ui->forge.Blank)
-			|| (atom->type == ui->forge.Resource) )
+		if(lv2_atom_forge_is_object_type(&ui->forge, atom->type))
 		{
 			const LV2_Atom_Object *atom_object = data;
-			const char *id = ui->unmap->unmap(ui->unmap->handle,
-				atom_object->body.id);
+			const char *id = atom_object->body.id
+				? ui->unmap->unmap(ui->unmap->handle, atom_object->body.id)
+				: "";
 			const char *otype = ui->unmap->unmap(ui->unmap->handle,
 				atom_object->body.otype);
 
@@ -393,9 +390,7 @@ _atom_expand(UI *ui, const void *data, Evas_Object *obj, Elm_Object_Item *itm)
 {
 	const LV2_Atom *atom = data;
 
-	if(  (atom->type == ui->forge.Object)
-		|| (atom->type == ui->forge.Resource)
-		|| (atom->type == ui->forge.Blank) )
+	if(lv2_atom_forge_is_object_type(&ui->forge, atom->type))
 	{
 		const LV2_Atom_Object *atom_object = (const LV2_Atom_Object *)atom;
 		//const LV2_Atom_Property_Body *prop;
@@ -604,7 +599,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
   }
 	
 	ui->uris.midi_MidiEvent = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
-	ui->uris.atom_transfer = ui->map->map(ui->map->handle, LV2_ATOM__atomTransfer);
+	ui->uris.event_transfer = ui->map->map(ui->map->handle, LV2_ATOM__eventTransfer);
 	
 	lv2_atom_forge_init(&ui->forge, ui->map);
 
@@ -671,7 +666,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 {
 	UI *ui = handle;
 
-	if( (i == 0) && (urid == ui->uris.atom_transfer) )
+	if( (i == 2) && (urid == ui->uris.event_transfer) )
 	{
 		const LV2_Atom_Sequence *seq = buf;
 

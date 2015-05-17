@@ -26,6 +26,8 @@ struct _handle_t {
 	LV2_URID_Map *map;
 	const LV2_Atom_Sequence *control_in;
 	LV2_Atom_Sequence *control_out;
+	LV2_Atom_Sequence *notify;
+	LV2_Atom_Forge forge;
 };
 
 static LV2_Handle
@@ -48,6 +50,8 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 	}
 
+	lv2_atom_forge_init(&handle->forge, handle->map);
+
 	return handle;
 }
 
@@ -63,6 +67,9 @@ connect_port(LV2_Handle instance, uint32_t port, void *data)
 			break;
 		case 1:
 			handle->control_out = (LV2_Atom_Sequence *)data;
+			break;
+		case 2:
+			handle->notify = (LV2_Atom_Sequence *)data;
 			break;
 		default:
 			break;
@@ -81,9 +88,25 @@ run(LV2_Handle instance, uint32_t nsamples)
 {
 	handle_t *handle = (handle_t *)instance;
 
+	// size of input sequence
+	size_t size = handle->control_in->atom.size;
+
 	// copy whole sequence
-	size_t size = sizeof(LV2_Atom) + handle->control_in->atom.size;
-	memcpy(handle->control_out, handle->control_in, size);
+	memcpy(handle->control_out, handle->control_in, sizeof(LV2_Atom) + size);
+
+	// forge whole sequence as single event
+	uint32_t capacity = handle->notify->atom.size;
+	LV2_Atom_Forge *forge = &handle->forge;
+	LV2_Atom_Forge_Frame frame;
+
+	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
+	lv2_atom_forge_sequence_head(forge, &frame, 0);
+
+	lv2_atom_forge_frame_time(forge, 0);
+	lv2_atom_forge_raw(forge, handle->control_in, sizeof(LV2_Atom) + size);
+	lv2_atom_forge_pad(forge, size);
+
+	lv2_atom_forge_pop(forge, &frame);
 }
 
 static void
