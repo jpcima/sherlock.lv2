@@ -265,9 +265,12 @@ _ui_resize_cb(LV2UI_Feature_Handle instance, int w, int h)
 	eoui->h = h;
 
 	// resize main window
-	evas_object_resize(eoui->win, eoui->w, eoui->h); // resizes bg & content, too
-	evas_object_resize(eoui->bg, eoui->w, eoui->h); // resizes bg & content, too
-	evas_object_resize(eoui->content, eoui->w, eoui->h); // resizes bg & content, too
+#if defined(X11_UI_WRAP)
+	ecore_evas_resize(eoui->x11.ee, eoui->w, eoui->h);
+#endif
+	evas_object_resize(eoui->win, eoui->w, eoui->h);
+	evas_object_resize(eoui->bg, eoui->w, eoui->h);
+	evas_object_resize(eoui->content, eoui->w, eoui->h);
   
   return 0;
 }
