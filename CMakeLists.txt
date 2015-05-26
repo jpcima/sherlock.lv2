@@ -6,6 +6,8 @@ include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/libosc)
 include_directories(${PROJECT_SOURCE_DIR}/eo_ui.lv2)
 
+set(CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
+
 set(DEST lib/lv2/sherlock.lv2)
 if(WIN32)
 	set(LIB_EXT ".dll")
