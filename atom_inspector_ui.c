@@ -64,9 +64,10 @@ struct _UI {
 	
 	LV2_Atom_Forge forge;
 
-	Evas_Object *vbox;
+	Evas_Object *table;
 	Evas_Object *list;
 	Evas_Object *clear;
+	Evas_Object *popup;
 
 	Elm_Genlist_Item_Class *itc_sherlock;
 	Elm_Genlist_Item_Class *itc_seq;
@@ -75,6 +76,7 @@ struct _UI {
 	Elm_Genlist_Item_Class *itc_atom;
 
 	char string_buf [STRING_BUF_SIZE];
+	char *logo_path;
 
 	Eina_Hash *urids;
 };
@@ -701,8 +703,25 @@ _clear_clicked(void *data, Evas_Object *obj, void *event_info)
 {
 	UI *ui = data;
 
-	elm_genlist_clear(ui->list);
+	if(ui->list)
+		elm_genlist_clear(ui->list);
+
 	_clear_update(ui, 0);			
+}
+
+static void
+_info_clicked(void *data, Evas_Object *obj, void *event_info)
+{
+	UI *ui = data;
+
+	// toggle popup
+	if(ui->popup)
+	{
+		if(evas_object_visible_get(ui->popup))
+			evas_object_hide(ui->popup);
+		else
+			evas_object_show(ui->popup);
+	}
 }
 
 static Evas_Object *
@@ -710,19 +729,17 @@ _content_get(eo_ui_t *eoui)
 {
 	UI *ui = (void *)eoui - offsetof(UI, eoui);
 
-	ui->vbox = elm_box_add(eoui->win);
-	if(ui->vbox)
+	ui->table = elm_table_add(eoui->win);
+	if(ui->table)
 	{
-		elm_box_horizontal_set(ui->vbox, EINA_FALSE);
-		elm_box_homogeneous_set(ui->vbox, EINA_FALSE);
-		elm_box_padding_set(ui->vbox, 0, 10);
+		elm_table_homogeneous_set(ui->table, EINA_FALSE);
+		elm_table_padding_set(ui->table, 0, 0);
 
-		ui->list = elm_genlist_add(ui->vbox);
+		ui->list = elm_genlist_add(ui->table);
 		if(ui->list)
 		{
 			elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			//elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // TRUE for lazy-loading
-			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // XXX
+			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // TRUE for lazy-loading
 			elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
 			evas_object_data_set(ui->list, "ui", ui);
 			evas_object_smart_callback_add(ui->list, "expand,request",
@@ -734,21 +751,91 @@ _content_get(eo_ui_t *eoui)
 			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->list);
-			elm_box_pack_end(ui->vbox, ui->list);
+			elm_table_pack(ui->table, ui->list, 0, 0, 2, 1);
 		}
 
-		ui->clear = elm_button_add(ui->vbox);
+		ui->clear = elm_button_add(ui->table);
 		if(ui->clear)
 		{
 			_clear_update(ui, 0);
 			evas_object_smart_callback_add(ui->clear, "clicked", _clear_clicked, ui);
+			evas_object_size_hint_weight_set(ui->clear, EVAS_HINT_EXPAND, 0.f);
 			evas_object_size_hint_align_set(ui->clear, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->clear);
-			elm_box_pack_end(ui->vbox, ui->clear);
+			elm_table_pack(ui->table, ui->clear, 0, 1, 1, 1);
+		}
+
+		Evas_Object *info = elm_button_add(ui->table);
+		if(info)
+		{
+			evas_object_smart_callback_add(info, "clicked", _info_clicked, ui);
+			evas_object_size_hint_weight_set(info, 0.f, 0.f);
+			evas_object_size_hint_align_set(info, 1.f, EVAS_HINT_FILL);
+			evas_object_show(info);
+			elm_table_pack(ui->table, info, 1, 1, 1, 1);
+				
+			Evas_Object *icon = elm_icon_add(info);
+			if(icon)
+			{
+				elm_layout_file_set(icon, ui->logo_path, NULL);
+				evas_object_size_hint_min_set(icon, 20, 20);
+				evas_object_size_hint_max_set(icon, 32, 32);
+				evas_object_size_hint_aspect_set(icon, EVAS_ASPECT_CONTROL_BOTH, 1, 1);
+				evas_object_show(icon);
+				elm_object_part_content_set(info, "icon", icon);
+			}
+		}
+
+		ui->popup = elm_popup_add(ui->table);
+		if(ui->popup)
+		{
+			elm_popup_allow_events_set(ui->popup, EINA_TRUE);
+
+			Evas_Object *hbox = elm_box_add(ui->popup);
+			if(hbox)
+			{
+				elm_box_horizontal_set(hbox, EINA_TRUE);
+				elm_box_homogeneous_set(hbox, EINA_FALSE);
+				elm_box_padding_set(hbox, 10, 0);
+				evas_object_show(hbox);
+				elm_object_content_set(ui->popup, hbox);
+
+				Evas_Object *icon = elm_icon_add(hbox);
+				if(icon)
+				{
+					elm_layout_file_set(icon, ui->logo_path, NULL);
+					evas_object_size_hint_min_set(icon, 128, 128);
+					evas_object_size_hint_max_set(icon, 256, 256);
+					evas_object_size_hint_aspect_set(icon, EVAS_ASPECT_CONTROL_BOTH, 1, 1);
+					evas_object_show(icon);
+					elm_box_pack_end(hbox, icon);
+				}
+
+				Evas_Object *label = elm_label_add(hbox);
+				if(label)
+				{
+					elm_object_text_set(label,
+						"<color=#b00 shadow_color=#fff font_size=20>"
+						"Sherlock - Atom Inspector"
+						"</color></br><align=left>"
+						"Version "SHERLOCK_VERSION"</br></br>"
+						"Copyright (c) 2015 Hanspeter Portner</br></br>"
+						"This is free and libre software</br>"
+						"Released under Artistic License 2.0</br>"
+						"By Open Music Kontrollers</br></br>"
+						"<color=#bbb>"
+						"http://open-music-kontrollers.ch/lv2/sherlock</br>"
+						"dev@open-music-kontrollers.ch"
+						"</color></align>");
+
+					evas_object_show(label);
+					elm_box_pack_end(hbox, label);
+				}
+			}
 		}
 	}
 
-	return ui->vbox;
+	return ui->table;
 }
 
 static LV2UI_Handle
@@ -852,6 +939,9 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_atom->func.del = NULL;
 	}
 
+	sprintf(ui->string_buf, "%s/omk_logo_256x256.png", bundle_path);
+	ui->logo_path = strdup(ui->string_buf);
+
 	if(eoui_instantiate(eoui, descriptor, plugin_uri, bundle_path, write_function,
 		controller, widget, features))
 	{
@@ -918,6 +1008,9 @@ cleanup(LV2UI_Handle handle)
 	UI *ui = handle;
 
 	eoui_cleanup(&ui->eoui);
+
+	if(ui->logo_path)
+		free(ui->logo_path);
 
 	eina_hash_free(ui->urids);
 

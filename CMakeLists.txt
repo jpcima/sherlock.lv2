@@ -8,6 +8,9 @@ include_directories(${PROJECT_SOURCE_DIR}/eo_ui.lv2)
 
 set(CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
 
+set(SHERLOCK_VERSION "0.1.0_beta1")
+add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
+
 set(DEST lib/lv2/sherlock.lv2)
 if(WIN32)
 	set(LIB_EXT ".dll")
@@ -55,3 +58,4 @@ install(TARGETS sherlock_ui DESTINATION ${DEST})
 configure_file(${PROJECT_SOURCE_DIR}/manifest.ttl.in ${PROJECT_BINARY_DIR}/manifest.ttl)
 install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/sherlock.ttl DESTINATION ${DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/omk_logo_256x256.png DESTINATION ${DEST})
