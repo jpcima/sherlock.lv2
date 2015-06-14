@@ -22,6 +22,7 @@
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
 @prefix time: <http://lv2plug.in/ns/ext/time#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 @prefix osc:	<http://opensoundcontrol.org#> .
@@ -51,7 +52,8 @@ sherlock:atom_inspector_eo
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
 		ui:protocol atom:eventTransfer ;
-	] .
+	] ;
+	lv2:requiredFeature urid:map, urid:unmap .
 sherlock:atom_inspector_ui
 	a ui:UI ;
 	ui:portNotification [
@@ -59,7 +61,7 @@ sherlock:atom_inspector_ui
 		lv2:symbol "notify" ;
 		ui:protocol atom:eventTransfer ;
 	] ;
-	lv2:requiredFeature ui:idleInterface ;
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
   lv2:extensionData ui:idleInterface, ui:showInterface .
 sherlock:atom_inspector_x11
 	a ui:X11UI ;
@@ -68,7 +70,7 @@ sherlock:atom_inspector_x11
 		lv2:symbol "notify" ;
 		ui:protocol atom:eventTransfer ;
 	] ;
-	lv2:requiredFeature ui:idleInterface ;
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
 	lv2:optionalFeature ui:resize ;
   lv2:extensionData ui:idleInterface .
 sherlock:atom_inspector_kx
@@ -78,7 +80,7 @@ sherlock:atom_inspector_kx
 		lv2:symbol "notify" ;
 		ui:protocol atom:eventTransfer ;
 	] ;
-	lv2:requiredFeature kx:Host .
+	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
 
 # Atom Inspector Plugin
 sherlock:atom_inspector
@@ -88,6 +90,7 @@ sherlock:atom_inspector
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
+	lv2:requiredFeature urid:map ;
 
 	lv2:port [
 		# input event port
