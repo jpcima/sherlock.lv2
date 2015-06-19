@@ -129,12 +129,12 @@ _hash_get(UI *ui, LV2_URID urid)
 }
 
 static char *
-_atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
+_atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 {
 	//FIXME check for buffer overflows!!!
 
 	const char *type = _hash_get(ui, atom->type);
-	sprintf(ptr, URI("type    ", "%s"), type);
+	sprintf(ptr, URI("type    ", "%s (%u)"), type, atom->type);
 	ptr += strlen(ptr);
 
 	if(lv2_atom_forge_is_object_type(&ui->forge, atom->type))
@@ -142,13 +142,30 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		const LV2_Atom_Object *atom_object = (const LV2_Atom_Object *)atom;
 		const char *id = atom_object->body.id
 			? _hash_get(ui, atom_object->body.id)
-			: "";
+			: NULL;
 		const char *otype = _hash_get(ui, atom_object->body.otype);
 
-		sprintf(ptr, URI("</br>id      ", "%s"), id);
+		if(id)
+		{
+			sprintf(ptr, URI("</br>id      ", "%s (%u)"), id, atom_object->body.id);
+			ptr += strlen(ptr);
+		
+			if(newline)
+				sprintf(ptr, "</br>");
+			else
+				sprintf(ptr, "</tab>");
+		}
+		else // !id
+		{
+			sprintf(ptr, "</br>");
+			ptr += strlen(ptr);
+
+			if(newline)
+				sprintf(ptr, "</br>");
+		}
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("</br>otype   ", "%s"), otype);
+		sprintf(ptr, URI("otype   ", "%s (%u)"), otype, atom_object->body.otype);
 	}
 	else if(atom->type == ui->forge.Tuple)
 	{
@@ -162,10 +179,16 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		const LV2_Atom_Vector *atom_vector = (const LV2_Atom_Vector *)atom;
 		const char *ctype = _hash_get(ui, atom_vector->body.child_type);
 
-		sprintf(ptr, URI("</br>ctype   ", "%s"), ctype);
+		sprintf(ptr, URI("</br>ctype   ", "%s (%u)"), ctype, atom_vector->body.child_type);
+		ptr += strlen(ptr);
+			
+		if(newline)
+			sprintf(ptr, "</br>");
+		else
+			sprintf(ptr, "</tab>");
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("</br>csize   ", "%u"), atom_vector->body.child_size);
+		sprintf(ptr, URI("csize   ", "%u"), atom_vector->body.child_size);
 	}
 	else if(atom->type == ui->forge.Sequence)
 	{
@@ -207,8 +230,9 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 	else if(atom->type == ui->forge.URID)
 	{
 		const LV2_Atom_URID *atom_urid = (const LV2_Atom_URID *)atom;
+		const char *uri = _hash_get(ui, atom_urid->body);
 
-		sprintf(ptr, HIL("</br>value   ", "%u"), atom_urid->body);
+		sprintf(ptr, HIL("</br>value   ", "%u (%s)"), atom_urid->body, uri);
 	}
 	else if(atom->type == ui->forge.String)
 	{
@@ -268,15 +292,22 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		// restore
 		if(atom->size > STRING_MAX)
 			memcpy(&str[STRING_OFF], tmp, 4);
-
-		sprintf(ptr, URI("</br>datatype", "%s"), datatype);
+			
+		if(newline)
+			sprintf(ptr, "</br>");
+		else
+			sprintf(ptr, "</tab>");
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("</tab>lang    ", "%s"), lang);
+		sprintf(ptr, URI("datatype", "%s (%u)"), datatype, atom_lit->body.datatype);
+		ptr += strlen(ptr);
+
+		sprintf(ptr, URI("</tab>lang    ", "%s (%u)"), lang, atom_lit->body.lang);
 	}
 	else if(atom->type == ui->forge.URI)
 	{
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
+		LV2_URID urid = ui->map->map(ui->map->handle, str); //TODO add hashing
 
 		// truncate
 		char tmp[4];
@@ -286,7 +317,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 			strcpy(&str[STRING_OFF], "...");
 		}
 
-		sprintf(ptr, HIL("</br>value   ", "%s"), str);
+		sprintf(ptr, HIL("</br>value   ", "%s (%u)"), str, urid);
 
 		// restore
 		if(atom->size > STRING_MAX)
@@ -333,7 +364,8 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		sprintf(ptr, HIL_POST);
 	}
 
-	if(  !lv2_atom_forge_is_object_type(&ui->forge, atom->type)
+	if(  newline
+		&& !lv2_atom_forge_is_object_type(&ui->forge, atom->type)
 		&& !(atom->type == ui->forge.Literal)
 		&& !(atom->type == ui->forge.Vector) )
 	{
@@ -360,7 +392,7 @@ _atom_item_label_get(void *data, Evas_Object *obj, const char *part)
 		char *ptr = buf;
 		char *end = buf + STRING_BUF_SIZE;
 
-		ptr = _atom_stringify(ui, ptr, end, atom);
+		ptr = _atom_stringify(ui, ptr, end, 1, atom);
 
 		return ptr
 			? strdup(buf)
@@ -388,19 +420,19 @@ _prop_item_label_get(void *data, Evas_Object *obj, const char *part)
 		const char *key = _hash_get(ui, prop->key);
 		const char *context = _hash_get(ui, prop->context);
 
-		sprintf(ptr, URI("key     ", "%s"), key);
+		sprintf(ptr, URI("key     ", "%s (%u)"), key, prop->key);
 		ptr += strlen(ptr);
 
 		if(context)
 		{
-			sprintf(ptr, URI("</tab>context ", "%s"), context);
+			sprintf(ptr, URI("</tab>context ", "%s (%u)"), context, prop->context);
 			ptr += strlen(ptr);
 		}
 		
-		sprintf(ptr, "</tab>");
+		sprintf(ptr, "</br>");
 		ptr += strlen(ptr);
 
-		ptr = _atom_stringify(ui, ptr, end, &prop->value);
+		ptr = _atom_stringify(ui, ptr, end, 0, &prop->value);
 
 		return ptr
 			? strdup(buf)
@@ -426,7 +458,7 @@ _seq_item_label_get(void *data, Evas_Object *obj, const char *part)
 		char *ptr = buf;
 		char *end = buf + STRING_BUF_SIZE;
 
-		ptr = _atom_stringify(ui, ptr, end, atom);
+		ptr = _atom_stringify(ui, ptr, end, 1, atom);
 
 		return ptr
 			? strdup(buf)
@@ -508,7 +540,7 @@ _seq_item_content_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char *buf = ui->string_buf;
 
-		sprintf(buf, "<color=#bb0 font=Mono>%4ld</color>", ev->time.frames);
+		sprintf(buf, "<color=#bb0 font=Mono>%04ld</color>", ev->time.frames);
 
 		Evas_Object *label = elm_label_add(obj);
 		if(label)

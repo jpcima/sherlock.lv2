@@ -23,6 +23,7 @@
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
 @prefix time: <http://lv2plug.in/ns/ext/time#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 @prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 @prefix osc:	<http://opensoundcontrol.org#> .
@@ -99,6 +100,7 @@ sherlock:atom_inspector
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ;
 		atom:supports time:Position ;
+		atom:supports patch:Message ;
 		atom:supports atom:Blank ;
 		atom:supports atom:Bool ;
 		atom:supports atom:Chunk ;
@@ -128,6 +130,7 @@ sherlock:atom_inspector
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ;
 		atom:supports time:Position ;
+		atom:supports patch:Message ;
 		atom:supports atom:Blank ;
 		atom:supports atom:Bool ;
 		atom:supports atom:Chunk ;
