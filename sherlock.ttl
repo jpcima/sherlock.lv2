@@ -31,7 +31,6 @@
 @prefix omk:	<http://open-music-kontrollers.ch/ventosus#> .
 @prefix proj:	<http://open-music-kontrollers.ch/lv2/> .
 @prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
-@prefix chim:	<http://open-music-kontrollers.ch/lv2/chimaera#> .
 
 # Maintainer
 omk:me
