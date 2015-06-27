@@ -34,6 +34,8 @@ kx:Host
 # Atom Inspector Plugin
 sherlock:atom_inspector
 	a lv2:Plugin ;
+	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
+	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@LIB_EXT@> ;
 	@EO_UI_WRAP@ui:ui sherlock:atom_inspector_eo ;
 	@UI_UI_WRAP@ui:ui sherlock:atom_inspector_ui ;
