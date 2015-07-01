@@ -651,7 +651,7 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 				atom->type = atom_vector->body.child_type;
 				memcpy(LV2_ATOM_BODY(atom), body + i*atom->size, atom->size);
 
-				Elm_Genlist_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_vec,
+				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_vec,
 					atom, itm, type, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 				elm_genlist_item_expanded_set(itm2, EINA_FALSE);
@@ -1089,7 +1089,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				? ELM_GENLIST_ITEM_TREE
 				: ELM_GENLIST_ITEM_NONE;
 
-			Elm_Genlist_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_sherlock,
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_sherlock,
 				ev, NULL, type, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
