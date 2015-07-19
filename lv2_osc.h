@@ -464,4 +464,119 @@ osc_forge_message_vararg(osc_forge_t *oforge, LV2_Atom_Forge *forge,
 	return ref;
 }
 
+static inline const LV2_Atom *
+osc_deforge_message_varlist(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, const char *fmt, va_list args)
+{
+	for(const char *type = fmt; *type; type++, atom = lv2_atom_tuple_next(atom))
+	{
+		switch(*type)
+		{
+			case 'i':
+			{
+				assert(atom->type == forge->Int);
+				int32_t *i = va_arg(args, int32_t *);
+				*i = ((const LV2_Atom_Int *)atom)->body;
+				break;
+			}
+			case 'f':
+			{
+				assert(atom->type == forge->Float);
+				float *f = va_arg(args, float *);
+				*f = ((const LV2_Atom_Float *)atom)->body;
+				break;
+			}
+			case 's':
+			{
+				assert(atom->type == forge->Float);
+				const char **s = va_arg(args, const char **);
+				*s = LV2_ATOM_BODY_CONST(atom);
+				break;
+			}
+			case 'S':
+			{
+				assert(atom->type == forge->Float);
+				const char **s = va_arg(args, const char **);
+				*s = LV2_ATOM_BODY_CONST(atom);
+				break;
+			}
+			case 'b':
+			{
+				assert(atom->type == forge->Chunk);
+				int32_t *i = va_arg(args, int32_t *);
+				*i = atom->size;
+				const uint8_t **b = va_arg(args, const uint8_t **);
+				*b = LV2_ATOM_BODY_CONST(atom);
+				break;
+			}
+			
+			case 'h':
+			{
+				assert(atom->type == forge->Long);
+				int64_t *h = va_arg(args, int64_t *);
+				*h = ((const LV2_Atom_Long *)atom)->body;
+				break;
+			}
+			case 'd':
+			{
+				assert(atom->type == forge->Double);
+				double *d = va_arg(args, double *);
+				*d = ((const LV2_Atom_Double *)atom)->body;
+				break;
+			}
+			case 't':
+			{
+				assert(atom->type == forge->Long);
+				uint64_t *h = va_arg(args, uint64_t *);
+				*h = ((const LV2_Atom_Long *)atom)->body;
+				break;
+			}
+			
+			case 'c':
+			{
+				assert(atom->type == forge->Int);
+				char *c = va_arg(args, char *);
+				*c = ((const LV2_Atom_Int *)atom)->body;
+				break;
+			}
+			case 'm':
+			{
+				assert(atom->type == oforge->MIDI_MidiEvent);
+				const uint8_t **m = va_arg(args, const uint8_t **);
+				*m = LV2_ATOM_BODY_CONST(atom);
+				break;
+			}
+			
+			case 'T':
+			case 'F':
+			case 'N':
+			case 'I':
+			{
+				break;
+			}
+
+			default: // unknown argument type
+			{
+				return NULL;
+			}
+		}
+	}
+
+	return atom;
+}
+
+static inline const LV2_Atom *
+osc_deforge_message_vararg(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	atom = osc_deforge_message_varlist(oforge, forge, atom, fmt, args);
+
+	va_end(args);
+
+	return atom;
+}
+
 #endif // _LV2_OSC_H_
