@@ -271,7 +271,7 @@ osc_forge_message_pop(osc_forge_t *oforge, LV2_Atom_Forge *forge,
 	lv2_atom_forge_pop(forge, &frame[1]);
 	lv2_atom_forge_pop(forge, &frame[0]);
 }
-	
+
 static inline LV2_Atom_Forge_Ref
 osc_forge_int32(osc_forge_t *oforge, LV2_Atom_Forge *forge, int32_t i)
 {
@@ -297,7 +297,7 @@ osc_forge_symbol(osc_forge_t *oforge, LV2_Atom_Forge *forge, const char *s)
 }
 
 static inline LV2_Atom_Forge_Ref
-osc_forge_blob(osc_forge_t *oforge, LV2_Atom_Forge *forge, int32_t size,
+osc_forge_blob(osc_forge_t *oforge, LV2_Atom_Forge *forge, uint32_t size,
 	const uint8_t *b)
 {
 	LV2_Atom_Forge_Ref ref;
@@ -388,7 +388,7 @@ osc_forge_message_varlist(osc_forge_t *oforge, LV2_Atom_Forge *forge,
 			}
 			case 'b':
 			{
-				int32_t size = va_arg(args, int32_t);
+				uint32_t size = va_arg(args, uint32_t);
 				const uint8_t *b = va_arg(args, const uint8_t *);
 				if(!(ref = osc_forge_blob(oforge, forge, size, b)))
 					return 0;
@@ -465,85 +465,207 @@ osc_forge_message_vararg(osc_forge_t *oforge, LV2_Atom_Forge *forge,
 }
 
 static inline const LV2_Atom *
+osc_deforge_int32(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, int32_t *i)
+{
+	if(!atom || (atom->type != forge->Int) )
+		return NULL;
+
+	*i = ((const LV2_Atom_Int *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_float(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, float *f)
+{
+	if(!atom || (atom->type != forge->Float) )
+		return NULL;
+
+	*f = ((const LV2_Atom_Float *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_string(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, const char **s)
+{
+	if(!atom || (atom->type != forge->String) )
+		return NULL;
+
+	*s = LV2_ATOM_BODY_CONST(atom);
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_symbol(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, const char **s)
+{
+	if(!atom || (atom->type != forge->String) )
+		return NULL;
+
+	*s = LV2_ATOM_BODY_CONST(atom);
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_blob(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, uint32_t *size, const uint8_t **b)
+{
+	if(!atom || (atom->type != forge->Chunk) )
+		return NULL;
+
+	*size = atom->size;
+	*b = LV2_ATOM_BODY_CONST(atom);
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_int64(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, int64_t *h)
+{
+	if(!atom || (atom->type != forge->Long) )
+		return NULL;
+
+	*h = ((const LV2_Atom_Long *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_double(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, double *d)
+{
+	if(!atom || (atom->type != forge->Double) )
+		return NULL;
+
+	*d = ((const LV2_Atom_Double *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_timestamp(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, uint64_t *t)
+{
+	if(!atom || (atom->type != forge->Long) )
+		return NULL;
+
+	*t = ((const LV2_Atom_Long *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_char(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, char *c)
+{
+	if(!atom || (atom->type != forge->Int) )
+		return NULL;
+
+	*c = ((const LV2_Atom_Int *)atom)->body;
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
+osc_deforge_midi(osc_forge_t *oforge, LV2_Atom_Forge *forge,
+	const LV2_Atom *atom, uint32_t *size, const uint8_t **m)
+{
+	if(!atom || (atom->type != oforge->MIDI_MidiEvent) )
+		return NULL;
+
+	*size = atom->size;
+	*m = LV2_ATOM_BODY_CONST(atom);
+
+	return lv2_atom_tuple_next(atom);
+}
+
+static inline const LV2_Atom *
 osc_deforge_message_varlist(osc_forge_t *oforge, LV2_Atom_Forge *forge,
 	const LV2_Atom *atom, const char *fmt, va_list args)
 {
-	for(const char *type = fmt; *type; type++, atom = lv2_atom_tuple_next(atom))
+	for(const char *type = fmt; *type; type++)
 	{
 		switch(*type)
 		{
 			case 'i':
 			{
-				assert(atom->type == forge->Int);
 				int32_t *i = va_arg(args, int32_t *);
-				*i = ((const LV2_Atom_Int *)atom)->body;
+				if(!(atom = osc_deforge_int32(oforge, forge, atom, i)))
+					return NULL;
 				break;
 			}
 			case 'f':
 			{
-				assert(atom->type == forge->Float);
 				float *f = va_arg(args, float *);
-				*f = ((const LV2_Atom_Float *)atom)->body;
+				if(!(atom = osc_deforge_float(oforge, forge, atom, f)))
+					return NULL;
 				break;
 			}
 			case 's':
 			{
-				assert(atom->type == forge->Float);
 				const char **s = va_arg(args, const char **);
-				*s = LV2_ATOM_BODY_CONST(atom);
+				if(!(atom = osc_deforge_string(oforge, forge, atom, s)))
+					return NULL;
 				break;
 			}
 			case 'S':
 			{
-				assert(atom->type == forge->Float);
 				const char **s = va_arg(args, const char **);
-				*s = LV2_ATOM_BODY_CONST(atom);
+				if(!(atom = osc_deforge_symbol(oforge, forge, atom, s)))
+					return NULL;
 				break;
 			}
 			case 'b':
 			{
-				assert(atom->type == forge->Chunk);
-				int32_t *i = va_arg(args, int32_t *);
-				*i = atom->size;
+				uint32_t *size = va_arg(args, uint32_t *);
 				const uint8_t **b = va_arg(args, const uint8_t **);
-				*b = LV2_ATOM_BODY_CONST(atom);
+				if(!(atom = osc_deforge_blob(oforge, forge, atom, size, b)))
+					return NULL;
 				break;
 			}
 			
 			case 'h':
 			{
-				assert(atom->type == forge->Long);
 				int64_t *h = va_arg(args, int64_t *);
-				*h = ((const LV2_Atom_Long *)atom)->body;
+				if(!(atom = osc_deforge_int64(oforge, forge, atom, h)))
+					return NULL;
 				break;
 			}
 			case 'd':
 			{
-				assert(atom->type == forge->Double);
 				double *d = va_arg(args, double *);
-				*d = ((const LV2_Atom_Double *)atom)->body;
+				if(!(atom = osc_deforge_double(oforge, forge, atom, d)))
+					return NULL;
 				break;
 			}
 			case 't':
 			{
-				assert(atom->type == forge->Long);
-				uint64_t *h = va_arg(args, uint64_t *);
-				*h = ((const LV2_Atom_Long *)atom)->body;
+				uint64_t *t = va_arg(args, uint64_t *);
+				if(!(atom = osc_deforge_timestamp(oforge, forge, atom, t)))
+					return NULL;
 				break;
 			}
 			
 			case 'c':
 			{
-				assert(atom->type == forge->Int);
 				char *c = va_arg(args, char *);
-				*c = ((const LV2_Atom_Int *)atom)->body;
+				if(!(atom = osc_deforge_char(oforge, forge, atom, c)))
+					return NULL;
 				break;
 			}
 			case 'm':
 			{
-				assert(atom->type == oforge->MIDI_MidiEvent);
+				uint32_t *size = va_arg(args, uint32_t *);
 				const uint8_t **m = va_arg(args, const uint8_t **);
-				*m = LV2_ATOM_BODY_CONST(atom);
+				if(!(atom = osc_deforge_midi(oforge, forge, atom, size, m)))
+					return NULL;
 				break;
 			}
 			
