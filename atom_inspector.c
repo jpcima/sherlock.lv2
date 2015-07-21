@@ -90,7 +90,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	uint32_t capacity;
 	LV2_Atom_Forge *forge = &handle->forge;
 	LV2_Atom_Forge_Frame frame;
-	LV2_Atom_Forge_Ref status;
+	LV2_Atom_Forge_Ref ref;
 
 	// size of input sequence
 	size_t size = sizeof(LV2_Atom) + handle->control_in->atom.size;
@@ -98,37 +98,32 @@ run(LV2_Handle instance, uint32_t nsamples)
 	// copy whole input sequence to through port
 	capacity = handle->control_out->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
-	status = lv2_atom_forge_raw(forge, handle->control_in, size);
-	if(!status) // overflow
-	{
-		// empty sequence
-		lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
-		lv2_atom_forge_sequence_head(forge, &frame, 0);
+	ref = lv2_atom_forge_raw(forge, handle->control_in, size);
+	if(ref)
 		lv2_atom_forge_pop(forge, &frame);
-	}
+	else
+		lv2_atom_sequence_clear(handle->control_out);
 
 	// forge whole sequence as single event
 	capacity = handle->notify->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
-	lv2_atom_forge_sequence_head(forge, &frame, 0);
+	ref = lv2_atom_forge_sequence_head(forge, &frame, 0);
 
 	// only serialize sequence to UI if there were actually any events
 	if(handle->control_in->atom.size > sizeof(LV2_Atom_Sequence_Body))
 	{
-		status = lv2_atom_forge_frame_time(forge, 0);
-		if(status)
-			status = lv2_atom_forge_raw(forge, handle->control_in, size);
-		if(status)
+		if(ref)
+			ref = lv2_atom_forge_frame_time(forge, 0);
+		if(ref)
+			ref = lv2_atom_forge_raw(forge, handle->control_in, size);
+		if(ref)
 			lv2_atom_forge_pad(forge, size);
 
-		if(!status) // overflow
-		{
-			// empty sequence
-			lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
-			lv2_atom_forge_sequence_head(forge, &frame, 0);
-		}
 	}
-	lv2_atom_forge_pop(forge, &frame);
+	if(ref)
+		lv2_atom_forge_pop(forge, &frame);
+	else
+		lv2_atom_sequence_clear(handle->notify);
 }
 
 static void
