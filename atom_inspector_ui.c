@@ -239,7 +239,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
 
 		// truncate
-		char tmp[4];
+		char tmp[4] = {'\0'};
 		if(atom->size > STRING_MAX)
 		{
 			memcpy(tmp, &str[STRING_OFF], 4);
@@ -257,7 +257,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
 
 		// truncate
-		char tmp[4];
+		char tmp[4] = {'\0'};
 		if(atom->size > STRING_MAX)
 		{
 			memcpy(tmp, &str[STRING_OFF], 4);
@@ -279,7 +279,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		const char *lang = _hash_get(ui, atom_lit->body.lang);
 
 		// truncate
-		char tmp[4];
+		char tmp[4] = {'\0'};
 		if(atom->size > STRING_MAX)
 		{
 			memcpy(tmp, &str[STRING_OFF], 4);
@@ -310,7 +310,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		LV2_URID urid = ui->map->map(ui->map->handle, str); //TODO add hashing
 
 		// truncate
-		char tmp[4];
+		char tmp[4] = {'\0'};
 		if(atom->size > STRING_MAX)
 		{
 			memcpy(tmp, &str[STRING_OFF], 4);
@@ -331,7 +331,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		ptr += strlen(ptr);
 
 		char *barrier = ptr + STRING_OFF;
-		for(int i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
+		for(unsigned i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
 			sprintf(ptr, "%02X ", midi[i]);
 
 		if(ptr >= barrier) // there would be more to print
@@ -351,7 +351,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		ptr += strlen(ptr);
 			
 		char *barrier = ptr + STRING_OFF;
-		for(int i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
+		for(unsigned i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
 			sprintf(ptr, "%02X ", chunk[i]);
 
 		if(ptr >= barrier) // there would be more to print
@@ -644,15 +644,15 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 		const uint8_t *body = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Vector, atom_vector);
 		for(int i=0; i<num; i++)
 		{
-			LV2_Atom *atom = malloc(sizeof(LV2_Atom) + atom_vector->body.child_size);
-			if(atom)
+			LV2_Atom *child = malloc(sizeof(LV2_Atom) + atom_vector->body.child_size);
+			if(child)
 			{
-				atom->size = atom_vector->body.child_size;
-				atom->type = atom_vector->body.child_type;
-				memcpy(LV2_ATOM_BODY(atom), body + i*atom->size, atom->size);
+				child->size = atom_vector->body.child_size;
+				child->type = atom_vector->body.child_type;
+				memcpy(LV2_ATOM_BODY(child), body + i*child->size, child->size);
 
 				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_vec,
-					atom, itm, type, NULL, NULL);
+					child, itm, type, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 				elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 			}
@@ -664,9 +664,9 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 
 		LV2_ATOM_SEQUENCE_FOREACH(atom_seq, ev)
 		{
-			const LV2_Atom *atom = &ev->body;
+			const LV2_Atom *child = &ev->body;
 
-			Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
+			Elm_Genlist_Item_Type type = _is_expandable(ui, child->type)
 				? ELM_GENLIST_ITEM_TREE
 				: ELM_GENLIST_ITEM_NONE;
 
