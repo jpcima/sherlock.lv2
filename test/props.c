@@ -35,6 +35,7 @@ struct _plughandle_t {
 	float val3;
 	double val4;
 	int32_t val5;
+	int32_t val6;
 
 	const LV2_Atom_Sequence *event_in;
 	LV2_Atom_Sequence *event_out;
@@ -104,6 +105,17 @@ static const prop_def_t def5 = {
 	.scale_points = scale_points5
 };
 
+static const prop_def_t def6 = {
+	.label = "Bool",
+	.property = PROPS_PREFIX"Bool",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__Bool,
+	.mode = PROP_MODE_DYNAMIC,
+	.minimum.d = 0,
+	.maximum.d = 1,
+	.scale_points = NULL
+};
+
 const unsigned max_nprops = 32;
 
 static LV2_Handle
@@ -142,12 +154,14 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->val3 = 0.2f;
 	handle->val4 = 0.3;
 	handle->val5 = 0;
+	handle->val6 = true;
 
 	props_register(handle->props, &def1, &handle->val1);
 	props_register(handle->props, &def2, &handle->val2);
 	props_register(handle->props, &def3, &handle->val3);
 	props_register(handle->props, &def4, &handle->val4);
 	props_register(handle->props, &def5, &handle->val5);
+	props_register(handle->props, &def6, &handle->val6);
 
 	props_sort(handle->props);
 

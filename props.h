@@ -41,7 +41,7 @@ union _value_raw_t {
 	const int64_t h;			// Long
 	const float f;				// Float
 	const double d;				// Double
-	const bool b;					// Bool
+	const int32_t b;			// Bool
 	const uint32_t u;			// URID
 	const char *s;				// String
 	//TODO
@@ -52,7 +52,7 @@ union _value_ptr_t {
 	int64_t *h;
 	float *f;
 	double *d;
-	bool *b;
+	int32_t *b;
 	uint32_t *u;
 	char *s;
 	//TODO
@@ -252,6 +252,8 @@ _props_impl_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl)
 		return lv2_atom_forge_float(forge, *impl->value.f);
 	else if(impl->type == forge->Double)
 		return lv2_atom_forge_double(forge, *impl->value.d);
+	else if(impl->type == forge->Bool)
+		return lv2_atom_forge_bool(forge, *impl->value.b);
 	//TODO handle more types
 	
 	return 0;
@@ -269,6 +271,8 @@ _props_def_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl,
 		return lv2_atom_forge_float(forge, value->f);
 	else if(impl->type == forge->Double)
 		return lv2_atom_forge_double(forge, value->d);
+	else if(impl->type == forge->Bool)
+		return lv2_atom_forge_bool(forge, value->b);
 	//TODO handle more types
 	
 	return 0;
@@ -470,6 +474,8 @@ _props_set(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl, const LV2_A
 			*impl->value.f = ((const LV2_Atom_Float *)value)->body;
 		else if(impl->type == forge->Double)
 			*impl->value.d = ((const LV2_Atom_Double *)value)->body;
+		else if(impl->type == forge->Bool)
+			*impl->value.b = ((const LV2_Atom_Bool *)value)->body;
 		//TODO handle more types
 	}
 }
@@ -579,6 +585,8 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 			size = sizeof(float);
 		else if(impl->type == forge->Double)
 			size = sizeof(double);
+		else if(impl->type == forge->Bool)
+			size = sizeof(int32_t);
 		//TODO handle more types
 
 		if(size)
@@ -612,6 +620,8 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 				*impl->value.f = *(const float *)data;
 			else if(impl->type == forge->Double)
 				*impl->value.d = *(const double *)data;
+			else if(impl->type == forge->Bool)
+				*impl->value.b = *(const int32_t *)data;
 			//TODO handle more types
 		}
 		else
