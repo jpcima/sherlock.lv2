@@ -118,6 +118,32 @@ static const prop_def_t def6 = {
 
 const unsigned max_nprops = 32;
 
+static LV2_Atom_Forge_Ref
+_intercept(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
+	prop_event_t event, prop_impl_t *impl, const LV2_Atom *value)
+{
+	switch(event)
+	{
+		case PROP_EVENT_GET:
+		{
+			printf("intercept patch:Get: %s\n", impl->def->label);
+			break;
+		}
+		case PROP_EVENT_SET:
+		{
+			printf("intercept patch:Set: %s\n", impl->def->label);
+			break;
+		}
+		case PROP_EVENT_REG:
+		{
+			printf("intercept patch:Patch: %s\n", impl->def->label);
+			break;
+		}
+	}
+
+	return props_default_cb(props, forge, frames, event, impl, value);
+}
+
 static LV2_Handle
 instantiate(const LV2_Descriptor* descriptor, double rate,
 	const char *bundle_path, const LV2_Feature *const *features)
@@ -141,7 +167,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	}
 
 	lv2_atom_forge_init(&handle->forge, handle->map);
-	handle->props = props_new(max_nprops, descriptor->URI, handle->map, 48000.0);
+	handle->props = props_new(max_nprops, descriptor->URI, handle->map);
 	if(!handle->props)
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
@@ -156,12 +182,12 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->val5 = 0;
 	handle->val6 = true;
 
-	props_register(handle->props, &def1, &handle->val1);
-	props_register(handle->props, &def2, &handle->val2);
-	props_register(handle->props, &def3, &handle->val3);
-	props_register(handle->props, &def4, &handle->val4);
-	props_register(handle->props, &def5, &handle->val5);
-	props_register(handle->props, &def6, &handle->val6);
+	props_register(handle->props, &def1, _intercept, &handle->val1);
+	props_register(handle->props, &def2, _intercept, &handle->val2);
+	props_register(handle->props, &def3, _intercept, &handle->val3);
+	props_register(handle->props, &def4, _intercept, &handle->val4);
+	props_register(handle->props, &def5, _intercept, &handle->val5);
+	props_register(handle->props, &def6, _intercept, &handle->val6);
 
 	props_sort(handle->props);
 

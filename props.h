@@ -31,10 +31,13 @@ typedef union _value_raw_t value_raw_t;
 typedef union _value_ptr_t value_ptr_t;
 
 typedef enum _prop_mode_t prop_mode_t;
+typedef enum _prop_event_t prop_event_t;
 typedef struct _prop_scale_point_t prop_scale_point_t;
 typedef struct _prop_def_t prop_def_t;
 typedef struct _prop_impl_t prop_impl_t;
 typedef struct _props_t props_t;
+typedef LV2_Atom_Forge_Ref (*props_cb_t)(props_t *props, LV2_Atom_Forge *forge,
+	int64_t frames, prop_event_t event, prop_impl_t *impl, const LV2_Atom *value);
 
 union _value_raw_t {
 	const int32_t i;			// Int
@@ -64,6 +67,12 @@ enum _prop_mode_t {
 	PROP_MODE_DYNAMIC
 };
 
+enum _prop_event_t {
+	PROP_EVENT_GET,
+	PROP_EVENT_SET,
+	PROP_EVENT_REG
+};
+
 struct _prop_scale_point_t {
 	const char *label;
 	value_raw_t value;
@@ -86,6 +95,7 @@ struct _prop_impl_t {
 	LV2_URID access;
 	LV2_URID type;
 	const prop_def_t *def;
+	props_cb_t cb;
 	value_ptr_t value;
 };
 
@@ -123,7 +133,7 @@ struct _props_t {
 };
 
 static inline props_t *
-props_new(const size_t max_nimpls, const char *URI, LV2_URID_Map *map, const double rate)
+props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map)
 {
 	props_t *props = calloc(1, sizeof(props_t) + max_nimpls*sizeof(prop_impl_t));
 	if(!props)
@@ -133,7 +143,7 @@ props_new(const size_t max_nimpls, const char *URI, LV2_URID_Map *map, const dou
 	props->max_nimpls = max_nimpls;
 	props->map = map;
 	
-	props->urid.subject = map->map(map->handle, URI);
+	props->urid.subject = map->map(map->handle, subject);
 	
 	props->urid.patch_get = map->map(map->handle, LV2_PATCH__Get);
 	props->urid.patch_set = map->map(map->handle, LV2_PATCH__Set);
@@ -179,25 +189,6 @@ props_clear(props_t *props)
 	}
 
 	props->nimpls = 0;
-}
-
-static inline int
-props_register(props_t *props, const prop_def_t *def, void *value)
-{
-	if(props->nimpls >= props->max_nimpls)
-		return -1;
-
-	prop_impl_t *impl = &props->impls[props->nimpls++];
-	
-	impl->property = props->map->map(props->map->handle, def->property);
-	impl->access = props->map->map(props->map->handle, def->access);
-	impl->type = props->map->map(props->map->handle, def->type);
-	impl->def = def;
-	impl->value.p = value;
-
-	//TODO register?
-
-	return 0;
 }
 
 static inline int
@@ -480,7 +471,31 @@ _props_set(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl, const LV2_A
 	}
 }
 
-static int
+static LV2_Atom_Forge_Ref
+props_default_cb(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
+	prop_event_t event, prop_impl_t *impl, const LV2_Atom *value)
+{
+	switch(event)
+	{
+		case PROP_EVENT_GET:
+		{
+			return _props_get(props, forge, frames, impl);
+		}
+		case PROP_EVENT_SET:
+		{
+			_props_set(props, forge, impl, value);
+			return 1;
+		}
+		case PROP_EVENT_REG:
+		{
+			return _props_reg(props, forge, frames, impl);
+		}
+	}
+
+	return 0;
+}
+
+static inline int
 props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 	const LV2_Atom_Object *obj, LV2_Atom_Forge_Ref *ref)
 {
@@ -513,7 +528,10 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 				prop_impl_t *impl = &props->impls[0];
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
-					*ref = _props_reg(props, forge, frames, impl);
+					if(impl->cb)
+						*ref = impl->cb(props, forge, frames, PROP_EVENT_REG, impl, NULL);
+					else
+						*ref = _props_reg(props, forge, frames, impl);
 					break;
 				}
 			}
@@ -522,7 +540,10 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 				prop_impl_t *impl = &props->impls[i];
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
-					*ref = _props_reg(props, forge, frames, impl);
+					if(impl->cb)
+						*ref = impl->cb(props, forge, frames, PROP_EVENT_REG, impl, NULL);
+					else
+						*ref = _props_reg(props, forge, frames, impl);
 				}
 			}
 			return 1;
@@ -532,7 +553,10 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			prop_impl_t *impl = _props_search(props, property->body);
 			if(impl)
 			{
-				*ref = _props_get(props, forge, frames, impl);
+				if(impl->cb)
+					*ref = impl->cb(props, forge, frames, PROP_EVENT_GET, impl, NULL);
+				else
+					*ref = _props_get(props, forge, frames, impl);
 				return 1;
 			}
 		}
@@ -560,12 +584,35 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		prop_impl_t *impl = _props_search(props, property->body);
 		if(impl && (impl->access == props->urid.patch_writable) )
 		{
-			_props_set(props, forge, impl, value);
+			if(impl->cb)
+				impl->cb(props, forge, frames, PROP_EVENT_SET, impl, value);
+			else
+				_props_set(props, forge, impl, value);
 			return 1;
 		}
 	}
 
 	return 0; // did not handle a patch event
+}
+
+static inline int
+props_register(props_t *props, const prop_def_t *def, props_cb_t cb, void *value)
+{
+	if(props->nimpls >= props->max_nimpls)
+		return -1;
+
+	prop_impl_t *impl = &props->impls[props->nimpls++];
+	
+	impl->property = props->map->map(props->map->handle, def->property);
+	impl->access = props->map->map(props->map->handle, def->access);
+	impl->type = props->map->map(props->map->handle, def->type);
+	impl->def = def;
+	impl->cb = cb;
+	impl->value.p = value;
+
+	//TODO register?
+
+	return 0;
 }
 
 static inline LV2_State_Status
