@@ -29,13 +29,22 @@ struct _plughandle_t {
 	LV2_Atom_Forge forge;
 
 	props_t *props;
-	
-	int32_t val1;
-	int64_t val2;
-	float val3;
-	double val4;
-	int32_t val5;
-	int32_t val6;
+
+	struct {
+		int32_t val1;
+		int64_t val2;
+		float val3;
+		double val4;
+		int32_t val5;
+		int32_t val6;
+	} dyn;
+
+	struct {
+		int32_t val7;
+		int64_t val8;
+		float val9;
+		double val10;
+	} stat;
 
 	const LV2_Atom_Sequence *event_in;
 	LV2_Atom_Sequence *event_out;
@@ -90,8 +99,7 @@ static const prop_scale_point_t scale_points5 [] = {
 	{.label = "Two",		.value.i = 1},
 	{.label = "Three",	.value.i = 2},
 	{.label = "Four",		.value.i = 3},
-
-	{.label = NULL }
+	{.label = NULL } // sentinel
 };
 
 static const prop_def_t def5 = {
@@ -101,7 +109,7 @@ static const prop_def_t def5 = {
 	.type = LV2_ATOM__Int,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.i = 0,
-	.maximum.i = 4,
+	.maximum.i = 3,
 	.scale_points = scale_points5
 };
 
@@ -114,6 +122,38 @@ static const prop_def_t def6 = {
 	.minimum.d = 0,
 	.maximum.d = 1,
 	.scale_points = NULL
+};
+
+static const prop_def_t def7 = {
+	.label = "statInt",
+	.property = PROPS_PREFIX"statInt",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__Int,
+	.mode = PROP_MODE_STATIC
+};
+
+static const prop_def_t def8 = {
+	.label = "statLong",
+	.property = PROPS_PREFIX"statLong",
+	.access = LV2_PATCH__readable,
+	.type = LV2_ATOM__Long,
+	.mode = PROP_MODE_STATIC
+};
+
+static const prop_def_t def9 = {
+	.label = "statFloat",
+	.property = PROPS_PREFIX"statFloat",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__Float,
+	.mode = PROP_MODE_STATIC
+};
+
+static const prop_def_t def10 = {
+	.label = "statDouble",
+	.property = PROPS_PREFIX"statDouble",
+	.access = LV2_PATCH__readable,
+	.type = LV2_ATOM__Double,
+	.mode = PROP_MODE_STATIC
 };
 
 const unsigned max_nprops = 32;
@@ -175,19 +215,29 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 	}
 
-	handle->val1 = 2;
-	handle->val2 = 3;
-	handle->val3 = 0.2f;
-	handle->val4 = 0.3;
-	handle->val5 = 0;
-	handle->val6 = true;
+	handle->dyn.val1 = 2;
+	handle->dyn.val2 = 3;
+	handle->dyn.val3 = 0.2f;
+	handle->dyn.val4 = 0.3;
+	handle->dyn.val5 = 0;
+	handle->dyn.val6 = true;
 
-	props_register(handle->props, &def1, _intercept, &handle->val1);
-	props_register(handle->props, &def2, _intercept, &handle->val2);
-	props_register(handle->props, &def3, _intercept, &handle->val3);
-	props_register(handle->props, &def4, _intercept, &handle->val4);
-	props_register(handle->props, &def5, _intercept, &handle->val5);
-	props_register(handle->props, &def6, _intercept, &handle->val6);
+	handle->stat.val7 = 4;
+	handle->stat.val8 = 5;
+	handle->stat.val9 = 0.4f;
+	handle->stat.val10 = 0.5;
+
+	props_register(handle->props, &def1, _intercept, &handle->dyn.val1);
+	props_register(handle->props, &def2, _intercept, &handle->dyn.val2);
+	props_register(handle->props, &def3, _intercept, &handle->dyn.val3);
+	props_register(handle->props, &def4, _intercept, &handle->dyn.val4);
+	props_register(handle->props, &def5, _intercept, &handle->dyn.val5);
+	props_register(handle->props, &def6, _intercept, &handle->dyn.val6);
+
+	props_register(handle->props, &def7, _intercept, &handle->stat.val7);
+	props_register(handle->props, &def8, _intercept, &handle->stat.val8);
+	props_register(handle->props, &def9, _intercept, &handle->stat.val9);
+	props_register(handle->props, &def10, _intercept, &handle->stat.val10);
 
 	props_sort(handle->props);
 

@@ -42,6 +42,34 @@ proj:props
 	doap:maintainer omk:me ;
 	doap:name "Props Bundle" .
 
+props:statInt
+	a lv2:Parameter ;
+	rdfs:range atom:Int ;
+	rdfs:label "statInt" ;
+	lv2:minimum 0 ;
+	lv2:maximum 10 .
+
+props:statLong
+	a lv2:Parameter ;
+	rdfs:range atom:Long ;
+	rdfs:label "statLong" ;
+	lv2:minimum 0 ;
+	lv2:maximum 10 .
+
+props:statFloat
+	a lv2:Parameter ;
+	rdfs:range atom:Float ;
+	rdfs:label "statFloat" ;
+	lv2:minimum -0.5 ;
+	lv2:maximum 0.5 .
+
+props:statDouble
+	a lv2:Parameter ;
+	rdfs:range atom:Double ;
+	rdfs:label "statDouble" ;
+	lv2:minimum -1.0 ;
+	lv2:maximum 1.0 .
+
 # Looper Test
 props:test
 	a lv2:Plugin ,
@@ -52,6 +80,11 @@ props:test
 	lv2:extensionData	state:interface ;
 	lv2:requiredFeature urid:map ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
+
+	patch:writable props:statInt ;
+	patch:readable props:statLong ;
+	patch:writable props:statFloat ;
+	patch:readable props:statDouble ;
 
 	lv2:port [
 		# sink event port
