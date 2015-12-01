@@ -50,7 +50,7 @@ struct _plughandle_t {
 	LV2_Atom_Sequence *event_out;
 };
 
-static const prop_def_t def1 = {
+static const props_def_t def1 = {
 	.label = "Int",
 	.property = PROPS_PREFIX"Int",
 	.access = LV2_PATCH__writable,
@@ -61,7 +61,7 @@ static const prop_def_t def1 = {
 	.scale_points = NULL
 };
 
-static const prop_def_t def2 = {
+static const props_def_t def2 = {
 	.label = "Long",
 	.property = PROPS_PREFIX"Long",
 	.access = LV2_PATCH__writable,
@@ -72,7 +72,7 @@ static const prop_def_t def2 = {
 	.scale_points = NULL
 };
 
-static const prop_def_t def3 = {
+static const props_def_t def3 = {
 	.label = "Float",
 	.property = PROPS_PREFIX"Float",
 	.access = LV2_PATCH__readable,
@@ -83,7 +83,7 @@ static const prop_def_t def3 = {
 	.scale_points = NULL
 };
 
-static const prop_def_t def4 = {
+static const props_def_t def4 = {
 	.label = "Double",
 	.property = PROPS_PREFIX"Double",
 	.access = LV2_PATCH__readable,
@@ -94,7 +94,7 @@ static const prop_def_t def4 = {
 	.scale_points = NULL
 };
 
-static const prop_scale_point_t scale_points5 [] = {
+static const props_scale_point_t scale_points5 [] = {
 	{.label = "One",		.value.i = 0},
 	{.label = "Two",		.value.i = 1},
 	{.label = "Three",	.value.i = 2},
@@ -102,7 +102,7 @@ static const prop_scale_point_t scale_points5 [] = {
 	{.label = NULL } // sentinel
 };
 
-static const prop_def_t def5 = {
+static const props_def_t def5 = {
 	.label = "scaleInt",
 	.property = PROPS_PREFIX"scaleInt",
 	.access = LV2_PATCH__writable,
@@ -113,7 +113,7 @@ static const prop_def_t def5 = {
 	.scale_points = scale_points5
 };
 
-static const prop_def_t def6 = {
+static const props_def_t def6 = {
 	.label = "Bool",
 	.property = PROPS_PREFIX"Bool",
 	.access = LV2_PATCH__writable,
@@ -124,7 +124,7 @@ static const prop_def_t def6 = {
 	.scale_points = NULL
 };
 
-static const prop_def_t def7 = {
+static const props_def_t def7 = {
 	.label = "statInt",
 	.property = PROPS_PREFIX"statInt",
 	.access = LV2_PATCH__writable,
@@ -132,7 +132,7 @@ static const prop_def_t def7 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const prop_def_t def8 = {
+static const props_def_t def8 = {
 	.label = "statLong",
 	.property = PROPS_PREFIX"statLong",
 	.access = LV2_PATCH__readable,
@@ -140,7 +140,7 @@ static const prop_def_t def8 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const prop_def_t def9 = {
+static const props_def_t def9 = {
 	.label = "statFloat",
 	.property = PROPS_PREFIX"statFloat",
 	.access = LV2_PATCH__writable,
@@ -148,7 +148,7 @@ static const prop_def_t def9 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const prop_def_t def10 = {
+static const props_def_t def10 = {
 	.label = "statDouble",
 	.property = PROPS_PREFIX"statDouble",
 	.access = LV2_PATCH__readable,
@@ -160,7 +160,7 @@ const unsigned max_nprops = 32;
 
 static LV2_Atom_Forge_Ref
 _intercept(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
-	prop_event_t event, prop_impl_t *impl, const LV2_Atom *value)
+	props_event_t event, props_impl_t *impl, const LV2_Atom *value)
 {
 	switch(event)
 	{

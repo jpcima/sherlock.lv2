@@ -27,19 +27,19 @@
 #include <lv2/lv2plug.in/ns/ext/patch/patch.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
 
-typedef union _value_raw_t value_raw_t;
-typedef union _value_ptr_t value_ptr_t;
+typedef union _props_value_raw_t props_value_raw_t;
+typedef union _props_value_ptr_t props_value_ptr_t;
 
-typedef enum _prop_mode_t prop_mode_t;
-typedef enum _prop_event_t prop_event_t;
-typedef struct _prop_scale_point_t prop_scale_point_t;
-typedef struct _prop_def_t prop_def_t;
-typedef struct _prop_impl_t prop_impl_t;
+typedef enum _props_mode_t props_mode_t;
+typedef enum _props_event_t props_event_t;
+typedef struct _props_scale_point_t props_scale_point_t;
+typedef struct _props_def_t props_def_t;
+typedef struct _props_impl_t props_impl_t;
 typedef struct _props_t props_t;
 typedef LV2_Atom_Forge_Ref (*props_cb_t)(props_t *props, LV2_Atom_Forge *forge,
-	int64_t frames, prop_event_t event, prop_impl_t *impl, const LV2_Atom *value);
+	int64_t frames, props_event_t event, props_impl_t *impl, const LV2_Atom *value);
 
-union _value_raw_t {
+union _props_value_raw_t {
 	const int32_t i;			// Int
 	const int64_t h;			// Long
 	const float f;				// Float
@@ -50,7 +50,7 @@ union _value_raw_t {
 	//TODO
 };
 
-union _value_ptr_t {
+union _props_value_ptr_t {
 	int32_t *i;
 	int64_t *h;
 	float *f;
@@ -62,41 +62,41 @@ union _value_ptr_t {
 	void *p;
 };
 
-enum _prop_mode_t {
+enum _props_mode_t {
 	PROP_MODE_STATIC,
 	PROP_MODE_DYNAMIC
 };
 
-enum _prop_event_t {
+enum _props_event_t {
 	PROP_EVENT_GET,
 	PROP_EVENT_SET,
 	PROP_EVENT_REG
 };
 
-struct _prop_scale_point_t {
+struct _props_scale_point_t {
 	const char *label;
-	value_raw_t value;
+	props_value_raw_t value;
 };
 
-struct _prop_def_t {
+struct _props_def_t {
 	const char *label;
 	const char *property;
 	const char *access;
 	const char *type;
-	prop_mode_t mode;
+	props_mode_t mode;
 
-	value_raw_t minimum;
-	value_raw_t maximum;
-	const prop_scale_point_t *scale_points;
+	props_value_raw_t minimum;
+	props_value_raw_t maximum;
+	const props_scale_point_t *scale_points;
 };
 
-struct _prop_impl_t {
+struct _props_impl_t {
 	LV2_URID property;
 	LV2_URID access;
 	LV2_URID type;
-	const prop_def_t *def;
+	const props_def_t *def;
 	props_cb_t cb;
-	value_ptr_t value;
+	props_value_ptr_t value;
 };
 
 struct _props_t {
@@ -129,13 +129,13 @@ struct _props_t {
 
 	unsigned max_nimpls;
 	unsigned nimpls;
-	prop_impl_t impls [0];
+	props_impl_t impls [0];
 };
 
 static inline props_t *
 props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map)
 {
-	props_t *props = calloc(1, sizeof(props_t) + max_nimpls*sizeof(prop_impl_t));
+	props_t *props = calloc(1, sizeof(props_t) + max_nimpls*sizeof(props_impl_t));
 	if(!props)
 		return NULL;
 
@@ -184,7 +184,7 @@ props_clear(props_t *props)
 {
 	for(unsigned i = 0; i< props->nimpls; i++)
 	{
-		prop_impl_t *impl = &props->impls[i];
+		props_impl_t *impl = &props->impls[i];
 		//TODO deregister?
 	}
 
@@ -205,8 +205,8 @@ _signum(LV2_URID urid1, LV2_URID urid2)
 static int
 _cmp_sort(const void *itm1, const void *itm2)
 {
-	const prop_impl_t *impl1 = itm1;
-	const prop_impl_t *impl2 = itm2;
+	const props_impl_t *impl1 = itm1;
+	const props_impl_t *impl2 = itm2;
 
 	return _signum(impl1->property, impl2->property);
 }
@@ -214,26 +214,26 @@ _cmp_sort(const void *itm1, const void *itm2)
 static inline void
 props_sort(props_t *props)
 {
-	qsort(props->impls, props->nimpls, sizeof(prop_impl_t), _cmp_sort);
+	qsort(props->impls, props->nimpls, sizeof(props_impl_t), _cmp_sort);
 }
 
 static int
 _cmp_search(const void *itm1, const void *itm2)
 {
 	const LV2_URID *property = itm1;
-	const prop_impl_t *impl = itm2;
+	const props_impl_t *impl = itm2;
 
 	return _signum(*property, impl->property);
 }
 
-static inline prop_impl_t *
+static inline props_impl_t *
 _props_search(props_t *props, LV2_URID property)
 {
-	return bsearch(&property, props->impls, props->nimpls, sizeof(prop_impl_t), _cmp_search);
+	return bsearch(&property, props->impls, props->nimpls, sizeof(props_impl_t), _cmp_search);
 }
 
 static inline LV2_Atom_Forge_Ref
-_props_impl_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl)
+_props_impl_forge(props_t *props, LV2_Atom_Forge *forge, props_impl_t *impl)
 {
 	if(impl->type == forge->Int)
 		return lv2_atom_forge_int(forge, *impl->value.i);
@@ -251,8 +251,8 @@ _props_impl_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl)
 }
 
 static inline LV2_Atom_Forge_Ref
-_props_def_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl,
-	const value_raw_t *value)
+_props_def_forge(props_t *props, LV2_Atom_Forge *forge, props_impl_t *impl,
+	const props_value_raw_t *value)
 {
 	if(impl->type == forge->Int)
 		return lv2_atom_forge_int(forge, value->i);
@@ -270,9 +270,9 @@ _props_def_forge(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl,
 }
 
 static inline LV2_Atom_Forge_Ref
-_props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, prop_impl_t *impl)
+_props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t *impl)
 {
-	const prop_def_t *def = impl->def;
+	const props_def_t *def = impl->def;
 	LV2_Atom_Forge_Frame obj_frame;
 	LV2_Atom_Forge_Frame add_frame;
 	LV2_Atom_Forge_Frame remove_frame;
@@ -388,7 +388,7 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, prop_impl_t *
 
 			if(def->scale_points)
 			{
-				for(const prop_scale_point_t *sp = def->scale_points; sp->label; sp++)
+				for(const props_scale_point_t *sp = def->scale_points; sp->label; sp++)
 				{
 					LV2_Atom_Forge_Frame scale_point_frame;
 
@@ -422,7 +422,7 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, prop_impl_t *
 }
 
 static inline LV2_Atom_Forge_Ref
-_props_get(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, prop_impl_t *impl)
+_props_get(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t *impl)
 {
 	LV2_Atom_Forge_Frame obj_frame;
 
@@ -453,7 +453,7 @@ _props_get(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, prop_impl_t *
 }
 
 static inline void
-_props_set(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl, const LV2_Atom *value)
+_props_set(props_t *props, LV2_Atom_Forge *forge, props_impl_t *impl, const LV2_Atom *value)
 {
 	if(impl->type == value->type)
 	{
@@ -473,7 +473,7 @@ _props_set(props_t *props, LV2_Atom_Forge *forge, prop_impl_t *impl, const LV2_A
 
 static LV2_Atom_Forge_Ref
 props_default_cb(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
-	prop_event_t event, prop_impl_t *impl, const LV2_Atom *value)
+	props_event_t event, props_impl_t *impl, const LV2_Atom *value)
 {
 	switch(event)
 	{
@@ -525,7 +525,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			unsigned i;
 			for(i = 0; i < props->nimpls; i++)
 			{
-				prop_impl_t *impl = &props->impls[0];
+				props_impl_t *impl = &props->impls[0];
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
 					if(impl->cb)
@@ -537,7 +537,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			}
 			for( ; *ref && (i < props->nimpls); i++)
 			{
-				prop_impl_t *impl = &props->impls[i];
+				props_impl_t *impl = &props->impls[i];
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
 					if(impl->cb)
@@ -550,7 +550,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		}
 		else // !wildcard
 		{
-			prop_impl_t *impl = _props_search(props, property->body);
+			props_impl_t *impl = _props_search(props, property->body);
 			if(impl)
 			{
 				if(impl->cb)
@@ -581,7 +581,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		if(subject && (subject->body != props->urid.subject) )
 			return 0;
 
-		prop_impl_t *impl = _props_search(props, property->body);
+		props_impl_t *impl = _props_search(props, property->body);
 		if(impl && (impl->access == props->urid.patch_writable) )
 		{
 			if(impl->cb)
@@ -596,12 +596,12 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 }
 
 static inline int
-props_register(props_t *props, const prop_def_t *def, props_cb_t cb, void *value)
+props_register(props_t *props, const props_def_t *def, props_cb_t cb, void *value)
 {
 	if(props->nimpls >= props->max_nimpls)
 		return -1;
 
-	prop_impl_t *impl = &props->impls[props->nimpls++];
+	props_impl_t *impl = &props->impls[props->nimpls++];
 	
 	impl->property = props->map->map(props->map->handle, def->property);
 	impl->access = props->map->map(props->map->handle, def->access);
@@ -621,7 +621,7 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 {
 	for(unsigned i = 0; i < props->nimpls; i++)
 	{
-		prop_impl_t *impl = &props->impls[i];
+		props_impl_t *impl = &props->impls[i];
 
 		uint32_t size = 0;
 		if(impl->type == forge->Int)
@@ -651,7 +651,7 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 {
 	for(unsigned i = 0; i < props->nimpls; i++)
 	{
-		prop_impl_t *impl = &props->impls[i];
+		props_impl_t *impl = &props->impls[i];
 
 		size_t size;
 		uint32_t type;
