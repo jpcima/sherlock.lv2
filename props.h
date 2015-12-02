@@ -535,7 +535,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 					break;
 				}
 			}
-			for( ; *ref && (i < props->nimpls); i++)
+			for(i = i+1 ; *ref && (i < props->nimpls); i++)
 			{
 				props_impl_t *impl = &props->impls[i];
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
