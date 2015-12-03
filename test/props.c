@@ -19,6 +19,8 @@
 
 #include <props.h>
 
+#include <lv2/lv2plug.in/ns/ext/log/log.h>
+
 #define PROPS_PREFIX		"http://open-music-kontrollers.ch/lv2/props#"
 #define PROPS_TEST_URI	PROPS_PREFIX"test"
 
@@ -26,7 +28,10 @@ typedef struct _plughandle_t plughandle_t;
 
 struct _plughandle_t {
 	LV2_URID_Map *map;
+	LV2_Log_Log *log;
 	LV2_Atom_Forge forge;
+
+	LV2_URID log_trace;
 
 	props_t *props;
 
@@ -158,30 +163,52 @@ static const props_def_t def10 = {
 
 const unsigned max_nprops = 32;
 
+static int
+_log_vprintf(plughandle_t *handle, LV2_URID type, const char *fmt, va_list args)
+{
+	return handle->log->vprintf(handle->log->handle, type, fmt, args);
+}
+
+// non-rt || rt with LV2_LOG__Trace
+static int
+_log_printf(plughandle_t *handle, LV2_URID type, const char *fmt, ...)
+{
+  va_list args;
+	int ret;
+
+  va_start (args, fmt);
+	ret = _log_vprintf(handle, type, fmt, args);
+  va_end(args);
+
+	return ret;
+}
+
 static LV2_Atom_Forge_Ref
-_intercept(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
+_intercept(void *data, LV2_Atom_Forge *forge, int64_t frames,
 	props_event_t event, props_impl_t *impl, const LV2_Atom *value)
 {
+	plughandle_t *handle = data;
+
 	switch(event)
 	{
 		case PROP_EVENT_GET:
 		{
-			printf("intercept patch:Get: %s\n", impl->def->label);
+			_log_printf(handle, handle->log_trace, "intercept patch:Get: %s", impl->def->label);
 			break;
 		}
 		case PROP_EVENT_SET:
 		{
-			printf("intercept patch:Set: %s\n", impl->def->label);
+			_log_printf(handle, handle->log_trace, "intercept patch:Set: %s", impl->def->label);
 			break;
 		}
 		case PROP_EVENT_REG:
 		{
-			printf("intercept patch:Patch: %s\n", impl->def->label);
+			_log_printf(handle, handle->log_trace, "intercept patch:Patch: %s", impl->def->label);
 			break;
 		}
 	}
 
-	return props_default_cb(props, forge, frames, event, impl, value);
+	return props_default_cb(handle->props, forge, frames, event, impl, value);
 }
 
 static LV2_Handle
@@ -196,6 +223,8 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	{
 		if(!strcmp(features[i]->URI, LV2_URID__map))
 			handle->map = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_LOG__log))
+			handle->log = features[i]->data;
 	}
 
 	if(!handle->map)
@@ -205,6 +234,15 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		free(handle);
 		return NULL;
 	}
+	if(!handle->log)
+	{
+		fprintf(stderr,
+			"%s: Host does not support log:log\n", descriptor->URI);
+		free(handle);
+		return NULL;
+	}
+
+	handle->log_trace = handle->map->map(handle->map->handle, LV2_LOG__Trace);
 
 	lv2_atom_forge_init(&handle->forge, handle->map);
 	handle->props = props_new(max_nprops, descriptor->URI, handle->map);
@@ -277,7 +315,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
 		if(ref)
-			props_advance(handle->props, &handle->forge, ev->time.frames, obj, &ref); //TODO handle return
+			props_advance(handle->props, &handle->forge, ev->time.frames, obj, &ref, handle); //TODO handle return
 	}
 	if(ref)
 		lv2_atom_forge_pop(&handle->forge, &frame);

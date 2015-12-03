@@ -36,7 +36,7 @@ typedef struct _props_scale_point_t props_scale_point_t;
 typedef struct _props_def_t props_def_t;
 typedef struct _props_impl_t props_impl_t;
 typedef struct _props_t props_t;
-typedef LV2_Atom_Forge_Ref (*props_cb_t)(props_t *props, LV2_Atom_Forge *forge,
+typedef LV2_Atom_Forge_Ref (*props_cb_t)(void *data, LV2_Atom_Forge *forge,
 	int64_t frames, props_event_t event, props_impl_t *impl, const LV2_Atom *value);
 
 union _props_value_raw_t {
@@ -497,7 +497,7 @@ props_default_cb(props_t *props, LV2_Atom_Forge *forge, int64_t frames,
 
 static inline int
 props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
-	const LV2_Atom_Object *obj, LV2_Atom_Forge_Ref *ref)
+	const LV2_Atom_Object *obj, LV2_Atom_Forge_Ref *ref, void *data)
 {
 	if(!lv2_atom_forge_is_object_type(forge, obj->atom.type))
 		return 0;
@@ -529,7 +529,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
 					if(impl->cb)
-						*ref = impl->cb(props, forge, frames, PROP_EVENT_REG, impl, NULL);
+						*ref = impl->cb(data, forge, frames, PROP_EVENT_REG, impl, NULL);
 					else
 						*ref = _props_reg(props, forge, frames, impl);
 					break;
@@ -541,7 +541,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
 					if(impl->cb)
-						*ref = impl->cb(props, forge, frames, PROP_EVENT_REG, impl, NULL);
+						*ref = impl->cb(data, forge, frames, PROP_EVENT_REG, impl, NULL);
 					else
 						*ref = _props_reg(props, forge, frames, impl);
 				}
@@ -554,7 +554,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			if(impl)
 			{
 				if(impl->cb)
-					*ref = impl->cb(props, forge, frames, PROP_EVENT_GET, impl, NULL);
+					*ref = impl->cb(data, forge, frames, PROP_EVENT_GET, impl, NULL);
 				else
 					*ref = _props_get(props, forge, frames, impl);
 				return 1;
@@ -585,7 +585,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		if(impl && (impl->access == props->urid.patch_writable) )
 		{
 			if(impl->cb)
-				impl->cb(props, forge, frames, PROP_EVENT_SET, impl, value);
+				impl->cb(data, forge, frames, PROP_EVENT_SET, impl, value);
 			else
 				_props_set(props, forge, impl, value);
 			return 1;
