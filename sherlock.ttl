@@ -16,6 +16,7 @@
 @prefix owl:	<http://www.w3.org/2002/07/owl#> .
 @prefix foaf:	<http://xmlns.com/foaf/0.1/> .
 @prefix doap:	<http://usefulinc.com/ns/doap#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix lv2:	<http://lv2plug.in/ns/lv2core#> .
 @prefix ui:		<http://lv2plug.in/ns/extensions/ui#> .
 @prefix atom:	<http://lv2plug.in/ns/ext/atom#> .
@@ -26,11 +27,16 @@
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 @prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
-@prefix osc:	<http://opensoundcontrol.org#> .
+@prefix osc:  <http://open-music-kontrollers.ch/lv2/osc#> .
 @prefix lic:	<http://opensource.org/licenses/> .
 @prefix omk:	<http://open-music-kontrollers.ch/ventosus#> .
 @prefix proj:	<http://open-music-kontrollers.ch/lv2/> .
 @prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
+
+osc:Event
+	a rdfs:Class ;
+	rdfs:subClassOf atom:Object ;
+	rdfs:label "OSC Event (Bundle or Message)" .
 
 # Maintainer
 omk:me
@@ -148,6 +154,162 @@ sherlock:atom_inspector
 		atom:supports atom:URI ;
 		atom:supports atom:URID ;
 		atom:supports atom:Vector ;
+		lv2:index 1 ;
+		lv2:symbol "control_out" ;
+		lv2:name "Control Out" ;
+		lv2:designation lv2:control ;
+	] , [
+		# output notify port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports atom:Sequence ;
+		lv2:index 2 ;
+		lv2:symbol "notify" ;
+		lv2:name "Notify" ;
+	] .
+
+# MIDI Inspector UI
+sherlock:midi_inspector_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol midi:eventTransfer ;
+	] ;
+	lv2:requiredFeature urid:map .
+sherlock:midi_inspector_ui
+	a ui:UI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol midi:eventTransfer ;
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+  lv2:extensionData ui:idleInterface, ui:showInterface .
+sherlock:midi_inspector_x11
+	a ui:X11UI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol midi:eventTransfer ;
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+	lv2:optionalFeature ui:resize ;
+  lv2:extensionData ui:idleInterface .
+sherlock:midi_inspector_kx
+	a kx:Widget ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol midi:eventTransfer ;
+	] ;
+	lv2:requiredFeature kx:Host, urid:map .
+
+# MIDI Inspector Plugin
+sherlock:midi_inspector
+	a lv2:Plugin,
+		lv2:AnalyserPlugin ;
+	doap:name "Sherlock MIDI Inspector" ;
+	doap:license lic:Artistic-2.0 ;
+	lv2:project proj:sherlock ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
+	lv2:requiredFeature urid:map ;
+
+	lv2:port [
+		# input event port
+	  a lv2:InputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports midi:MidiEvent ;
+		lv2:index 0 ;
+		lv2:symbol "control_in" ;
+		lv2:name "Control In" ;
+		lv2:designation lv2:control ;
+	] , [
+		# output event port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports midi:MidiEvent ;
+		lv2:index 1 ;
+		lv2:symbol "control_out" ;
+		lv2:name "Control Out" ;
+		lv2:designation lv2:control ;
+	] , [
+		# output notify port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports atom:Sequence ;
+		lv2:index 2 ;
+		lv2:symbol "notify" ;
+		lv2:name "Notify" ;
+	] .
+
+# OSC Inspector UI
+sherlock:osc_inspector_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol osc:eventTransfer ;
+	] ;
+	lv2:requiredFeature urid:map .
+sherlock:osc_inspector_ui
+	a ui:UI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol osc:eventTransfer ;
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+  lv2:extensionData ui:idleInterface, ui:showInterface .
+sherlock:osc_inspector_x11
+	a ui:X11UI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol osc:eventTransfer ;
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+	lv2:optionalFeature ui:resize ;
+  lv2:extensionData ui:idleInterface .
+sherlock:osc_inspector_kx
+	a kx:Widget ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:protocol osc:eventTransfer ;
+	] ;
+	lv2:requiredFeature kx:Host, urid:map .
+
+# OSC Inspector Plugin
+sherlock:osc_inspector
+	a lv2:Plugin,
+		lv2:AnalyserPlugin ;
+	doap:name "Sherlock OSC Inspector" ;
+	doap:license lic:Artistic-2.0 ;
+	lv2:project proj:sherlock ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
+	lv2:requiredFeature urid:map ;
+
+	lv2:port [
+		# input event port
+	  a lv2:InputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports osc:Event ;
+		lv2:index 0 ;
+		lv2:symbol "control_in" ;
+		lv2:name "Control In" ;
+		lv2:designation lv2:control ;
+	] , [
+		# output event port
+	  a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports osc:Event ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;

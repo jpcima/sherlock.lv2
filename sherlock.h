@@ -32,20 +32,40 @@
 
 #define SHERLOCK_URI										"http://open-music-kontrollers.ch/lv2/sherlock"
 
-#define SHERLOCK_OBJECT_URI							SHERLOCK_URI"#object"
-#define SHERLOCK_EVENT_URI							SHERLOCK_URI"#frametime"
-#define SHERLOCK_FRAMETIME_URI					SHERLOCK_URI"#event"
-
 #define SHERLOCK_ATOM_INSPECTOR_URI			SHERLOCK_URI"#atom_inspector"
 #define SHERLOCK_ATOM_INSPECTOR_EO_URI	SHERLOCK_URI"#atom_inspector_eo"
 #define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_ui"
 #define SHERLOCK_ATOM_INSPECTOR_X11_URI	SHERLOCK_URI"#atom_inspector_x11"
 #define SHERLOCK_ATOM_INSPECTOR_KX_URI	SHERLOCK_URI"#atom_inspector_kx"
 
+#define SHERLOCK_MIDI_INSPECTOR_URI			SHERLOCK_URI"#midi_inspector"
+#define SHERLOCK_MIDI_INSPECTOR_EO_URI	SHERLOCK_URI"#midi_inspector_eo"
+#define SHERLOCK_MIDI_INSPECTOR_UI_URI	SHERLOCK_URI"#midi_inspector_ui"
+#define SHERLOCK_MIDI_INSPECTOR_X11_URI	SHERLOCK_URI"#midi_inspector_x11"
+#define SHERLOCK_MIDI_INSPECTOR_KX_URI	SHERLOCK_URI"#midi_inspector_kx"
+
+#define SHERLOCK_OSC_INSPECTOR_URI			SHERLOCK_URI"#osc_inspector"
+#define SHERLOCK_OSC_INSPECTOR_EO_URI		SHERLOCK_URI"#osc_inspector_eo"
+#define SHERLOCK_OSC_INSPECTOR_UI_URI		SHERLOCK_URI"#osc_inspector_ui"
+#define SHERLOCK_OSC_INSPECTOR_X11_URI	SHERLOCK_URI"#osc_inspector_x11"
+#define SHERLOCK_OSC_INSPECTOR_KX_URI		SHERLOCK_URI"#osc_inspector_kx"
+
 extern const LV2_Descriptor atom_inspector;
 extern const LV2UI_Descriptor atom_inspector_eo;
 extern const LV2UI_Descriptor atom_inspector_ui;
 extern const LV2UI_Descriptor atom_inspector_x11;
 extern const LV2UI_Descriptor atom_inspector_kx;
+
+extern const LV2_Descriptor midi_inspector;
+extern const LV2UI_Descriptor midi_inspector_eo;
+extern const LV2UI_Descriptor midi_inspector_ui;
+extern const LV2UI_Descriptor midi_inspector_x11;
+extern const LV2UI_Descriptor midi_inspector_kx;
+
+extern const LV2_Descriptor osc_inspector;
+extern const LV2UI_Descriptor osc_inspector_eo;
+extern const LV2UI_Descriptor osc_inspector_ui;
+extern const LV2UI_Descriptor osc_inspector_x11;
+extern const LV2UI_Descriptor osc_inspector_kx;
 
 #endif // _SHERLOCK_LV2_H

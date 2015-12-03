@@ -5,6 +5,7 @@ project(sherlock.lv2)
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/libosc)
 include_directories(${PROJECT_SOURCE_DIR}/eo_ui.lv2)
+include_directories(${PROJECT_SOURCE_DIR}/osc.lv2)
 
 set(CMAKE_C_FLAGS "-std=gnu99 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
@@ -15,6 +16,7 @@ set(SHERLOCK_MINOR_VERSION 1)
 set(SHERLOCK_MICRO_VERSION 1)
 set(SHERLOCK_VERSION "${SHERLOCK_MAJOR_VERSION}.${SHERLOCK_MINOR_VERSION}.${SHERLOCK_MICRO_VERSION}")
 add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
+add_definitions("-D_GNU_SOURCE=1") # asprintf
 
 set(DEST lib/lv2/sherlock.lv2)
 if(WIN32)
@@ -48,14 +50,18 @@ endif()
 
 add_library(sherlock MODULE
 	sherlock.c
-	atom_inspector.c)
+	atom_inspector.c
+	midi_inspector.c
+	osc_inspector.c)
 target_link_libraries(sherlock ${LIBS})
 set_target_properties(sherlock PROPERTIES PREFIX "")
 install(TARGETS sherlock DESTINATION ${DEST})
 
 add_library(sherlock_ui MODULE
 	sherlock_ui.c
-	atom_inspector_ui.c)
+	atom_inspector_ui.c
+	midi_inspector_ui.c
+	osc_inspector_ui.c)
 target_link_libraries(sherlock_ui ${LIBS_UI})
 set_target_properties(sherlock_ui PROPERTIES PREFIX "")
 install(TARGETS sherlock_ui DESTINATION ${DEST})

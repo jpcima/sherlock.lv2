@@ -24,6 +24,10 @@ lv2_descriptor(uint32_t index)
 	{
 		case 0:
 			return &atom_inspector;
+		case 1:
+			return &midi_inspector;
+		case 2:
+			return &osc_inspector;
 		default:
 			return NULL;
 	}

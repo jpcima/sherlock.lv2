@@ -30,6 +30,25 @@ lv2ui_descriptor(uint32_t index)
 			return &atom_inspector_x11;
 		case 3:
 			return &atom_inspector_kx;
+
+		case 4:
+			return &midi_inspector_eo;
+		case 5:
+			return &midi_inspector_ui;
+		case 6:
+			return &midi_inspector_x11;
+		case 7:
+			return &midi_inspector_kx;
+
+		case 8:
+			return &osc_inspector_eo;
+		case 9:
+			return &osc_inspector_ui;
+		case 10:
+			return &osc_inspector_x11;
+		case 11:
+			return &osc_inspector_kx;
+
 		default:
 			return NULL;
 	}

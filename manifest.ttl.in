@@ -59,3 +59,61 @@ sherlock:atom_inspector_kx
 	a kx:Widget ;
 	ui:binary <sherlock_ui@LIB_EXT@> ;
 	rdfs:seeAlso <sherlock.ttl> .
+
+# MIDI Inspector Plugin
+sherlock:midi_inspector
+	a lv2:Plugin ;
+	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
+	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
+	lv2:binary <sherlock@LIB_EXT@> ;
+	@EO_UI_WRAP@ui:ui sherlock:midi_inspector_eo ;
+	@UI_UI_WRAP@ui:ui sherlock:midi_inspector_ui ;
+	@KX_UI_WRAP@ui:ui sherlock:midi_inspector_kx ;
+	@X11_UI_WRAP@ui:ui sherlock:midi_inspector_x11 ;
+	rdfs:seeAlso <sherlock.ttl> .
+
+sherlock:midi_inspector_eo
+	a ui:EoUI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:midi_inspector_ui
+	a ui:UI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:midi_inspector_x11
+	a ui:X11UI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:midi_inspector_kx
+	a kx:Widget ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+
+# OSC Inspector Plugin
+sherlock:osc_inspector
+	a lv2:Plugin ;
+	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
+	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
+	lv2:binary <sherlock@LIB_EXT@> ;
+	@EO_UI_WRAP@ui:ui sherlock:osc_inspector_eo ;
+	@UI_UI_WRAP@ui:ui sherlock:osc_inspector_ui ;
+	@KX_UI_WRAP@ui:ui sherlock:osc_inspector_kx ;
+	@X11_UI_WRAP@ui:ui sherlock:osc_inspector_x11 ;
+	rdfs:seeAlso <sherlock.ttl> .
+
+sherlock:osc_inspector_eo
+	a ui:EoUI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:osc_inspector_ui
+	a ui:UI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:osc_inspector_x11
+	a ui:X11UI ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .
+sherlock:osc_inspector_kx
+	a kx:Widget ;
+	ui:binary <sherlock_ui@LIB_EXT@> ;
+	rdfs:seeAlso <sherlock.ttl> .

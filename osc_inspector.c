@@ -20,6 +20,8 @@
 
 #include <sherlock.h>
 
+#include <lv2_osc.h>
+
 typedef struct _handle_t handle_t;
 
 struct _handle_t {
@@ -28,6 +30,8 @@ struct _handle_t {
 	LV2_Atom_Sequence *control_out;
 	LV2_Atom_Sequence *notify;
 	LV2_Atom_Forge forge;
+
+	osc_forge_t oforge;
 };
 
 static LV2_Handle
@@ -50,6 +54,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 	}
 
+	osc_forge_init(&handle->oforge, handle->map);
 	lv2_atom_forge_init(&handle->forge, handle->map);
 
 	return handle;
@@ -82,7 +87,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	handle_t *handle = (handle_t *)instance;
 	uint32_t capacity;
 	LV2_Atom_Forge *forge = &handle->forge;
-	LV2_Atom_Forge_Frame frame;
+	LV2_Atom_Forge_Frame frame [2];
 	LV2_Atom_Forge_Ref ref;
 
 	// size of input sequence
@@ -92,30 +97,39 @@ run(LV2_Handle instance, uint32_t nsamples)
 	capacity = handle->control_out->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
 	ref = lv2_atom_forge_raw(forge, handle->control_in, size);
-	if(ref)
-		lv2_atom_forge_pop(forge, &frame);
-	else
+	if(!ref)
 		lv2_atom_sequence_clear(handle->control_out);
 
 	// forge whole sequence as single event
 	capacity = handle->notify->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
-	ref = lv2_atom_forge_sequence_head(forge, &frame, 0);
+	ref = lv2_atom_forge_sequence_head(forge, &frame[0], 0);
+	if(ref)
+		ref = lv2_atom_forge_frame_time(forge, 0);
+	if(ref)
+		ref = lv2_atom_forge_sequence_head(forge, &frame[1], 0);
 
-	// only serialize sequence to UI if there were actually any events
-	if(handle->control_in->atom.size > sizeof(LV2_Atom_Sequence_Body))
+	// only serialize OSC events to UI
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
 	{
-		if(ref)
-			ref = lv2_atom_forge_frame_time(forge, 0);
-		if(ref)
-			ref = lv2_atom_forge_raw(forge, handle->control_in, size);
-		if(ref)
-			lv2_atom_forge_pad(forge, size);
+		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
+		if(  osc_atom_is_bundle(&handle->oforge, obj)
+			|| osc_atom_is_message(&handle->oforge, obj) )
+		{
+			if(ref)
+				ref = lv2_atom_forge_frame_time(forge, ev->time.frames);
+			if(ref)
+				ref = lv2_atom_forge_raw(forge, &ev->body, sizeof(LV2_Atom) + ev->body.size);
+			if(ref)
+				lv2_atom_forge_pad(forge, ev->body.size);
+		}
 	}
 
 	if(ref)
-		lv2_atom_forge_pop(forge, &frame);
+		lv2_atom_forge_pop(forge, &frame[1]);
+	if(ref)
+		lv2_atom_forge_pop(forge, &frame[0]);
 	else
 		lv2_atom_sequence_clear(handle->notify);
 }
@@ -128,8 +142,8 @@ cleanup(LV2_Handle instance)
 	free(handle);
 }
 
-const LV2_Descriptor atom_inspector = {
-	.URI						= SHERLOCK_ATOM_INSPECTOR_URI,
+const LV2_Descriptor osc_inspector = {
+	.URI						= SHERLOCK_OSC_INSPECTOR_URI,
 	.instantiate		= instantiate,
 	.connect_port		= connect_port,
 	.activate				= NULL,
