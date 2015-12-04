@@ -69,6 +69,8 @@ struct _UI {
 	Evas_Object *table;
 	Evas_Object *list;
 	Evas_Object *clear;
+	Evas_Object *autoclear;
+	Evas_Object *autoblock;
 	Evas_Object *popup;
 
 	Elm_Genlist_Item_Class *itc_sherlock;
@@ -793,7 +795,7 @@ _content_get(eo_ui_t *eoui)
 			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->list);
-			elm_table_pack(ui->table, ui->list, 0, 0, 2, 1);
+			elm_table_pack(ui->table, ui->list, 0, 0, 4, 1);
 		}
 
 		ui->clear = elm_button_add(ui->table);
@@ -807,6 +809,26 @@ _content_get(eo_ui_t *eoui)
 			elm_table_pack(ui->table, ui->clear, 0, 1, 1, 1);
 		}
 
+		ui->autoclear = elm_check_add(ui->table);
+		if(ui->autoclear)
+		{
+			elm_object_text_set(ui->autoclear, "overwrite");
+			evas_object_size_hint_weight_set(ui->autoclear, 0.f, 0.f);
+			evas_object_size_hint_align_set(ui->autoclear, EVAS_HINT_FILL, EVAS_HINT_FILL);
+			evas_object_show(ui->autoclear);
+			elm_table_pack(ui->table, ui->autoclear, 1, 1, 1, 1);
+		}
+
+		ui->autoblock = elm_check_add(ui->table);
+		if(ui->autoblock)
+		{
+			elm_object_text_set(ui->autoblock, "block");
+			evas_object_size_hint_weight_set(ui->autoblock, 0.f, 0.f);
+			evas_object_size_hint_align_set(ui->autoblock, EVAS_HINT_FILL, EVAS_HINT_FILL);
+			evas_object_show(ui->autoblock);
+			elm_table_pack(ui->table, ui->autoblock, 2, 1, 1, 1);
+		}
+
 		Evas_Object *info = elm_button_add(ui->table);
 		if(info)
 		{
@@ -814,7 +836,7 @@ _content_get(eo_ui_t *eoui)
 			evas_object_size_hint_weight_set(info, 0.f, 0.f);
 			evas_object_size_hint_align_set(info, 1.f, EVAS_HINT_FILL);
 			evas_object_show(info);
-			elm_table_pack(ui->table, info, 1, 1, 1, 1);
+			elm_table_pack(ui->table, info, 3, 1, 1, 1);
 				
 			Evas_Object *icon = elm_icon_add(info);
 			if(icon)
@@ -1091,8 +1113,22 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			memcpy(ev, elmnt, len);
 
 			// check item count 
-			if(n++ >= COUNT_MAX)
+			if(n + 1 > COUNT_MAX)
+			{
+				if(elm_check_state_get(ui->autoclear))
+				{
+					elm_genlist_clear(ui->list);
+					n = 0;
+				}
+				else
+				{
+					break;
+				}
+			}
+			else if(elm_check_state_get(ui->autoblock))
+			{
 				break;
+			}
 			
 			const LV2_Atom *atom = &elmnt->body;
 			Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
@@ -1103,6 +1139,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				ev, NULL, type, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+			n++;
 			
 			// scroll to last item
 			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
