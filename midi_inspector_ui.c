@@ -189,7 +189,7 @@ _search_controller(uint8_t type)
 	return bsearch(&type, controllers, CONTROLLERS_NUM, sizeof(midi_msg_t), _cmp_search);
 }
 
-#define CODE_PRE "<font=Mono style=plain>"
+#define CODE_PRE "<font=Mono style=shadow,bottom>"
 #define CODE_POST "</font>"
 
 #define RAW_PRE "<color=#b0b><b>"
@@ -729,7 +729,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				break;
 		
 			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
-				ev, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+				ev, NULL, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 			
 			// scroll to last item

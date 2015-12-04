@@ -64,11 +64,11 @@ struct _UI {
 	     (iter) = lv2_atom_tuple_next(iter))
 #endif
 
-#define CODE_PRE ("<font=Mono style=plain>")
+#define CODE_PRE ("<font=Mono style=shadow,bottom>")
 #define CODE_POST ("</font>")
 
 #define PATH(VAL) ("<color=#b0b><b>"VAL"</b></color>")
-#define BUNDLE(VAL) ("<color=#888><b>"VAL"</b></color>")
+#define BUNDLE(VAL) ("<color=#b0b><b>"VAL"</b></color>")
 #define TYPE(TYP, VAL) ("<color=#0b0><b>"TYP"</b></color><color=#fff>"VAL"</color>")
 
 #define TYPE_PRE(TYP, VAL) ("<color=#0b0><b>"TYP"</b></color><color=#fff>"VAL)
@@ -798,8 +798,10 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_packet,
 				ev, NULL, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			/*
 			if(osc_atom_is_bundle(&ui->oforge, obj))
 				elm_genlist_item_expanded_set(itm2, EINA_TRUE);
+			*/
 			
 			// scroll to last item
 			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);

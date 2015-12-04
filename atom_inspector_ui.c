@@ -92,11 +92,14 @@ _is_expandable(UI *ui, const uint32_t type)
 		|| (type == ui->forge.Sequence);
 }
 
-#define HIL_PRE(VAL) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>")
+#define CODE_PRE "<style=shadow,bottom>"
+#define CODE_POST "</style>"
+
+#define HIL_PRE(VAL) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#b00 font=Mono>")
 #define HIL_POST ("</color>")
 
-#define URI(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#fff style=plain>"TYP"</color>")
-#define HIL(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>"TYP"</color>")
+#define URI(VAL,TYP) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#fff font=Default>"TYP"</color>")
+#define HIL(VAL,TYP) ("<color=#bbb font=Mono><b>"VAL"</b></color> <color=#b00 font=Mono>"TYP"</color>")
 
 static void
 _hash_del(void *data)
@@ -134,6 +137,8 @@ static char *
 _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 {
 	//FIXME check for buffer overflows!!!
+	sprintf(ptr, CODE_PRE);
+	ptr += strlen(ptr);
 
 	const char *type = _hash_get(ui, atom->type);
 	sprintf(ptr, URI("type    ", "%s (%"PRIu32")"), type, atom->type);
@@ -375,6 +380,9 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 
 		sprintf(ptr, "</br>");
 	}
+	ptr += strlen(ptr);
+
+	sprintf(ptr, CODE_POST);
 
 	return ptr + strlen(ptr);
 }
