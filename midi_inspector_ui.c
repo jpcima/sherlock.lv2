@@ -49,12 +49,6 @@ struct _UI {
 	char *logo_path;
 };
 
-#define HIL_PRE(VAL) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>")
-#define HIL_POST ("</color>")
-
-#define URI(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#fff style=plain>"TYP"</color>")
-#define HIL(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>"TYP"</color>")
-
 typedef struct _midi_msg_t midi_msg_t;
 
 struct _midi_msg_t {
@@ -195,41 +189,198 @@ _search_controller(uint8_t type)
 	return bsearch(&type, controllers, CONTROLLERS_NUM, sizeof(midi_msg_t), _cmp_search);
 }
 
-static char *
-_atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
+#define CODE_PRE "<font=Mono style=plain>"
+#define CODE_POST "</font>"
+
+#define RAW_PRE "<color=#b0b><b>"
+#define RAW_POST "</b></color>"
+
+#define SYSTEM(TYP) "<color=#888><b>"TYP"</b></color>"
+#define CHANNEL(TYP, VAL) "<color=#888><b>"TYP"</b></color><color=#fff>"VAL"</color>"
+#define COMMAND(VAL) "<color=#0b0>"VAL"</color>"
+#define CONTROLLER(VAL) "<color=#b00>"VAL"</color>"
+#define PUNKT(VAL) "<color=#00b>"VAL"</color>"
+
+static const char *keys [12] = {
+	"C", "#C",
+	"D", "#D",
+	"E",
+	"F", "#F",
+	"G", "#G",
+	"A", "#A",
+	"H"
+};
+
+static inline const char *
+_note(uint8_t val, uint8_t *octave)
+{
+	*octave = val / 12;
+
+	return keys[val % 12];
+}
+
+static inline char *
+_atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 {
 	//FIXME check for buffer overflows!!!
 
 	const uint8_t *midi = LV2_ATOM_BODY_CONST(atom);
 
-	sprintf(ptr, HIL_PRE(" "));
+	sprintf(ptr, CODE_PRE RAW_PRE);
 	ptr += strlen(ptr);
 
 	char *barrier = ptr + STRING_OFF;
 	unsigned i;
 	for(i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
-		sprintf(ptr, "%02X ", midi[i]);
+		sprintf(ptr, " %02"PRIX8, midi[i]);
 
 	for( ; (i<3) && (ptr<barrier); i++, ptr += 3)
 		sprintf(ptr, "   ");
 
-	const uint8_t command = midi[0] & 0xf0;
-	const uint8_t channel = midi[0] & 0x0f;
-	const midi_msg_t *command_msg = _search_command(command); 
-	const char *command_str = command_msg
-		? command_msg->key
-		: "Unknown";
-	if(command == LV2_MIDI_MSG_CONTROLLER)
+	sprintf(ptr, RAW_POST);
+	ptr += strlen(ptr);
+
+	if( (midi[0] & 0xf0) == 0xf0) // system messages
 	{
-		const midi_msg_t *controller_msg = _search_controller(midi[1]);
-		const char *controller_str = controller_msg
-			? controller_msg->key
+		const midi_msg_t *command_msg = _search_command(midi[0]); 
+		const char *command_str = command_msg
+			? command_msg->key
 			: "Unknown";
-		sprintf(ptr, "(Ch %02hhu, %s, %s)", channel, command_str, controller_str);
+
+		if(midi[0] == LV2_MIDI_MSG_SYSTEM_EXCLUSIVE) // sysex message
+		{
+			for( ; (i<atom->size) && ptr<barrier; i++, ptr += 3)
+				sprintf(ptr, " %02"PRIX8, midi[i]);
+		}
+		else if(midi[0] == LV2_MIDI_MSG_SONG_POS)
+		{
+			uint16_t pos = (((uint16_t)midi[2] << 7) | midi[1]);
+			sprintf(ptr,
+				PUNKT(" [") SYSTEM("Syst.")
+				PUNKT(", ") COMMAND("%s")
+				PUNKT(", ") "%"PRIu16
+				PUNKT("]"),
+				command_str, pos);
+		}
+		else // other system message
+		{
+			if(atom->size == 2)
+			{
+				sprintf(ptr,
+					PUNKT(" [") SYSTEM("Syst.")
+					PUNKT(", ") COMMAND("%s")
+					PUNKT(", ") "%"PRIi8
+					PUNKT("]"),
+					command_str, midi[1]);
+			}
+			else if(atom->size == 3)
+			{
+				sprintf(ptr,
+					PUNKT(" [") SYSTEM("Syst.")
+					PUNKT(", ") COMMAND("%s")
+					PUNKT(", ") "%"PRIi8
+					PUNKT(", ") "%"PRIi8
+					PUNKT("]"),
+					command_str, midi[1], midi[2]);
+			}
+			else // assume atom->size == 1, aka no data
+			{
+				sprintf(ptr,
+					PUNKT(" [") SYSTEM("Syst.")
+					PUNKT(", ") COMMAND("%s")
+					PUNKT("]"),
+					command_str);
+			}
+		}
 	}
-	else
+	else // channel messages
 	{
-		sprintf(ptr, "(Ch %02hhu, %s)", channel, command_str);
+		const uint8_t command = midi[0] & 0xf0;
+		const uint8_t channel = midi[0] & 0x0f;
+
+		const midi_msg_t *command_msg = _search_command(command); 
+		const char *command_str = command_msg
+			? command_msg->key
+			: "Unknown";
+
+		if( (command == LV2_MIDI_MSG_NOTE_ON)
+			|| (command == LV2_MIDI_MSG_NOTE_OFF)
+			|| (command == LV2_MIDI_MSG_NOTE_PRESSURE))
+		{
+			uint8_t octave;
+			const char *note = _note(midi[1], &octave);
+			sprintf(ptr,
+				PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+				PUNKT(", ") COMMAND("%s")
+				PUNKT(", ") "%s-%"PRIu8
+				PUNKT(", ") "%"PRIi8
+				PUNKT("]"),
+				channel, command_str, note, octave, midi[2]);
+		}
+		else if(command == LV2_MIDI_MSG_CONTROLLER)
+		{
+			const midi_msg_t *controller_msg = _search_controller(midi[1]);
+			const char *controller_str = controller_msg
+				? controller_msg->key
+				: "Unknown";
+
+			if(atom->size == 3)
+			{
+				sprintf(ptr,
+					PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+					PUNKT(", ") COMMAND("%s")
+					PUNKT(", ") CONTROLLER("%s")
+					PUNKT(", ") "%"PRIi8 
+					PUNKT("]"),
+					channel, command_str, controller_str, midi[2]);
+			}
+			else if(atom->size == 2)
+			{
+				sprintf(ptr,
+					PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+					PUNKT(", ") COMMAND("%s")
+					PUNKT(", ") CONTROLLER("%s")
+					PUNKT("]"),
+					channel, command_str, controller_str);
+			}
+		}
+		else if(command == LV2_MIDI_MSG_BENDER)
+		{
+			int16_t bender = (((int16_t)midi[2] << 7) | midi[1]) - 0x2000;
+			sprintf(ptr,
+				PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+				PUNKT(", ") COMMAND("%s")
+				PUNKT(", ") "%"PRIi16
+				PUNKT("]"),
+				channel, command_str, bender);
+		}
+		else if(atom->size == 3)
+		{
+			sprintf(ptr,
+				PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+				PUNKT(", ") COMMAND("%s")
+				PUNKT(", ") "%"PRIi8
+				PUNKT(", ") "%"PRIi8
+				PUNKT("]"),
+				channel, command_str, midi[1], midi[2]);
+		}
+		else if(atom->size == 2)
+		{
+			sprintf(ptr,
+				PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+				PUNKT(", ") COMMAND("%s")
+				PUNKT(", ") "%"PRIi8
+				PUNKT("]"),
+				channel, command_str, midi[1]);
+		}
+		else // fall-back
+		{
+			sprintf(ptr,
+				PUNKT(" [") CHANNEL("Ch ", "%02"PRIX8)
+				PUNKT(", ") COMMAND("%s")
+				PUNKT("]"),
+				channel, command_str);
+		}
 	}
 	ptr += strlen(ptr);
 
@@ -240,7 +391,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		ptr += 4;
 	}
 
-	sprintf(ptr, HIL_POST);
+	sprintf(ptr, CODE_POST);
 
 	return ptr + strlen(ptr);
 }
@@ -260,7 +411,7 @@ _midi_label_get(void *data, Evas_Object *obj, const char *part)
 		char *ptr = buf;
 		char *end = buf + STRING_BUF_SIZE;
 
-		ptr = _atom_stringify(ui, ptr, end, 1, &ev->body);
+		ptr = _atom_stringify(ui, ptr, end, &ev->body);
 
 		return ptr
 			? strdup(buf)
@@ -326,7 +477,7 @@ _clear_update(UI *ui, int count)
 		return;
 
 	char *buf = ui->string_buf;
-	sprintf(buf, "Clear (%i of %i)", count, COUNT_MAX);
+	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, COUNT_MAX);
 	elm_object_text_set(ui->clear, buf);
 }
 

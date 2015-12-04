@@ -15,6 +15,8 @@
  * http://www.perlfoundation.org/artistic_license_2_0.
  */
 
+#include <inttypes.h>
+
 #include <sherlock.h>
 
 #include <Elementary.h>
@@ -38,6 +40,7 @@ struct _UI {
 	LV2_URID_Map *map;
 	LV2_Atom_Forge forge;
 	LV2_URID event_transfer;
+	LV2_URID midi_event;
 	osc_forge_t oforge;
 
 	Evas_Object *table;
@@ -45,21 +48,63 @@ struct _UI {
 	Evas_Object *clear;
 	Evas_Object *popup;
 
-	Elm_Genlist_Item_Class *itc_osc;
+	Elm_Genlist_Item_Class *itc_packet;
+	Elm_Genlist_Item_Class *itc_item;
 
 	char string_buf [STRING_BUF_SIZE];
 	char *logo_path;
 };
 
-#define HIL_PRE(VAL) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>")
-#define HIL_POST ("</color>")
+// there is a bug in LV2 <= 0.10
+#if defined(LV2_ATOM_TUPLE_FOREACH)
+#	undef LV2_ATOM_TUPLE_FOREACH
+#	define LV2_ATOM_TUPLE_FOREACH(tuple, iter) \
+	for (LV2_Atom* (iter) = lv2_atom_tuple_begin(tuple); \
+	     !lv2_atom_tuple_is_end(LV2_ATOM_BODY(tuple), (tuple)->atom.size, (iter)); \
+	     (iter) = lv2_atom_tuple_next(iter))
+#endif
 
-#define URI(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#fff style=plain>"TYP"</color>")
-#define HIL(VAL,TYP) ("<color=#bbb font=Mono style=plain><b>"VAL"</b></color> <color=#b00 font=Mono style=plain>"TYP"</color>")
+#define CODE_PRE ("<font=Mono style=plain>")
+#define CODE_POST ("</font>")
 
-static char *
-_atom_stringify(UI *ui, const LV2_Atom *atom)
+#define PATH(VAL) ("<color=#b0b><b>"VAL"</b></color>")
+#define BUNDLE(VAL) ("<color=#888><b>"VAL"</b></color>")
+#define TYPE(TYP, VAL) ("<color=#0b0><b>"TYP"</b></color><color=#fff>"VAL"</color>")
+
+#define TYPE_PRE(TYP, VAL) ("<color=#0b0><b>"TYP"</b></color><color=#fff>"VAL)
+#define TYPE_POST(VAL) (VAL"</color>")
+
+#define PUNKT(VAL) "<color=#00b>"VAL"</color>"
+
+static inline char *
+_timestamp_stringify(UI *ui, char *ptr, char *end, const LV2_Atom_Long *atom)
 {
+	const uint32_t sec = (uint64_t)atom->body >> 32;
+	const uint32_t frac = (uint64_t)atom->body & 0xffffffff;
+	const double part = frac * 0x1p-32;
+
+	if(sec <= 1UL)
+	{
+		sprintf(ptr, TYPE(" t:", "immediate"));
+	}
+	else
+	{
+		const time_t ttime = sec - 0x83aa7e80;
+		const struct tm *ltime = localtime(&ttime);
+
+		char tmp [32];
+		strftime(tmp, 32, "%d-%b-%Y %T", ltime);
+
+		sprintf(ptr, TYPE(" t:", "%s.%06"PRIu32), tmp, (uint32_t)(part*1e6));
+	}
+
+	return ptr + strlen(ptr);
+}
+
+static inline char *
+_atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
+{
+	//FIXME check for buffer overflows!!!
 	const LV2_Atom_Object *obj = (const LV2_Atom_Object *)atom;
 
 	if(osc_atom_is_message(&ui->oforge, obj))
@@ -69,21 +114,210 @@ _atom_stringify(UI *ui, const LV2_Atom *atom)
 		const LV2_Atom_Tuple *tup = NULL;
 		osc_atom_message_unpack(&ui->oforge, obj, &path, &fmt, &tup);
 
-		char *osc = NULL;
-		asprintf(&osc, " %s ,%s", LV2_ATOM_BODY_CONST(path), LV2_ATOM_BODY_CONST(fmt));
-		//FIXME
-		return osc;
+		sprintf(ptr, CODE_PRE);
+		ptr += strlen(ptr);
+
+		if(path && fmt)
+		{
+			sprintf(ptr, PATH(" %s"), LV2_ATOM_BODY_CONST(path));
+		}
+		else
+		{
+			sprintf(ptr, " unknown path and/or format string");
+		}
+		ptr += strlen(ptr);
+
+		const LV2_Atom *itm = lv2_atom_tuple_begin(tup);
+		for(const char *type = LV2_ATOM_BODY_CONST(fmt); *type; type++)
+		{
+			bool advance = true;
+
+			switch(*type)
+			{
+				case 'i':
+				{
+					if(itm->type == ui->forge.Int)
+					{
+						sprintf(ptr, TYPE(" i:", "%"PRIi32), ((const LV2_Atom_Int *)itm)->body);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 'f':
+				{
+					if(itm->type == ui->forge.Float)
+					{
+						sprintf(ptr, TYPE(" f:", "%f"), ((const LV2_Atom_Float *)itm)->body);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 's': // fall-through
+				case 'S':
+				{
+					if(itm->type == ui->forge.String)
+					{
+						sprintf(ptr, TYPE(" s:", "%s"), LV2_ATOM_BODY_CONST(itm));
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 'b':
+				{
+					if(itm->type == ui->forge.Chunk)
+					{
+						const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
+						sprintf(ptr, TYPE_PRE(" b:", PUNKT("[")));
+						ptr += strlen(ptr);
+						if(itm->size)
+						{
+							sprintf(ptr, "%02"PRIX8, chunk[0]);
+							ptr += strlen(ptr);
+
+							for(unsigned i=1; i<itm->size; i++)
+							{
+								sprintf(ptr, " %02"PRIX8, chunk[i]);
+								ptr += strlen(ptr);
+							}
+						}
+						sprintf(ptr, TYPE_POST(PUNKT("]")));
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+
+				case 'h':
+				{
+					if(itm->type == ui->forge.Long)
+					{
+						sprintf(ptr, TYPE(" h:", "%"PRIi64), ((const LV2_Atom_Long *)itm)->body);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 'd':
+				{
+					if(itm->type == ui->forge.Double)
+					{
+						sprintf(ptr, TYPE(" d:", "%lf"), ((const LV2_Atom_Double *)itm)->body);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 't':
+				{
+					if(itm->type == ui->forge.Long)
+					{
+						ptr = _timestamp_stringify(ui, ptr, end, (const LV2_Atom_Long *)itm);
+					}
+					break;
+				}
+
+				case 'c':
+				{
+					//if(itm->type == ui->forge.Char)
+					{
+						sprintf(ptr, TYPE(" c:", "%c"), ((const LV2_Atom_Int *)itm)->body);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+				case 'm':
+				{
+					if(itm->type == ui->midi_event)
+					{
+						const uint8_t *m = LV2_ATOM_BODY_CONST(itm);
+						sprintf(ptr,
+							TYPE(" m:", PUNKT("[") "%02"PRIX8" %02"PRIX8" %02"PRIX8" %02"PRIX8 PUNKT("]")),
+							m[0], m[1], m[2], m[3]);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+
+				case 'T':
+				{
+					//if(itm->type == ui->forge.Bool)
+					{
+						sprintf(ptr, TYPE(" T:", "true"));
+						ptr += strlen(ptr);
+					}
+					advance = false;
+					break;
+				}
+				case 'F':
+				{
+					//if(itm->type == ui->forge.Bool)
+					{
+						sprintf(ptr, TYPE(" F:", "false"));
+						ptr += strlen(ptr);
+					}
+					advance = false;
+					break;
+				}
+				case 'N':
+				{
+					//if(itm->type == 0)
+					{
+						sprintf(ptr, TYPE(" N:", "nil"));
+						ptr += strlen(ptr);
+					}
+					advance = false;
+					break;
+				}
+				case 'I':
+				{
+					//if(itm->type == ui->forge.Impulse)
+					{
+						sprintf(ptr, TYPE(" I:", "impulse"));
+						ptr += strlen(ptr);
+					}
+					advance = false;
+					break;
+				}
+
+				default:
+				{
+					{
+						sprintf(ptr, TYPE(" %c:", "unknown"), *type);
+						ptr += strlen(ptr);
+					}
+					break;
+				}
+			}
+
+			if(advance && !lv2_atom_tuple_is_end(LV2_ATOM_BODY(tup), tup->atom.size, itm))
+				itm = lv2_atom_tuple_next(itm);
+		}
+
+		sprintf(ptr, CODE_POST);
+
+		return ptr + strlen(ptr);
 	}
 	else if(osc_atom_is_bundle(&ui->oforge, obj))
 	{
-		//FIXME
+		const LV2_Atom_Long *timestamp = NULL;
+		const LV2_Atom_Tuple *tup = NULL;
+		osc_atom_bundle_unpack(&ui->oforge, obj, &timestamp, &tup);
+		
+		sprintf(ptr, CODE_PRE);
+		ptr += strlen(ptr);
+
+		sprintf(ptr, BUNDLE(" #bundle"));
+		ptr += strlen(ptr);
+
+		ptr = _timestamp_stringify(ui, ptr, end, timestamp);
+
+		sprintf(ptr, CODE_POST);
+
+		return ptr + strlen(ptr);
 	}
 
 	return NULL;
 }
 
 static char *
-_osc_label_get(void *data, Evas_Object *obj, const char *part)
+_packet_label_get(void *data, Evas_Object *obj, const char *part)
 {
 	UI *ui = evas_object_data_get(obj, "ui");
 	const LV2_Atom_Event *ev = data;
@@ -93,14 +327,22 @@ _osc_label_get(void *data, Evas_Object *obj, const char *part)
 
 	if(!strcmp(part, "elm.text"))
 	{
-		return _atom_stringify(ui, &ev->body);
+		char *buf = ui->string_buf;
+		char *ptr = buf;
+		char *end = buf + STRING_BUF_SIZE;
+
+		ptr = _atom_stringify(ui, ptr, end, &ev->body);
+
+		return ptr
+			? strdup(buf)
+			: NULL;
 	}
 
 	return NULL;
 }
 
 static Evas_Object * 
-_osc_content_get(void *data, Evas_Object *obj, const char *part)
+_packet_content_get(void *data, Evas_Object *obj, const char *part)
 {
 	UI *ui = evas_object_data_get(obj, "ui");
 	const LV2_Atom_Event *ev = data;
@@ -143,9 +385,135 @@ _osc_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static void
-_osc_del(void *data, Evas_Object *obj)
+_packet_del(void *data, Evas_Object *obj)
 {
 	free(data);
+}
+
+static char *
+_item_label_get(void *data, Evas_Object *obj, const char *part)
+{
+	UI *ui = evas_object_data_get(obj, "ui");
+	const LV2_Atom *atom = data;
+
+	if(!ui)
+		return NULL;
+
+	if(!strcmp(part, "elm.text"))
+	{
+		char *buf = ui->string_buf;
+		char *ptr = buf;
+		char *end = buf + STRING_BUF_SIZE;
+
+		ptr = _atom_stringify(ui, ptr, end, atom);
+
+		return ptr
+			? strdup(buf)
+			: NULL;
+	}
+
+	return NULL;
+}
+
+static Evas_Object * 
+_item_content_get(void *data, Evas_Object *obj, const char *part)
+{
+	UI *ui = evas_object_data_get(obj, "ui");
+	const LV2_Atom *atom = data;
+	
+	if(!ui)
+		return NULL;
+
+	if(!strcmp(part, "elm.swallow.end"))
+	{
+		char *buf = ui->string_buf;
+
+		sprintf(buf, "<color=#0bb font=Mono>%4u</color>", atom->size);
+
+		Evas_Object *label = elm_label_add(obj);
+		if(label)
+		{
+			elm_object_part_text_set(label, "default", buf);
+			evas_object_show(label);
+		}
+
+		return label;
+	}
+
+	return NULL;
+}
+
+static void
+_item_expand_request(void *data, Evas_Object *obj, void *event_info)
+{
+	Elm_Object_Item *itm = event_info;
+	UI *ui = data;
+
+	elm_genlist_item_expanded_set(itm, EINA_TRUE);
+}
+
+static void
+_item_contract_request(void *data, Evas_Object *obj, void *event_info)
+{
+	Elm_Object_Item *itm = event_info;
+	UI *ui = data;
+
+	elm_genlist_item_expanded_set(itm, EINA_FALSE);
+}
+
+static void
+_item_expanded(void *data, Evas_Object *obj, void *event_info)
+{
+	Elm_Object_Item *itm = event_info;
+	UI *ui = data;
+
+	const Elm_Genlist_Item_Class *class = elm_genlist_item_item_class_get(itm);
+	const void *udata = elm_object_item_data_get(itm);
+
+	if(!udata)
+		return;
+
+	const LV2_Atom_Object *_obj = NULL;
+
+	if(class == ui->itc_packet)
+	{
+		const LV2_Atom_Event *ev = udata;
+		_obj = (const LV2_Atom_Object *)&ev->body;
+	}
+	else if(class == ui->itc_item)
+	{
+		_obj = udata;
+	}
+
+	if(_obj && osc_atom_is_bundle(&ui->oforge, _obj))
+	{
+		const LV2_Atom_Long *timestamp = NULL;
+		const LV2_Atom_Tuple *tup = NULL;
+		osc_atom_bundle_unpack(&ui->oforge, _obj, &timestamp, &tup);
+
+		if(tup)
+		{
+			LV2_ATOM_TUPLE_FOREACH(tup, atom)
+			{
+				const LV2_Atom_Object *_obj2 = (const LV2_Atom_Object *)atom;
+
+				Elm_Object_Item *itm2 = elm_genlist_item_append(obj, ui->itc_item,
+					_obj2, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
+				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+				if(osc_atom_is_bundle(&ui->oforge, _obj2))
+					elm_genlist_item_expanded_set(itm2, EINA_TRUE);
+			}
+		}
+	}
+}
+
+static void
+_item_contracted(void *data, Evas_Object *obj, void *event_info)
+{
+	Elm_Object_Item *itm = event_info;
+	UI *ui = data;
+
+	elm_genlist_item_subitems_clear(itm);
 }
 
 static void
@@ -155,7 +523,7 @@ _clear_update(UI *ui, int count)
 		return;
 
 	char *buf = ui->string_buf;
-	sprintf(buf, "Clear (%i of %i)", count, COUNT_MAX);
+	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, COUNT_MAX);
 	elm_object_text_set(ui->clear, buf);
 }
 
@@ -203,6 +571,12 @@ _content_get(eo_ui_t *eoui)
 			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // TRUE for lazy-loading
 			elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
 			evas_object_data_set(ui->list, "ui", ui);
+			evas_object_smart_callback_add(ui->list, "expand,request",
+				_item_expand_request, ui);
+			evas_object_smart_callback_add(ui->list, "contract,request",
+				_item_contract_request, ui);
+			evas_object_smart_callback_add(ui->list, "expanded", _item_expanded, ui);
+			evas_object_smart_callback_add(ui->list, "contracted", _item_contracted, ui);
 			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->list);
@@ -341,17 +715,28 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	}
 	
 	ui->event_transfer = ui->map->map(ui->map->handle, LV2_ATOM__eventTransfer);
+	ui->midi_event = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
 	lv2_atom_forge_init(&ui->forge, ui->map);
 	osc_forge_init(&ui->oforge, ui->map);
 
-	ui->itc_osc = elm_genlist_item_class_new();
-	if(ui->itc_osc)
+	ui->itc_packet = elm_genlist_item_class_new();
+	if(ui->itc_packet)
 	{
-		ui->itc_osc->item_style = "default_style";
-		ui->itc_osc->func.text_get = _osc_label_get;
-		ui->itc_osc->func.content_get = _osc_content_get;
-		ui->itc_osc->func.state_get = NULL;
-		ui->itc_osc->func.del = _osc_del;
+		ui->itc_packet->item_style = "default_style";
+		ui->itc_packet->func.text_get = _packet_label_get;
+		ui->itc_packet->func.content_get = _packet_content_get;
+		ui->itc_packet->func.state_get = NULL;
+		ui->itc_packet->func.del = _packet_del;
+	}
+
+	ui->itc_item = elm_genlist_item_class_new();
+	if(ui->itc_item)
+	{
+		ui->itc_item->item_style = "default_style";
+		ui->itc_item->func.text_get = _item_label_get;
+		ui->itc_item->func.content_get = _item_content_get;
+		ui->itc_item->func.state_get = NULL;
+		ui->itc_item->func.del = NULL;
 	}
 
 	sprintf(ui->string_buf, "%s/omk_logo_256x256.png", bundle_path);
@@ -377,8 +762,10 @@ cleanup(LV2UI_Handle handle)
 	if(ui->logo_path)
 		free(ui->logo_path);
 
-	if(ui->itc_osc)
-		elm_genlist_item_class_free(ui->itc_osc);
+	if(ui->itc_packet)
+		elm_genlist_item_class_free(ui->itc_packet);
+	if(ui->itc_item)
+		elm_genlist_item_class_free(ui->itc_item);
 
 	free(ui);
 }
@@ -406,10 +793,13 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			// check item count 
 			if(n++ >= COUNT_MAX)
 				break;
-		
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_osc,
-				ev, NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+
+			const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_packet,
+				ev, NULL, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+			if(osc_atom_is_bundle(&ui->oforge, obj))
+				elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 			
 			// scroll to last item
 			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);

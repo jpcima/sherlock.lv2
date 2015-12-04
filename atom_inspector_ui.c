@@ -15,6 +15,8 @@
  * http://www.perlfoundation.org/artistic_license_2_0.
  */
 
+#include <inttypes.h>
+
 #include <sherlock.h>
 
 #include <Elementary.h>
@@ -112,7 +114,7 @@ _hash_set(UI *ui, LV2_URID urid)
 	if(uri)
 		eina_hash_add(ui->urids, &urid, strdup(uri));
 
-	//printf("prefill: %s (%u)\n", uri, urid);
+	//printf("prefill: %s (%"PRIu32")\n", uri, urid);
 
 	return uri;
 }
@@ -134,7 +136,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 	//FIXME check for buffer overflows!!!
 
 	const char *type = _hash_get(ui, atom->type);
-	sprintf(ptr, URI("type    ", "%s (%u)"), type, atom->type);
+	sprintf(ptr, URI("type    ", "%s (%"PRIu32")"), type, atom->type);
 	ptr += strlen(ptr);
 
 	if(lv2_atom_forge_is_object_type(&ui->forge, atom->type))
@@ -147,7 +149,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 
 		if(id)
 		{
-			sprintf(ptr, URI("</br>id      ", "%s (%u)"), id, atom_object->body.id);
+			sprintf(ptr, URI("</br>id      ", "%s (%"PRIu32")"), id, atom_object->body.id);
 			ptr += strlen(ptr);
 		
 			if(newline)
@@ -165,7 +167,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		}
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("otype   ", "%s (%u)"), otype, atom_object->body.otype);
+		sprintf(ptr, URI("otype   ", "%s (%"PRIu32")"), otype, atom_object->body.otype);
 	}
 	else if(atom->type == ui->forge.Tuple)
 	{
@@ -179,7 +181,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		const LV2_Atom_Vector *atom_vector = (const LV2_Atom_Vector *)atom;
 		const char *ctype = _hash_get(ui, atom_vector->body.child_type);
 
-		sprintf(ptr, URI("</br>ctype   ", "%s (%u)"), ctype, atom_vector->body.child_type);
+		sprintf(ptr, URI("</br>ctype   ", "%s (%"PRIu32")"), ctype, atom_vector->body.child_type);
 		ptr += strlen(ptr);
 			
 		if(newline)
@@ -188,7 +190,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 			sprintf(ptr, "</tab>");
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("csize   ", "%u"), atom_vector->body.child_size);
+		sprintf(ptr, URI("csize   ", "%"PRIu32), atom_vector->body.child_size);
 	}
 	else if(atom->type == ui->forge.Sequence)
 	{
@@ -201,13 +203,13 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 	{
 		const LV2_Atom_Int *atom_int = (const LV2_Atom_Int *)atom;
 
-		sprintf(ptr, HIL("</br>value   ", "%d"), atom_int->body);
+		sprintf(ptr, HIL("</br>value   ", "%"PRIi32), atom_int->body);
 	}
 	else if(atom->type == ui->forge.Long)
 	{
 		const LV2_Atom_Long *atom_long = (const LV2_Atom_Long *)atom;
 
-		sprintf(ptr, HIL("</br>value   ", "%ld"), atom_long->body);
+		sprintf(ptr, HIL("</br>value   ", "%"PRIi64), atom_long->body);
 	}
 	else if(atom->type == ui->forge.Float)
 	{
@@ -232,7 +234,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		const LV2_Atom_URID *atom_urid = (const LV2_Atom_URID *)atom;
 		const char *uri = _hash_get(ui, atom_urid->body);
 
-		sprintf(ptr, HIL("</br>value   ", "%u (%s)"), atom_urid->body, uri);
+		sprintf(ptr, HIL("</br>value   ", "%"PRIu32" (%s)"), atom_urid->body, uri);
 	}
 	else if(atom->type == ui->forge.String)
 	{
@@ -299,10 +301,10 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 			sprintf(ptr, "</tab>");
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("datatype", "%s (%u)"), datatype, atom_lit->body.datatype);
+		sprintf(ptr, URI("datatype", "%s (%"PRIu32")"), datatype, atom_lit->body.datatype);
 		ptr += strlen(ptr);
 
-		sprintf(ptr, URI("</tab>lang    ", "%s (%u)"), lang, atom_lit->body.lang);
+		sprintf(ptr, URI("</tab>lang    ", "%s (%"PRIu32")"), lang, atom_lit->body.lang);
 	}
 	else if(atom->type == ui->forge.URI)
 	{
@@ -317,7 +319,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 			strcpy(&str[STRING_OFF], "...");
 		}
 
-		sprintf(ptr, HIL("</br>value   ", "%s (%u)"), str, urid);
+		sprintf(ptr, HIL("</br>value   ", "%s (%"PRIu32")"), str, urid);
 
 		// restore
 		if(atom->size > STRING_MAX)
@@ -420,12 +422,12 @@ _prop_item_label_get(void *data, Evas_Object *obj, const char *part)
 		const char *key = _hash_get(ui, prop->key);
 		const char *context = _hash_get(ui, prop->context);
 
-		sprintf(ptr, URI("key     ", "%s (%u)"), key, prop->key);
+		sprintf(ptr, URI("key     ", "%s (%"PRIu32")"), key, prop->key);
 		ptr += strlen(ptr);
 
 		if(context)
 		{
-			sprintf(ptr, URI("</tab>context ", "%s (%u)"), context, prop->context);
+			sprintf(ptr, URI("</tab>context ", "%s (%"PRIu32")"), context, prop->context);
 			ptr += strlen(ptr);
 		}
 		
@@ -726,7 +728,7 @@ _clear_update(UI *ui, int count)
 		return;
 
 	char *buf = ui->string_buf;
-	sprintf(buf, "Clear (%i of %i)", count, COUNT_MAX);
+	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, COUNT_MAX);
 	elm_object_text_set(ui->clear, buf);
 }
 
