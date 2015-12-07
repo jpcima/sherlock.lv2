@@ -174,6 +174,11 @@ _props_int_get_cb(LV2_Atom_Forge *forge, const void *value)
 {
 	return lv2_atom_forge_int(forge, *(const int32_t *)value);
 }
+static LV2_Atom_Forge_Ref
+_props_bool_get_cb(LV2_Atom_Forge *forge, const void *value)
+{
+	return lv2_atom_forge_bool(forge, *(const int32_t *)value);
+}
 static void
 _props_int_set_cb(props_t *props, void *value, LV2_URID new_type, const void *new_value)
 {
@@ -303,6 +308,16 @@ static LV2_Atom_Forge_Ref
 _props_string_get_cb(LV2_Atom_Forge *forge, const void *value)
 {
 	return lv2_atom_forge_string(forge, (const char *)value, strlen((const char *)value));
+}
+static LV2_Atom_Forge_Ref
+_props_path_get_cb(LV2_Atom_Forge *forge, const void *value)
+{
+	return lv2_atom_forge_path(forge, (const char *)value, strlen((const char *)value));
+}
+static LV2_Atom_Forge_Ref
+_props_uri_get_cb(LV2_Atom_Forge *forge, const void *value)
+{
+	return lv2_atom_forge_uri(forge, (const char *)value, strlen((const char *)value));
 }
 static void
 _props_string_set_cb(props_t *props, void *value, LV2_URID new_type, const void *new_value)
@@ -641,7 +656,7 @@ props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map, void 
 	props->types[ptr].urid = props->urid.atom_bool;
 	props->types[ptr].size = sizeof(int32_t);
 	props->types[ptr].size_cb = NULL;
-	props->types[ptr].get_cb = _props_int_get_cb;
+	props->types[ptr].get_cb = _props_bool_get_cb;
 	props->types[ptr].set_cb = _props_int_set_cb;
 	ptr++;
 
@@ -665,7 +680,7 @@ props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map, void 
 	props->types[ptr].urid = props->urid.atom_path;
 	props->types[ptr].size = 0;
 	props->types[ptr].size_cb = _props_string_size_cb;
-	props->types[ptr].get_cb = _props_string_get_cb;
+	props->types[ptr].get_cb = _props_path_get_cb;
 	props->types[ptr].set_cb = _props_string_set_cb;
 	ptr++;
 
@@ -673,7 +688,7 @@ props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map, void 
 	props->types[ptr].urid = props->urid.atom_uri;
 	props->types[ptr].size = 0;
 	props->types[ptr].size_cb = _props_string_size_cb;
-	props->types[ptr].get_cb = _props_string_get_cb;
+	props->types[ptr].get_cb = _props_uri_get_cb;
 	props->types[ptr].set_cb = _props_string_set_cb;
 	ptr++;
 
