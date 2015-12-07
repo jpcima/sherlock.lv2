@@ -564,10 +564,6 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 	if(ref)
 		lv2_atom_forge_pop(forge, &obj_frame);
 
-	// we direcly set the variable here, too
-	if(ref)
-		ref = _props_get(props, forge, frames, impl);
-
 	return ref;
 }
 
@@ -746,27 +742,24 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 
 		if(!property || (property->body == props->urid.patch_wildcard) )
 		{
-			unsigned i;
-			for(i = 0; i < props->nimpls; i++)
-			{
-				props_impl_t *impl = &props->impls[0];
-				if(impl->def->mode == PROP_MODE_DYNAMIC)
-				{
-					*ref = _props_reg(props, forge, frames, impl);
-					if(impl->change_cb)
-						impl->change_cb(props->data, forge, frames, PROP_EVENT_REGISTER, impl);
-					break;
-				}
-			}
-			for(i = i+1 ; *ref && (i < props->nimpls); i++)
+			if(props->nimpls)
+				*ref = 1; // needed to get loop started
+			for(unsigned i = 0 ; i < props->nimpls; i++)
 			{
 				props_impl_t *impl = &props->impls[i];
+
 				if(impl->def->mode == PROP_MODE_DYNAMIC)
 				{
-					*ref = _props_reg(props, forge, frames, impl);
+					if(*ref)
+						*ref = _props_reg(props, forge, frames, impl);
 					if(impl->change_cb)
 						impl->change_cb(props->data, forge, frames, PROP_EVENT_REGISTER, impl);
 				}
+
+				if(*ref)
+					*ref = _props_get(props, forge, frames, impl);
+				if(impl->change_cb)
+					impl->change_cb(props->data, forge, frames, PROP_EVENT_GET, impl);
 			}
 			return 1;
 		}
