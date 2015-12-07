@@ -42,61 +42,60 @@ struct _plughandle_t {
 		double val4;
 		int32_t val5;
 		int32_t val6;
+		char val7 [256];
 	} dyn;
 
 	struct {
-		int32_t val7;
-		int64_t val8;
-		float val9;
-		double val10;
+		int32_t val1;
+		int64_t val2;
+		float val3;
+		double val4;
+		char val5 [256];
+		char val6 [256];
 	} stat;
 
 	const LV2_Atom_Sequence *event_in;
 	LV2_Atom_Sequence *event_out;
 };
 
-static const props_def_t def1 = {
+static const props_def_t dyn1 = {
 	.label = "Int",
 	.property = PROPS_PREFIX"Int",
 	.access = LV2_PATCH__writable,
 	.type = LV2_ATOM__Int,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.i = 0,
-	.maximum.i = 10,
-	.scale_points = NULL
+	.maximum.i = 10
 };
 
-static const props_def_t def2 = {
+static const props_def_t dyn2 = {
 	.label = "Long",
 	.property = PROPS_PREFIX"Long",
 	.access = LV2_PATCH__writable,
 	.type = LV2_ATOM__Long,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.h = 0,
-	.maximum.h = 10,
-	.scale_points = NULL
+	.maximum.h = 10
 };
 
-static const props_def_t def3 = {
+static const props_def_t dyn3 = {
 	.label = "Float",
 	.property = PROPS_PREFIX"Float",
 	.access = LV2_PATCH__readable,
 	.type = LV2_ATOM__Float,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.f = -1.f,
-	.maximum.f = 1.f,
-	.scale_points = NULL
+	.maximum.f = 1.f
 };
 
-static const props_def_t def4 = {
+static const props_def_t dyn4 = {
 	.label = "Double",
 	.property = PROPS_PREFIX"Double",
 	.access = LV2_PATCH__readable,
 	.type = LV2_ATOM__Double,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.d = -1.0,
-	.maximum.d = 1.0,
-	.scale_points = NULL
+	.maximum.d = 1.0
 };
 
 static const props_scale_point_t scale_points5 [] = {
@@ -107,7 +106,7 @@ static const props_scale_point_t scale_points5 [] = {
 	{.label = NULL } // sentinel
 };
 
-static const props_def_t def5 = {
+static const props_def_t dyn5 = {
 	.label = "scaleInt",
 	.property = PROPS_PREFIX"scaleInt",
 	.access = LV2_PATCH__writable,
@@ -118,18 +117,26 @@ static const props_def_t def5 = {
 	.scale_points = scale_points5
 };
 
-static const props_def_t def6 = {
+static const props_def_t dyn6 = {
 	.label = "Bool",
 	.property = PROPS_PREFIX"Bool",
 	.access = LV2_PATCH__writable,
 	.type = LV2_ATOM__Bool,
 	.mode = PROP_MODE_DYNAMIC,
 	.minimum.d = 0,
-	.maximum.d = 1,
-	.scale_points = NULL
+	.maximum.d = 1
 };
 
-static const props_def_t def7 = {
+static const props_def_t dyn7 = {
+	.label = "String",
+	.property = PROPS_PREFIX"String",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__String,
+	.mode = PROP_MODE_DYNAMIC,
+	.maximum.s = 256, // strlen
+};
+
+static const props_def_t stat1 = {
 	.label = "statInt",
 	.property = PROPS_PREFIX"statInt",
 	.access = LV2_PATCH__writable,
@@ -137,7 +144,7 @@ static const props_def_t def7 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const props_def_t def8 = {
+static const props_def_t stat2 = {
 	.label = "statLong",
 	.property = PROPS_PREFIX"statLong",
 	.access = LV2_PATCH__readable,
@@ -145,7 +152,7 @@ static const props_def_t def8 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const props_def_t def9 = {
+static const props_def_t stat3 = {
 	.label = "statFloat",
 	.property = PROPS_PREFIX"statFloat",
 	.access = LV2_PATCH__writable,
@@ -153,12 +160,30 @@ static const props_def_t def9 = {
 	.mode = PROP_MODE_STATIC
 };
 
-static const props_def_t def10 = {
+static const props_def_t stat4 = {
 	.label = "statDouble",
 	.property = PROPS_PREFIX"statDouble",
 	.access = LV2_PATCH__readable,
 	.type = LV2_ATOM__Double,
 	.mode = PROP_MODE_STATIC
+};
+
+static const props_def_t stat5 = {
+	.label = "statString",
+	.property = PROPS_PREFIX"statString",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__String,
+	.mode = PROP_MODE_STATIC,
+	.maximum.s = 256 // strlen
+};
+
+static const props_def_t stat6 = {
+	.label = "statPath",
+	.property = PROPS_PREFIX"statPath",
+	.access = LV2_PATCH__writable,
+	.type = LV2_ATOM__Path,
+	.mode = PROP_MODE_STATIC,
+	.maximum.s = 256 // strlen
 };
 
 const unsigned max_nprops = 32;
@@ -183,9 +208,9 @@ _log_printf(plughandle_t *handle, LV2_URID type, const char *fmt, ...)
 	return ret;
 }
 
-static LV2_Atom_Forge_Ref
+static void
 _intercept(void *data, LV2_Atom_Forge *forge, int64_t frames,
-	props_event_t event, props_impl_t *impl, const LV2_Atom *value)
+	props_event_t event, props_impl_t *impl)
 {
 	plughandle_t *handle = data;
 
@@ -193,22 +218,30 @@ _intercept(void *data, LV2_Atom_Forge *forge, int64_t frames,
 	{
 		case PROP_EVENT_GET:
 		{
-			_log_printf(handle, handle->log_trace, "intercept patch:Get: %s", impl->def->label);
+			_log_printf(handle, handle->log_trace, "GET     : %s", impl->def->label);
 			break;
 		}
 		case PROP_EVENT_SET:
 		{
-			_log_printf(handle, handle->log_trace, "intercept patch:Set: %s", impl->def->label);
+			_log_printf(handle, handle->log_trace, "SET     : %s", impl->def->label);
 			break;
 		}
-		case PROP_EVENT_REG:
+		case PROP_EVENT_REGISTER:
 		{
-			_log_printf(handle, handle->log_trace, "intercept patch:Patch: %s", impl->def->label);
+			_log_printf(handle, handle->log_trace, "REGISTER: %s", impl->def->label);
+			break;
+		}
+		case PROP_EVENT_SAVE:
+		{
+			_log_printf(handle, handle->log_trace, "SAVE    : %s", impl->def->label);
+			break;
+		}
+		case PROP_EVENT_RESTORE:
+		{
+			_log_printf(handle, handle->log_trace, "RESTORE : %s", impl->def->label);
 			break;
 		}
 	}
-
-	return props_default_cb(handle->props, forge, frames, event, impl, value);
 }
 
 static LV2_Handle
@@ -245,7 +278,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->log_trace = handle->map->map(handle->map->handle, LV2_LOG__Trace);
 
 	lv2_atom_forge_init(&handle->forge, handle->map);
-	handle->props = props_new(max_nprops, descriptor->URI, handle->map);
+	handle->props = props_new(max_nprops, descriptor->URI, handle->map, handle);
 	if(!handle->props)
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
@@ -259,23 +292,22 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->dyn.val4 = 0.3;
 	handle->dyn.val5 = 0;
 	handle->dyn.val6 = true;
+	handle->dyn.val7[0] = '\0';
 
-	handle->stat.val7 = 4;
-	handle->stat.val8 = 5;
-	handle->stat.val9 = 0.4f;
-	handle->stat.val10 = 0.5;
+	props_register(handle->props, &dyn1, _intercept, &handle->dyn.val1);
+	props_register(handle->props, &dyn2, _intercept, &handle->dyn.val2);
+	props_register(handle->props, &dyn3, _intercept, &handle->dyn.val3);
+	props_register(handle->props, &dyn4, _intercept, &handle->dyn.val4);
+	props_register(handle->props, &dyn5, _intercept, &handle->dyn.val5);
+	props_register(handle->props, &dyn6, _intercept, &handle->dyn.val6);
+	props_register(handle->props, &dyn7, _intercept, &handle->dyn.val7);
 
-	props_register(handle->props, &def1, _intercept, &handle->dyn.val1);
-	props_register(handle->props, &def2, _intercept, &handle->dyn.val2);
-	props_register(handle->props, &def3, _intercept, &handle->dyn.val3);
-	props_register(handle->props, &def4, _intercept, &handle->dyn.val4);
-	props_register(handle->props, &def5, _intercept, &handle->dyn.val5);
-	props_register(handle->props, &def6, _intercept, &handle->dyn.val6);
-
-	props_register(handle->props, &def7, _intercept, &handle->stat.val7);
-	props_register(handle->props, &def8, _intercept, &handle->stat.val8);
-	props_register(handle->props, &def9, _intercept, &handle->stat.val9);
-	props_register(handle->props, &def10, _intercept, &handle->stat.val10);
+	props_register(handle->props, &stat1, _intercept, &handle->stat.val1);
+	props_register(handle->props, &stat2, _intercept, &handle->stat.val2);
+	props_register(handle->props, &stat3, _intercept, &handle->stat.val3);
+	props_register(handle->props, &stat4, _intercept, &handle->stat.val4);
+	props_register(handle->props, &stat5, _intercept, &handle->stat.val5);
+	props_register(handle->props, &stat6, _intercept, &handle->stat.val6);
 
 	props_sort(handle->props);
 
@@ -315,7 +347,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
 		if(ref)
-			props_advance(handle->props, &handle->forge, ev->time.frames, obj, &ref, handle); //TODO handle return
+			props_advance(handle->props, &handle->forge, ev->time.frames, obj, &ref); //TODO handle return
 	}
 	if(ref)
 		lv2_atom_forge_pop(&handle->forge, &frame);
