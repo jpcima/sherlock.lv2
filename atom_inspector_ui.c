@@ -246,6 +246,8 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 	else if(atom->type == ui->forge.String)
 	{
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
+		if(atom->size == 0)
+			str = "";
 
 		// truncate
 		char tmp[4] = {'\0'};
@@ -264,6 +266,8 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 	else if(atom->type == ui->forge.Path)
 	{
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
+		if(atom->size == 0)
+			str = "";
 
 		// truncate
 		char tmp[4] = {'\0'};
@@ -284,6 +288,8 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 		const LV2_Atom_Literal *atom_lit = (const LV2_Atom_Literal *)atom;
 
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_Literal, atom);
+		if(atom->size == sizeof(LV2_Atom_Literal_Body))
+			str = "";
 		const char *datatype = _hash_get(ui, atom_lit->body.datatype);
 		const char *lang = _hash_get(ui, atom_lit->body.lang);
 
@@ -316,6 +322,8 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 	else if(atom->type == ui->forge.URI)
 	{
 		char *str = LV2_ATOM_CONTENTS(LV2_Atom_String, atom);
+		if(atom->size == 0)
+			str = "";
 		LV2_URID urid = ui->map->map(ui->map->handle, str); //TODO add hashing
 
 		// truncate

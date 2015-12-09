@@ -159,7 +159,10 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 				{
 					if(itm->type == ui->forge.String)
 					{
-						sprintf(ptr, TYPE(" s:", "%s"), LV2_ATOM_BODY_CONST(itm));
+						const char *str = LV2_ATOM_BODY_CONST(itm);
+						if(itm->size == 0)
+							str = "";
+						sprintf(ptr, TYPE(" s:", "%s"), str);
 						ptr += strlen(ptr);
 					}
 					break;
