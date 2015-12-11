@@ -58,6 +58,10 @@ sherlock:atom_inspector_eo
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
 		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
 		ui:protocol atom:eventTransfer
 	] ;
 	lv2:requiredFeature urid:map, urid:unmap .
@@ -67,6 +71,10 @@ sherlock:atom_inspector_ui
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
 		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
 		ui:protocol atom:eventTransfer
 	] ;
 	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
@@ -77,6 +85,10 @@ sherlock:atom_inspector_x11
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
 		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
 		ui:protocol atom:eventTransfer
 	] ;
 	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
@@ -88,6 +100,10 @@ sherlock:atom_inspector_kx
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
 		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
 		ui:protocol atom:eventTransfer ;
 	] ;
 	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
