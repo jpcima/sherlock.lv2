@@ -231,10 +231,21 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 				{
 					if(itm->type == ui->midi_event)
 					{
-						const uint8_t *m = LV2_ATOM_BODY_CONST(itm);
-						sprintf(ptr,
-							TYPE(" m:", PUNKT("[") "%02"PRIX8" %02"PRIX8" %02"PRIX8" %02"PRIX8 PUNKT("]")),
-							m[0], m[1], m[2], m[3]);
+						const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
+						sprintf(ptr, TYPE_PRE(" m:", PUNKT("[")));
+						ptr += strlen(ptr);
+						if(itm->size)
+						{
+							sprintf(ptr, "%02"PRIX8, chunk[0]);
+							ptr += strlen(ptr);
+
+							for(unsigned i=1; i<itm->size; i++)
+							{
+								sprintf(ptr, " %02"PRIX8, chunk[i]);
+								ptr += strlen(ptr);
+							}
+						}
+						sprintf(ptr, TYPE_POST(PUNKT("]")));
 						ptr += strlen(ptr);
 					}
 					break;
