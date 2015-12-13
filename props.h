@@ -838,6 +838,9 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 	{
 		props_impl_t *impl = &props->impls[i];
 
+		if(impl->access == props->urid.patch_readable)
+			continue; // skip read-only, as it makes no sense to restore them
+
 		uint32_t size = impl->type->size_cb
 			? impl->type->size_cb(impl->value)
 			: impl->type->size;
@@ -858,6 +861,9 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 	for(unsigned i = 0; i < props->nimpls; i++)
 	{
 		props_impl_t *impl = &props->impls[i];
+
+		if(impl->access == props->urid.patch_readable)
+			continue; // skip read-only, as it makes no sense to restore them
 
 		size_t size;
 		uint32_t type;
