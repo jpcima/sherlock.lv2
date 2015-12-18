@@ -26,6 +26,7 @@
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 #include <lv2/lv2plug.in/ns/ext/patch/patch.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
+#include <lv2/lv2plug.in/ns/extensions/units/units.h>
 
 // definitions
 #define PROPS_TYPE_N 9
@@ -98,6 +99,7 @@ struct _props_def_t {
 	const char *label;
 	const char *property;
 	const char *access;
+	const char *unit;
 	const char *type;
 	props_mode_t mode;
 
@@ -117,6 +119,7 @@ struct _props_type_t {
 struct _props_impl_t {
 	LV2_URID property;
 	LV2_URID access;
+	LV2_URID unit;
 	const props_type_t *type;
 	const props_def_t *def;
 	props_change_cb_t change_cb;
@@ -157,6 +160,8 @@ struct _props_t {
 		LV2_URID atom_string;
 		LV2_URID atom_path;
 		LV2_URID atom_uri;
+
+		LV2_URID units_unit;
 	} urid;
 
 	LV2_URID_Map *map;
@@ -497,6 +502,11 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
 
 			if(ref)
+				ref = lv2_atom_forge_key(forge, props->urid.units_unit);
+			if(ref)
+				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
+
+			if(ref)
 				ref = lv2_atom_forge_key(forge, props->urid.lv2_scale_point);
 			if(ref)
 				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
@@ -531,6 +541,14 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 				ref = lv2_atom_forge_key(forge, props->urid.lv2_maximum);
 			if(ref)
 				ref = impl->type->get_cb(forge, &def->maximum);
+
+			if(props->urid.units_unit)
+			{
+				if(ref)
+					ref = lv2_atom_forge_key(forge, props->urid.units_unit);
+				if(ref)
+					ref = lv2_atom_forge_urid(forge, impl->unit);
+			}
 
 			if(def->scale_points)
 			{
@@ -614,6 +632,8 @@ props_new(const size_t max_nimpls, const char *subject, LV2_URID_Map *map, void 
 	props->urid.atom_string = map->map(map->handle, LV2_ATOM__String);
 	props->urid.atom_path = map->map(map->handle, LV2_ATOM__Path);
 	props->urid.atom_uri = map->map(map->handle, LV2_ATOM__URI);
+
+	props->urid.units_unit = map->map(map->handle, LV2_UNITS__unit);
 
 	// Int
 	unsigned ptr = 0;
@@ -705,7 +725,7 @@ props_clear(props_t *props)
 {
 	for(unsigned i = 0; i< props->nimpls; i++)
 	{
-		props_impl_t *impl = &props->impls[i];
+		//props_impl_t *impl = &props->impls[i];
 		//TODO deregister?
 	}
 
@@ -814,10 +834,14 @@ props_register(props_t *props, const props_def_t *def, props_change_cb_t change_
 	if(props->nimpls >= props->max_nimpls)
 		return -1;
 
+	if(!def || !def->property || !def->access || !def->type || !value)
+		return -1;
+
 	props_impl_t *impl = &props->impls[props->nimpls++];
-	
+
 	impl->property = props->map->map(props->map->handle, def->property);
 	impl->access = props->map->map(props->map->handle, def->access);
+	impl->unit = def->unit ? props->map->map(props->map->handle, def->unit) : 0;
 	const LV2_URID type = props->map->map(props->map->handle, def->type);
 	impl->type = bsearch(&type, props->types, PROPS_TYPE_N, sizeof(props_type_t), _type_cmp);
 	assert(impl->type != NULL);

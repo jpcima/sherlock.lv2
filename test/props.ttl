@@ -24,6 +24,7 @@
 @prefix state:		<http://lv2plug.in/ns/ext/state#> .
 @prefix patch:		<http://lv2plug.in/ns/ext/patch#> .
 @prefix log:			<http://lv2plug.in/ns/ext/log#> .
+@prefix units:		<http://lv2plug.in/ns/extensions/units#> .
 @prefix xsd:			<http://www.w3.org/2001/XMLSchema#> .
 
 @prefix lic:			<http://opensource.org/licenses/> .
@@ -48,6 +49,7 @@ props:statInt
 	a lv2:Parameter ;
 	rdfs:range atom:Int ;
 	rdfs:label "statInt" ;
+	units:unit units:hz ;
 	lv2:minimum 0 ;
 	lv2:maximum 10 .
 
@@ -55,6 +57,7 @@ props:statLong
 	a lv2:Parameter ;
 	rdfs:range atom:Long ;
 	rdfs:label "statLong" ;
+	units:unit units:khz ;
 	lv2:minimum 0 ;
 	lv2:maximum 10 .
 
@@ -62,6 +65,7 @@ props:statFloat
 	a lv2:Parameter ;
 	rdfs:range atom:Float ;
 	rdfs:label "statFloat" ;
+	units:unit units:mhz ;
 	lv2:minimum -0.5 ;
 	lv2:maximum 0.5 .
 
@@ -69,6 +73,7 @@ props:statDouble
 	a lv2:Parameter ;
 	rdfs:range atom:Double ;
 	rdfs:label "statDouble" ;
+	units:unit units:db ;
 	lv2:minimum -1.0 ;
 	lv2:maximum 1.0 .
 
