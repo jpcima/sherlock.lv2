@@ -920,6 +920,14 @@ static inline LV2_State_Status
 props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store,
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features)
 {
+	const LV2_State_Map_Path *map_path = NULL;
+
+	for(unsigned i = 0; features[i]; i++)
+	{
+		if(!strcmp(features[i]->URI, LV2_STATE__mapPath))
+			map_path = features[i]->data;
+	}
+
 	for(unsigned i = 0; i < props->nimpls; i++)
 	{
 		props_impl_t *impl = &props->impls[i];
@@ -931,7 +939,22 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 			? impl->type->size_cb(impl->value)
 			: impl->type->size;
 
-		store(state, impl->property, impl->value, size, impl->type->urid, flags);
+		if( map_path && (impl->type->urid == forge->Path) )
+		{
+			const char *path = strstr(impl->value, "file://")
+				? impl->value + 7 // skip "file://"
+				: impl->value;
+			char *abstract = map_path->abstract_path(map_path->handle, path);
+			if(abstract)
+			{
+				store(state, impl->property, abstract, strlen(abstract) + 1, impl->type->urid, flags);
+				free(abstract);
+			}
+		}
+		else // !Path
+		{
+			store(state, impl->property, impl->value, size, impl->type->urid, flags);
+		}
 
 		if(impl->change_cb)
 			impl->change_cb(props->data, forge, 0, PROP_EVENT_SAVE, impl);
@@ -944,6 +967,14 @@ static inline LV2_State_Status
 props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function retrieve,
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features)
 {
+	const LV2_State_Map_Path *map_path = NULL;
+
+	for(unsigned i = 0; features[i]; i++)
+	{
+		if(!strcmp(features[i]->URI, LV2_STATE__mapPath))
+			map_path = features[i]->data;
+	}
+
 	for(unsigned i = 0; i < props->nimpls; i++)
 	{
 		props_impl_t *impl = &props->impls[i];
@@ -958,7 +989,20 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 
 		if(value)
 		{
-			_props_set(props, forge, impl, type, value);
+			if( map_path && (impl->type->urid == forge->Path) )
+			{
+				char *absolute = map_path->absolute_path(map_path->handle, value);
+				if(absolute)
+				{
+					_props_set(props, forge, impl, type, absolute);
+					free(absolute);
+				}
+			}
+			else // !Path
+			{
+				_props_set(props, forge, impl, type, value);
+			}
+
 			if(impl->change_cb)
 				impl->change_cb(props->data, forge, 0, PROP_EVENT_RESTORE, impl);
 		}

@@ -264,10 +264,13 @@ _intercept_dyn1(void *data, LV2_Atom_Forge *forge, int64_t frames,
 
 	_intercept(data, forge, frames, event, impl);
 
-	handle->dyn.val2 = handle->dyn.val1 * 2;
+	if( (event == PROP_EVENT_SET) || (event == PROP_EVENT_RESTORE) )
+	{
+		handle->dyn.val2 = handle->dyn.val1 * 2;
 
-	if(handle->ref)
-		handle->ref = props_set(handle->props, forge, frames, handle->urid.dyn2);
+		if(handle->ref)
+			handle->ref = props_set(handle->props, forge, frames, handle->urid.dyn2);
+	}
 }
 
 static void
@@ -276,12 +279,15 @@ _intercept_dyn3(void *data, LV2_Atom_Forge *forge, int64_t frames,
 {
 	plughandle_t *handle = data;
 
-	_intercept(data, forge, frames, event, impl);
+	if( (event == PROP_EVENT_SET) || (event == PROP_EVENT_RESTORE) )
+	{
+		_intercept(data, forge, frames, event, impl);
 
-	handle->dyn.val4 = handle->dyn.val3 * 2;
+		handle->dyn.val4 = handle->dyn.val3 * 2;
 
-	if(handle->ref)
-		handle->ref = props_set(handle->props, forge, frames, handle->urid.dyn4);
+		if(handle->ref)
+			handle->ref = props_set(handle->props, forge, frames, handle->urid.dyn4);
+	}
 }
 
 static void
@@ -290,12 +296,15 @@ _intercept_stat1(void *data, LV2_Atom_Forge *forge, int64_t frames,
 {
 	plughandle_t *handle = data;
 
-	_intercept(data, forge, frames, event, impl);
+	if( (event == PROP_EVENT_SET) || (event == PROP_EVENT_RESTORE) )
+	{
+		_intercept(data, forge, frames, event, impl);
 
-	handle->stat.val2 = handle->stat.val1 * 2;
+		handle->stat.val2 = handle->stat.val1 * 2;
 
-	if(handle->ref)
-		handle->ref = props_set(handle->props, forge, frames, handle->urid.stat2);
+		if(handle->ref)
+			handle->ref = props_set(handle->props, forge, frames, handle->urid.stat2);
+	}
 }
 
 static void
@@ -304,12 +313,34 @@ _intercept_stat3(void *data, LV2_Atom_Forge *forge, int64_t frames,
 {
 	plughandle_t *handle = data;
 
-	_intercept(data, forge, frames, event, impl);
+	if( (event == PROP_EVENT_SET) || (event == PROP_EVENT_RESTORE) )
+	{
+		_intercept(data, forge, frames, event, impl);
 
-	handle->stat.val4 = handle->stat.val3 * 2;
+		handle->stat.val4 = handle->stat.val3 * 2;
 
-	if(handle->ref)
-		handle->ref = props_set(handle->props, forge, frames, handle->urid.stat4);
+		if(handle->ref)
+			handle->ref = props_set(handle->props, forge, frames, handle->urid.stat4);
+	}
+}
+
+static void
+_intercept_stat6(void *data, LV2_Atom_Forge *forge, int64_t frames,
+	props_event_t event, props_impl_t *impl)
+{
+	plughandle_t *handle = data;
+
+	if( (event == PROP_EVENT_SET) || (event == PROP_EVENT_RESTORE) )
+	{
+		_intercept(data, forge, frames, event, impl);
+
+		const char *path = strstr(handle->stat.val6, "file://")
+			? handle->stat.val6 + 7 // skip "file://"
+			: handle->stat.val6;
+		FILE *f = fopen(path, "wb"); // create empty file
+		if(f)
+			fclose(f);
+	}
 }
 
 static LV2_Handle
@@ -379,7 +410,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		&& (handle->urid.stat4 = props_register(handle->props, &stat4, _intercept,
 			&handle->stat.val4))
 		&& props_register(handle->props, &stat5, _intercept, &handle->stat.val5)
-		&& props_register(handle->props, &stat6, _intercept, &handle->stat.val6) )
+		&& props_register(handle->props, &stat6, _intercept_stat6, &handle->stat.val6) )
 	{
 		props_sort(handle->props);
 	}
