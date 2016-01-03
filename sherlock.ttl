@@ -64,6 +64,8 @@ sherlock:atom_inspector_eo
 		ui:notifyType patch:Message ;
 		ui:protocol atom:eventTransfer
 	] ;
+	lv2:extensionData ui:resize ;
+	lv2:optionalFeature ui:resize ;
 	lv2:requiredFeature urid:map, urid:unmap .
 sherlock:atom_inspector_ui
 	a ui:UI ;
@@ -93,7 +95,7 @@ sherlock:atom_inspector_x11
 	] ;
 	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
 	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface .
+  lv2:extensionData ui:idleInterface, ui:resize .
 sherlock:atom_inspector_kx
 	a kx:Widget ;
 	ui:portNotification [
@@ -198,6 +200,8 @@ sherlock:midi_inspector_eo
 		ui:notifyType midi:MidiEvent ;
 		ui:protocol atom:eventTransfer
 	] ;
+	lv2:extensionData ui:resize ;
+	lv2:optionalFeature ui:resize ;
 	lv2:requiredFeature urid:map .
 sherlock:midi_inspector_ui
 	a ui:UI ;
@@ -219,7 +223,7 @@ sherlock:midi_inspector_x11
 	] ;
 	lv2:requiredFeature ui:idleInterface, urid:map ;
 	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface .
+  lv2:extensionData ui:idleInterface, ui:resize .
 sherlock:midi_inspector_kx
 	a kx:Widget ;
 	ui:portNotification [
@@ -280,6 +284,8 @@ sherlock:osc_inspector_eo
 		ui:notifyType osc:Event ;
 		ui:protocol atom:eventTransfer
 	] ;
+	lv2:extensionData ui:resize ;
+	lv2:optionalFeature ui:resize ;
 	lv2:requiredFeature urid:map .
 sherlock:osc_inspector_ui
 	a ui:UI ;
@@ -301,7 +307,7 @@ sherlock:osc_inspector_x11
 	] ;
 	lv2:requiredFeature ui:idleInterface, urid:map ;
 	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface .
+  lv2:extensionData ui:idleInterface, ui:resize .
 sherlock:osc_inspector_kx
 	a kx:Widget ;
 	ui:portNotification [
