@@ -837,7 +837,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		if( (subject && props->urid.subject) && (subject->body != props->urid.subject) )
 			return 0;
 
-		if(!property || (property->body == props->urid.patch_wildcard) )
+		if(!property)
 		{
 			if(props->nimpls)
 				*ref = 1; // needed to get loop started
@@ -860,7 +860,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			}
 			return 1;
 		}
-		else // !wildcard
+		else
 		{
 			props_impl_t *impl = _props_impl_search(props, property->body);
 			if(impl)
@@ -921,6 +921,9 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features)
 {
 	const LV2_State_Map_Path *map_path = NULL;
+
+	// set POD flag if not already set by host
+	flags |= LV2_STATE_IS_POD;
 
 	for(unsigned i = 0; features[i]; i++)
 	{
