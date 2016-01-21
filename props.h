@@ -112,6 +112,7 @@ struct _props_scale_point_t {
 
 struct _props_def_t {
 	const char *label;
+	const char *comment;
 	const char *property;
 	const char *access;
 	const char *unit;
@@ -165,6 +166,7 @@ struct _props_t {
 
 		LV2_URID rdfs_label;
 		LV2_URID rdfs_range;
+		LV2_URID rdfs_comment;
 
 		LV2_URID lv2_minimum;
 		LV2_URID lv2_maximum;
@@ -581,6 +583,11 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
 
 			if(ref)
+				ref = lv2_atom_forge_key(forge, props->urid.rdfs_comment);
+			if(ref)
+				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
+
+			if(ref)
 				ref = lv2_atom_forge_key(forge, props->urid.lv2_minimum);
 			if(ref)
 				ref = lv2_atom_forge_urid(forge, props->urid.patch_wildcard);
@@ -619,6 +626,14 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 					ref = lv2_atom_forge_key(forge, props->urid.rdfs_label);
 				if(ref)
 					ref = lv2_atom_forge_string(forge, def->label, strlen(def->label));
+			}
+
+			if(def->comment)
+			{
+				if(ref)
+					ref = lv2_atom_forge_key(forge, props->urid.rdfs_comment);
+				if(ref)
+					ref = lv2_atom_forge_string(forge, def->comment, strlen(def->comment));
 			}
 
 			if(ref)
@@ -709,6 +724,8 @@ props_init(props_t *props, const size_t max_nimpls, const char *subject,
 		"http://www.w3.org/2000/01/rdf-schema#label");
 	props->urid.rdfs_range = map->map(map->handle,
 		"http://www.w3.org/2000/01/rdf-schema#range");
+	props->urid.rdfs_comment = map->map(map->handle,
+		"http://www.w3.org/2000/01/rdf-schema#comment");
 
 	props->urid.lv2_minimum = map->map(map->handle, LV2_CORE__minimum);
 	props->urid.lv2_maximum = map->map(map->handle, LV2_CORE__maximum);
