@@ -897,8 +897,6 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 
 		if(!property)
 		{
-			if(props->nimpls)
-				*ref = 1; // needed to get loop started
 			for(unsigned i = 0; i < props->nimpls; i++)
 			{
 				props_impl_t *impl = &props->impls[i];
