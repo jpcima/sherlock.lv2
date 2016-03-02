@@ -68,4 +68,11 @@ extern const LV2UI_Descriptor osc_inspector_ui;
 extern const LV2UI_Descriptor osc_inspector_x11;
 extern const LV2UI_Descriptor osc_inspector_kx;
 
+typedef struct _position_t position_t;
+
+struct _position_t {
+	uint64_t offset;
+	uint32_t nsamples;
+};
+
 #endif // _SHERLOCK_LV2_H

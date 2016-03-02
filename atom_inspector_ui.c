@@ -37,13 +37,7 @@
 #    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-typedef struct _position_t position_t;
 typedef struct _UI UI;
-
-struct _position_t {
-	uint64_t offset;
-	uint32_t nsamples;
-};
 
 struct _UI {
 	eo_ui_t eoui;
@@ -672,7 +666,7 @@ _seq_item_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static void
-_item_del(void *data, Evas_Object *obj)
+_del(void *data, Evas_Object *obj)
 {
 	free(data);
 }
@@ -1090,7 +1084,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_list->func.text_get = _list_item_label_get;
 		ui->itc_list->func.content_get = _seq_item_content_get;
 		ui->itc_list->func.state_get = NULL;
-		ui->itc_list->func.del = _item_del;
+		ui->itc_list->func.del = _del;
 	}
 
 	ui->itc_group = elm_genlist_item_class_new();
@@ -1100,7 +1094,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_group->func.text_get = NULL;
 		ui->itc_group->func.content_get = _group_item_content_get;
 		ui->itc_group->func.state_get = NULL;
-		ui->itc_group->func.del = _item_del;
+		ui->itc_group->func.del = _del;
 	}
 
 	ui->itc_sherlock = elm_genlist_item_class_new();
@@ -1110,7 +1104,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_sherlock->func.text_get = _seq_item_label_get;
 		ui->itc_sherlock->func.content_get = _seq_item_content_get;
 		ui->itc_sherlock->func.state_get = NULL;
-		ui->itc_sherlock->func.del = _item_del;
+		ui->itc_sherlock->func.del = _del;
 	}
 
 	ui->itc_seq = elm_genlist_item_class_new();
@@ -1140,7 +1134,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_vec->func.text_get = _atom_item_label_get;
 		ui->itc_vec->func.content_get = _atom_item_content_get;
 		ui->itc_vec->func.state_get = NULL;
-		ui->itc_vec->func.del = _item_del;
+		ui->itc_vec->func.del = _del;
 	}
 	
 	ui->itc_atom = elm_genlist_item_class_new();
@@ -1261,7 +1255,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 		int n = elm_genlist_items_count(ui->list);
 
 		Elm_Object_Item *itm = NULL;
-
 		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
 		{
 			position_t *pos = malloc(sizeof(position_t));

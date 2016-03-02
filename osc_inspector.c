@@ -32,6 +32,7 @@ struct _handle_t {
 	LV2_Atom_Forge forge;
 
 	osc_forge_t oforge;
+	uint64_t offset;
 };
 
 static LV2_Handle
@@ -87,7 +88,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	handle_t *handle = (handle_t *)instance;
 	uint32_t capacity;
 	LV2_Atom_Forge *forge = &handle->forge;
-	LV2_Atom_Forge_Frame frame [2];
+	LV2_Atom_Forge_Frame frame [3];
 	LV2_Atom_Forge_Ref ref;
 
 	// size of input sequence
@@ -103,11 +104,20 @@ run(LV2_Handle instance, uint32_t nsamples)
 	// forge whole sequence as single event
 	capacity = handle->notify->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
+
+	bool has_osc = false;
+
 	ref = lv2_atom_forge_sequence_head(forge, &frame[0], 0);
 	if(ref)
 		ref = lv2_atom_forge_frame_time(forge, 0);
 	if(ref)
-		ref = lv2_atom_forge_sequence_head(forge, &frame[1], 0);
+		ref = lv2_atom_forge_tuple(forge, &frame[1]);
+	if(ref)
+		ref = lv2_atom_forge_long(forge, handle->offset);
+	if(ref)
+		ref = lv2_atom_forge_int(forge, nsamples);
+	if(ref)
+		ref = lv2_atom_forge_sequence_head(forge, &frame[2], 0);
 
 	// only serialize OSC events to UI
 	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
@@ -117,6 +127,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 		if(  osc_atom_is_bundle(&handle->oforge, obj)
 			|| osc_atom_is_message(&handle->oforge, obj) )
 		{
+			has_osc = true;
 			if(ref)
 				ref = lv2_atom_forge_frame_time(forge, ev->time.frames);
 			if(ref)
@@ -127,11 +138,18 @@ run(LV2_Handle instance, uint32_t nsamples)
 	}
 
 	if(ref)
+		lv2_atom_forge_pop(forge, &frame[2]);
+	if(ref)
 		lv2_atom_forge_pop(forge, &frame[1]);
 	if(ref)
 		lv2_atom_forge_pop(forge, &frame[0]);
 	else
 		lv2_atom_sequence_clear(handle->notify);
+
+	if(!has_osc)
+		lv2_atom_sequence_clear(handle->notify);
+
+	handle->offset += nsamples;
 }
 
 static void

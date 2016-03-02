@@ -46,6 +46,7 @@ struct _UI {
 	Evas_Object *popup;
 
 	Elm_Genlist_Item_Class *itc_midi;
+	Elm_Genlist_Item_Class *itc_group;
 
 	char string_buf [STRING_BUF_SIZE];
 	char *logo_path;
@@ -466,8 +467,51 @@ _midi_content_get(void *data, Evas_Object *obj, const char *part)
 	return NULL;
 }
 
+static Evas_Object * 
+_group_item_content_get(void *data, Evas_Object *obj, const char *part)
+{
+	UI *ui = evas_object_data_get(obj, "ui");
+	const position_t *pos = data;
+
+	if(!ui)
+		return NULL;
+
+	if(!strcmp(part, "elm.swallow.icon"))
+	{
+		char *buf = ui->string_buf;
+
+		sprintf(buf, "<color=#000 font=Mono>0x%"PRIx64"</color>", pos->offset);
+
+		Evas_Object *label = elm_label_add(obj);
+		if(label)
+		{
+			elm_object_part_text_set(label, "default", buf);
+			evas_object_show(label);
+		}
+
+		return label;
+	}
+	else if(!strcmp(part, "elm.swallow.end"))
+	{
+		char *buf = ui->string_buf;
+
+		sprintf(buf, "<color=#0bb font=Mono>%"PRIu32"</color>", pos->nsamples);
+
+		Evas_Object *label = elm_label_add(obj);
+		if(label)
+		{
+			elm_object_part_text_set(label, "default", buf);
+			evas_object_show(label);
+		}
+
+		return label;
+	}
+
+	return NULL;
+}
+
 static void
-_midi_del(void *data, Evas_Object *obj)
+_del(void *data, Evas_Object *obj)
 {
 	free(data);
 }
@@ -694,7 +738,17 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		ui->itc_midi->func.text_get = _midi_label_get;
 		ui->itc_midi->func.content_get = _midi_content_get;
 		ui->itc_midi->func.state_get = NULL;
-		ui->itc_midi->func.del = _midi_del;
+		ui->itc_midi->func.del = _del;
+	}
+
+	ui->itc_group = elm_genlist_item_class_new();
+	if(ui->itc_group)
+	{
+		ui->itc_group->item_style = "default_style";
+		ui->itc_group->func.text_get = NULL;
+		ui->itc_group->func.content_get = _group_item_content_get;
+		ui->itc_group->func.state_get = NULL;
+		ui->itc_group->func.del = _del;
 	}
 
 	sprintf(ui->string_buf, "%s/omk_logo_256x256.png", bundle_path);
@@ -734,8 +788,26 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			
 	if( (i == 2) && (urid == ui->event_transfer) && ui->list)
 	{
-		const LV2_Atom_Sequence *seq = buf;
+		const LV2_Atom_Tuple *tup = buf;
+		const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
+		const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
+		const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
 		int n = elm_genlist_items_count(ui->list);
+
+		Elm_Object_Item *itm = NULL;
+		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
+		{
+			position_t *pos = malloc(sizeof(position_t));
+			if(pos)
+			{
+				pos->offset = offset->body;
+				pos->nsamples = nsamples->body;
+
+				itm = elm_genlist_item_append(ui->list, ui->itc_group,
+					pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
+				elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
+			}
+		}
 
 		LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
 		{
@@ -765,7 +837,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			}
 		
 			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
-				ev, NULL, ELM_GENLIST_ITEM_TREE, NULL, NULL);
+				ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 			n++;
