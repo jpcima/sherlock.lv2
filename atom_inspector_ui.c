@@ -37,7 +37,13 @@
 #    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+typedef struct _position_t position_t;
 typedef struct _UI UI;
+
+struct _position_t {
+	uint64_t offset;
+	uint32_t nsamples;
+};
 
 struct _UI {
 	eo_ui_t eoui;
@@ -68,12 +74,15 @@ struct _UI {
 
 	Evas_Object *table;
 	Evas_Object *list;
+	Evas_Object *info;
 	Evas_Object *clear;
 	Evas_Object *autoclear;
 	Evas_Object *autoblock;
 	Evas_Object *popup;
 
 	Elm_Genlist_Item_Class *itc_sherlock;
+	Elm_Genlist_Item_Class *itc_list;
+	Elm_Genlist_Item_Class *itc_group;
 	Elm_Genlist_Item_Class *itc_seq;
 	Elm_Genlist_Item_Class *itc_prop;
 	Elm_Genlist_Item_Class *itc_vec;
@@ -369,7 +378,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, int newline, const LV2_Atom *atom)
 			
 		char *barrier = ptr + STRING_OFF;
 		for(unsigned i=0; (i<atom->size) && (ptr<barrier); i++, ptr += 3)
-			sprintf(ptr, "%02X ", chunk[i]);
+			sprintf(ptr, "%02"PRIX8" ", chunk[i]);
 
 		if(ptr >= barrier) // there would be more to print
 		{
@@ -488,6 +497,78 @@ _seq_item_label_get(void *data, Evas_Object *obj, const char *part)
 	return NULL;
 }
 
+static char * 
+_list_item_label_get(void *data, Evas_Object *obj, const char *part)
+{
+	UI *ui = evas_object_data_get(obj, "ui");
+	const LV2_Atom_Event *ev = data;
+	const LV2_Atom *atom = &ev->body;
+
+	if(!ui)
+		return NULL;
+
+	if(!strcmp(part, "elm.text"))
+	{
+		char *buf = ui->string_buf;
+		char *ptr = buf;
+		char *end = buf + STRING_BUF_SIZE;
+
+		sprintf(ptr, CODE_PRE);
+		ptr += strlen(ptr);
+
+		const char *type = _hash_get(ui, atom->type);
+		sprintf(ptr, URI(" ", "%s (%"PRIu32")"), type, atom->type);
+
+		return ptr
+			? strdup(buf)
+			: NULL;
+	}
+
+	return NULL;
+}
+
+static Evas_Object * 
+_group_item_content_get(void *data, Evas_Object *obj, const char *part)
+{
+	UI *ui = evas_object_data_get(obj, "ui");
+	const position_t *pos = data;
+
+	if(!ui)
+		return NULL;
+
+	if(!strcmp(part, "elm.swallow.icon"))
+	{
+		char *buf = ui->string_buf;
+
+		sprintf(buf, "<color=#000 font=Mono>0x%"PRIx64"</color>", pos->offset);
+
+		Evas_Object *label = elm_label_add(obj);
+		if(label)
+		{
+			elm_object_part_text_set(label, "default", buf);
+			evas_object_show(label);
+		}
+
+		return label;
+	}
+	else if(!strcmp(part, "elm.swallow.end"))
+	{
+		char *buf = ui->string_buf;
+
+		sprintf(buf, "<color=#0bb font=Mono>%"PRIu32"</color>", pos->nsamples);
+
+		Evas_Object *label = elm_label_add(obj);
+		if(label)
+		{
+			elm_object_part_text_set(label, "default", buf);
+			evas_object_show(label);
+		}
+
+		return label;
+	}
+
+	return NULL;
+}
 
 static Evas_Object * 
 _atom_item_content_get(void *data, Evas_Object *obj, const char *part)
@@ -502,7 +583,7 @@ _atom_item_content_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char *buf = ui->string_buf;
 
-		sprintf(buf, "<color=#0bb font=Mono>%4u</color>", atom->size);
+		sprintf(buf, "<color=#0bb font=Mono>%4"PRIu32"</color>", atom->size);
 
 		Evas_Object *label = elm_label_add(obj);
 		if(label)
@@ -531,7 +612,7 @@ _prop_item_content_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char *buf = ui->string_buf;
 
-		sprintf(buf, "<color=#0bb font=Mono>%4u</color>", atom->size);
+		sprintf(buf, "<color=#0bb font=Mono>%4"PRIu32"</color>", atom->size);
 
 		Evas_Object *label = elm_label_add(obj);
 		if(label)
@@ -560,7 +641,7 @@ _seq_item_content_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char *buf = ui->string_buf;
 
-		sprintf(buf, "<color=#bb0 font=Mono>%04ld</color>", ev->time.frames);
+		sprintf(buf, "<color=#bb0 font=Mono>%04"PRIi64"</color>", ev->time.frames);
 
 		Evas_Object *label = elm_label_add(obj);
 		if(label)
@@ -575,7 +656,7 @@ _seq_item_content_get(void *data, Evas_Object *obj, const char *part)
 	{
 		char *buf = ui->string_buf;
 
-		sprintf(buf, "<color=#0bb font=Mono>%4u</color>", atom->size);
+		sprintf(buf, "<color=#0bb font=Mono>%4"PRIu32"</color>", atom->size);
 
 		Evas_Object *label = elm_label_add(obj);
 		if(label)
@@ -623,14 +704,10 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 
 		LV2_ATOM_OBJECT_FOREACH(atom_object, prop)
 		{
-			Elm_Genlist_Item_Type type = _is_expandable(ui, prop->value.type)
-				? ELM_GENLIST_ITEM_TREE
-				: ELM_GENLIST_ITEM_NONE;
-
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_prop,
-				prop, itm, type, NULL, NULL);
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->info, ui->itc_prop,
+				prop, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+			elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 		}
 	}
 	else if(atom->type == ui->forge.Tuple)
@@ -641,23 +718,15 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 			!lv2_atom_tuple_is_end(LV2_ATOM_BODY(atom_tuple), atom_tuple->atom.size, iter);
 			iter = lv2_atom_tuple_next(iter))
 		{
-			Elm_Genlist_Item_Type type = _is_expandable(ui, iter->type)
-				? ELM_GENLIST_ITEM_TREE
-				: ELM_GENLIST_ITEM_NONE;
-
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_atom,
-				iter, itm, type, NULL, NULL);
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->info, ui->itc_atom,
+				iter, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+			elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 		}
 	}
 	else if(atom->type == ui->forge.Vector)
 	{
 		const LV2_Atom_Vector *atom_vector = (const LV2_Atom_Vector *)atom;
-
-		Elm_Genlist_Item_Type type = _is_expandable(ui, atom_vector->body.child_type)
-			? ELM_GENLIST_ITEM_TREE
-			: ELM_GENLIST_ITEM_NONE;
 
 		int num = (atom_vector->atom.size - sizeof(LV2_Atom_Vector_Body))
 			/ atom_vector->body.child_size;
@@ -671,10 +740,10 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 				child->type = atom_vector->body.child_type;
 				memcpy(LV2_ATOM_BODY(child), body + i*child->size, child->size);
 
-				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_vec,
-					child, itm, type, NULL, NULL);
+				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->info, ui->itc_vec,
+					child, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-				elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+				elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 			}
 		}
 	}
@@ -686,14 +755,10 @@ _atom_expand(UI *ui, const LV2_Atom *atom, Evas_Object *obj, Elm_Object_Item *it
 		{
 			const LV2_Atom *child = &ev->body;
 
-			Elm_Genlist_Item_Type type = _is_expandable(ui, child->type)
-				? ELM_GENLIST_ITEM_TREE
-				: ELM_GENLIST_ITEM_NONE;
-
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_seq,
-				ev, itm, type, NULL, NULL);
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->info, ui->itc_seq,
+				ev, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+			elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 		}
 	}
 }
@@ -740,6 +805,32 @@ _item_contracted(void *data, Evas_Object *obj, void *event_info)
 }
 
 static void
+_item_selected(void *data, Evas_Object *obj, void *event_info)
+{
+	Elm_Object_Item *itm = event_info;
+	UI *ui = data;
+
+	const LV2_Atom_Event *ev = elm_object_item_data_get(itm);
+	size_t len = sizeof(LV2_Atom_Event) + ev->body.size;
+	LV2_Atom_Event *ev2 = malloc(len);
+	if(!ev2)
+		return;
+
+	memcpy(ev2, ev, len);
+
+	elm_genlist_clear(ui->info);
+
+	const LV2_Atom *atom = &ev->body;
+	const bool is_expandable = _is_expandable(ui, atom->type);
+
+	Elm_Object_Item *itm2 = elm_genlist_item_append(ui->info, ui->itc_sherlock,
+		ev2, NULL, ELM_GENLIST_ITEM_TREE, NULL, NULL);
+	elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+	if(is_expandable)
+		elm_genlist_item_expanded_set(itm2, EINA_TRUE);
+}
+
+static void
 _clear_update(UI *ui, int count)
 {
 	if(!ui->clear)
@@ -755,6 +846,8 @@ _clear_clicked(void *data, Evas_Object *obj, void *event_info)
 {
 	UI *ui = data;
 
+	if(ui->info)
+		elm_genlist_clear(ui->info);
 	if(ui->list)
 		elm_genlist_clear(ui->list);
 
@@ -787,23 +880,52 @@ _content_get(eo_ui_t *eoui)
 		elm_table_homogeneous_set(ui->table, EINA_FALSE);
 		elm_table_padding_set(ui->table, 0, 0);
 
-		ui->list = elm_genlist_add(ui->table);
-		if(ui->list)
+		Evas_Object *panes = elm_panes_add(ui->table);
+		if(panes)
 		{
-			elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // TRUE for lazy-loading
-			elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
-			evas_object_data_set(ui->list, "ui", ui);
-			evas_object_smart_callback_add(ui->list, "expand,request",
-				_item_expand_request, ui);
-			evas_object_smart_callback_add(ui->list, "contract,request",
-				_item_contract_request, ui);
-			evas_object_smart_callback_add(ui->list, "expanded", _item_expanded, ui);
-			evas_object_smart_callback_add(ui->list, "contracted", _item_contracted, ui);
-			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
-			evas_object_show(ui->list);
-			elm_table_pack(ui->table, ui->list, 0, 0, 4, 1);
+			elm_panes_horizontal_set(panes, EINA_FALSE);
+			elm_panes_content_left_size_set(panes, 0.3);
+			evas_object_size_hint_weight_set(panes, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+			evas_object_size_hint_align_set(panes, EVAS_HINT_FILL, EVAS_HINT_FILL);
+			evas_object_show(panes);
+			elm_table_pack(ui->table, panes, 0, 0, 4, 1);
+
+			ui->list = elm_genlist_add(panes);
+			if(ui->list)
+			{
+				elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // needef for lazy-loading
+				elm_genlist_mode_set(ui->list, ELM_LIST_LIMIT);
+				elm_genlist_block_count_set(ui->list, 64); // needef for lazy-loading
+				elm_genlist_reorder_mode_set(ui->list, EINA_FALSE);
+				elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
+				evas_object_data_set(ui->list, "ui", ui);
+				evas_object_smart_callback_add(ui->list, "selected", _item_selected, ui);
+				evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+				evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+				evas_object_show(ui->list);
+				elm_object_part_content_set(panes, "left", ui->list);
+			}
+
+			ui->info = elm_genlist_add(panes);
+			if(ui->info)
+			{
+				elm_genlist_homogeneous_set(ui->info, EINA_TRUE); // needef for lazy-loading
+				elm_genlist_mode_set(ui->info, ELM_LIST_SCROLL);
+				elm_genlist_block_count_set(ui->info, 64); // needef for lazy-loading
+				elm_genlist_reorder_mode_set(ui->info, EINA_FALSE);
+				elm_genlist_select_mode_set(ui->info, ELM_OBJECT_SELECT_MODE_DEFAULT);
+				evas_object_data_set(ui->info, "ui", ui);
+				evas_object_smart_callback_add(ui->info, "expand,request",
+					_item_expand_request, ui);
+				evas_object_smart_callback_add(ui->info, "contract,request",
+					_item_contract_request, ui);
+				evas_object_smart_callback_add(ui->info, "expanded", _item_expanded, ui);
+				evas_object_smart_callback_add(ui->info, "contracted", _item_contracted, ui);
+				evas_object_size_hint_weight_set(ui->info, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+				evas_object_size_hint_align_set(ui->info, EVAS_HINT_FILL, EVAS_HINT_FILL);
+				evas_object_show(ui->info);
+				elm_object_part_content_set(panes, "right", ui->info);
+			}
 		}
 
 		ui->clear = elm_button_add(ui->table);
@@ -938,8 +1060,8 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	eo_ui_t *eoui = &ui->eoui;
 	eoui->driver = driver;
 	eoui->content_get = _content_get;
-	eoui->w = 600,
-	eoui->h = 800;
+	eoui->w = 1280,
+	eoui->h = 720;
 
 	ui->write_function = write_function;
 	ui->controller = controller;
@@ -960,6 +1082,26 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	}
 	
 	lv2_atom_forge_init(&ui->forge, ui->map);
+
+	ui->itc_list = elm_genlist_item_class_new();
+	if(ui->itc_list)
+	{
+		ui->itc_list->item_style = "default_style";
+		ui->itc_list->func.text_get = _list_item_label_get;
+		ui->itc_list->func.content_get = _seq_item_content_get;
+		ui->itc_list->func.state_get = NULL;
+		ui->itc_list->func.del = _item_del;
+	}
+
+	ui->itc_group = elm_genlist_item_class_new();
+	if(ui->itc_group)
+	{
+		ui->itc_group->item_style = "default_style";
+		ui->itc_group->func.text_get = NULL;
+		ui->itc_group->func.content_get = _group_item_content_get;
+		ui->itc_group->func.state_get = NULL;
+		ui->itc_group->func.del = _item_del;
+	}
 
 	ui->itc_sherlock = elm_genlist_item_class_new();
 	if(ui->itc_sherlock)
@@ -1096,6 +1238,10 @@ cleanup(LV2UI_Handle handle)
 		elm_genlist_item_class_free(ui->itc_seq);
 	if(ui->itc_sherlock)
 		elm_genlist_item_class_free(ui->itc_sherlock);
+	if(ui->itc_list)
+		elm_genlist_item_class_free(ui->itc_list);
+	if(ui->itc_group)
+		elm_genlist_item_class_free(ui->itc_group);
 
 	free(ui);
 }
@@ -1108,8 +1254,27 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			
 	if( (i == 2) && (urid == ui->uris.event_transfer) && ui->list)
 	{
-		const LV2_Atom_Sequence *seq = buf;
+		const LV2_Atom_Tuple *tup = buf;
+		const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
+		const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
+		const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
 		int n = elm_genlist_items_count(ui->list);
+
+		Elm_Object_Item *itm = NULL;
+
+		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
+		{
+			position_t *pos = malloc(sizeof(position_t));
+			if(pos)
+			{
+				pos->offset = offset->body;
+				pos->nsamples = nsamples->body;
+
+				itm = elm_genlist_item_append(ui->list, ui->itc_group,
+					pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
+				elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
+			}
+		}
 
 		LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
 		{
@@ -1138,15 +1303,9 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				break;
 			}
 			
-			const LV2_Atom *atom = &elmnt->body;
-			Elm_Genlist_Item_Type type = _is_expandable(ui, atom->type)
-				? ELM_GENLIST_ITEM_TREE
-				: ELM_GENLIST_ITEM_NONE;
-
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_sherlock,
-				ev, NULL, type, NULL, NULL);
+			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_list,
+				ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 			n++;
 			
 			// scroll to last item

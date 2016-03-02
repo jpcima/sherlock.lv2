@@ -28,6 +28,8 @@ struct _handle_t {
 	LV2_Atom_Sequence *control_out;
 	LV2_Atom_Sequence *notify;
 	LV2_Atom_Forge forge;
+
+	uint64_t offset;
 };
 
 static LV2_Handle
@@ -105,12 +107,22 @@ run(LV2_Handle instance, uint32_t nsamples)
 	// only serialize sequence to UI if there were actually any events
 	if(handle->control_in->atom.size > sizeof(LV2_Atom_Sequence_Body))
 	{
+		LV2_Atom_Forge_Frame tup_frame;
+
 		if(ref)
 			ref = lv2_atom_forge_frame_time(forge, 0);
+		if(ref)
+			ref = lv2_atom_forge_tuple(forge, &tup_frame);
+		if(ref)
+			ref = lv2_atom_forge_long(forge, handle->offset);
+		if(ref)
+			ref = lv2_atom_forge_int(forge, nsamples);
 		if(ref)
 			ref = lv2_atom_forge_raw(forge, handle->control_in, size);
 		if(ref)
 			lv2_atom_forge_pad(forge, size);
+		if(ref)
+			lv2_atom_forge_pop(forge, &tup_frame);
 
 	}
 
@@ -118,6 +130,8 @@ run(LV2_Handle instance, uint32_t nsamples)
 		lv2_atom_forge_pop(forge, &frame);
 	else
 		lv2_atom_sequence_clear(handle->notify);
+
+	handle->offset += nsamples;
 }
 
 static void
