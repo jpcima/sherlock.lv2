@@ -7,8 +7,8 @@ include_directories(${PROJECT_SOURCE_DIR}/libosc)
 include_directories(${PROJECT_SOURCE_DIR}/eo_ui.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/osc.lv2)
 
-set(CMAKE_C_FLAGS "-std=gnu99 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-std=gnu11 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-z,nodelete ${CMAKE_MODULE_LINKER_FLAGS}")
 
 set(SHERLOCK_MAJOR_VERSION 0)
@@ -19,13 +19,6 @@ add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
 add_definitions("-D_GNU_SOURCE=1") # asprintf
 
 set(DEST lib/lv2/sherlock.lv2)
-if(WIN32)
-	set(LIB_EXT ".dll")
-elseif(APPLE)
-	set(LIB_EXT ".so")
-else()
-	set(LIB_EXT ".so")
-endif()
 
 find_package(PkgConfig) # ${PKG_CONFIG_FOUND}
 

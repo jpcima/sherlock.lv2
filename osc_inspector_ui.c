@@ -19,8 +19,6 @@
 
 #include <sherlock.h>
 
-#include <Elementary.h>
-
 #include <lv2_eo_ui.h>
 #include <lv2_osc.h>
 

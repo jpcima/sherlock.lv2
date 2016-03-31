@@ -19,8 +19,6 @@
 
 #include <sherlock.h>
 
-#include <Elementary.h>
-
 #include <lv2_eo_ui.h>
 
 #define COUNT_MAX 2048 // maximal amount of events shown
