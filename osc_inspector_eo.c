@@ -19,8 +19,9 @@
 
 #include <sherlock.h>
 
-#include <lv2_eo_ui.h>
 #include <lv2_osc.h>
+
+#include <Elementary.h>
 
 #define COUNT_MAX 2048 // maximal amount of events shown
 #define STRING_BUF_SIZE 2048
@@ -30,8 +31,6 @@
 typedef struct _UI UI;
 
 struct _UI {
-	eo_ui_t eoui;
-
 	LV2UI_Write_Function write_function;
 	LV2UI_Controller controller;
 	
@@ -41,6 +40,7 @@ struct _UI {
 	LV2_URID midi_event;
 	osc_forge_t oforge;
 
+	Evas_Object *widget;
 	Evas_Object *table;
 	Evas_Object *list;
 	Evas_Object *clear;
@@ -611,16 +611,33 @@ _info_clicked(void *data, Evas_Object *obj, void *event_info)
 	}
 }
 
-static Evas_Object *
-_content_get(eo_ui_t *eoui)
+static void
+_content_free(void *data, Evas *e, Evas_Object *obj, void *event_info)
 {
-	UI *ui = (void *)eoui - offsetof(UI, eoui);
+	UI *ui = data;
 
-	ui->table = elm_table_add(eoui->win);
+	ui->widget = NULL;
+}
+
+static void
+_content_del(void *data, Evas *e, Evas_Object *obj, void *event_info)
+{
+	UI *ui = data;
+
+	evas_object_del(ui->widget);
+}
+
+static Evas_Object *
+_content_get(UI *ui, Evas_Object *parent)
+{
+	ui->table = elm_table_add(parent);
 	if(ui->table)
 	{
 		elm_table_homogeneous_set(ui->table, EINA_FALSE);
 		elm_table_padding_set(ui->table, 0, 0);
+		evas_object_size_hint_min_set(ui->table, 600, 800);
+		evas_object_event_callback_add(ui->table, EVAS_CALLBACK_FREE, _content_free, ui);
+		evas_object_event_callback_add(ui->table, EVAS_CALLBACK_DEL, _content_del, ui);
 
 		ui->list = elm_genlist_add(ui->table);
 		if(ui->list)
@@ -754,40 +771,30 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	if(strcmp(plugin_uri, SHERLOCK_OSC_INSPECTOR_URI))
 		return NULL;
 
-	eo_ui_driver_t driver;
-	if(descriptor == &osc_inspector_eo)
-		driver = EO_UI_DRIVER_EO;
-	else if(descriptor == &osc_inspector_ui)
-		driver = EO_UI_DRIVER_UI;
-	else if(descriptor == &osc_inspector_x11)
-		driver = EO_UI_DRIVER_X11;
-	else if(descriptor == &osc_inspector_kx)
-		driver = EO_UI_DRIVER_KX;
-	else
-		return NULL;
-
 	UI *ui = calloc(1, sizeof(UI));
 	if(!ui)
 		return NULL;
 
-	eo_ui_t *eoui = &ui->eoui;
-	eoui->driver = driver;
-	eoui->content_get = _content_get;
-	eoui->w = 600,
-	eoui->h = 800;
-
 	ui->write_function = write_function;
 	ui->controller = controller;
-	
+
+	Evas_Object *parent = NULL;
 	for(int i=0; features[i]; i++)
 	{
 		if(!strcmp(features[i]->URI, LV2_URID__map))
-			ui->map = (LV2_URID_Map *)features[i]->data;
+			ui->map = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_UI__parent))
+			parent = features[i]->data;
   }
 
 	if(!ui->map)
 	{
 		fprintf(stderr, "LV2 URID extension not supported\n");
+		free(ui);
+		return NULL;
+	}
+	if(!parent)
+	{
 		free(ui);
 		return NULL;
 	}
@@ -830,12 +837,13 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	sprintf(ui->string_buf, "%s/omk_logo_256x256.png", bundle_path);
 	ui->logo_path = strdup(ui->string_buf);
 
-	if(eoui_instantiate(eoui, descriptor, plugin_uri, bundle_path, write_function,
-		controller, widget, features))
+	ui->widget = _content_get(ui, parent);
+	if(!ui->widget)
 	{
 		free(ui);
 		return NULL;
 	}
+	*(Evas_Object **)widget = ui->widget;
 	
 	return ui;
 }
@@ -845,8 +853,8 @@ cleanup(LV2UI_Handle handle)
 {
 	UI *ui = handle;
 
-	eoui_cleanup(&ui->eoui);
-
+	if(ui->widget)
+		evas_object_del(ui->widget);
 	if(ui->logo_path)
 		free(ui->logo_path);
 
@@ -935,29 +943,5 @@ const LV2UI_Descriptor osc_inspector_eo = {
 	.instantiate		= instantiate,
 	.cleanup				= cleanup,
 	.port_event			= port_event,
-	.extension_data	= eoui_eo_extension_data
-};
-
-const LV2UI_Descriptor osc_inspector_ui = {
-	.URI						= SHERLOCK_OSC_INSPECTOR_UI_URI,
-	.instantiate		= instantiate,
-	.cleanup				= cleanup,
-	.port_event			= port_event,
-	.extension_data	= eoui_ui_extension_data
-};
-
-const LV2UI_Descriptor osc_inspector_x11 = {
-	.URI						= SHERLOCK_OSC_INSPECTOR_X11_URI,
-	.instantiate		= instantiate,
-	.cleanup				= cleanup,
-	.port_event			= port_event,
-	.extension_data	= eoui_x11_extension_data
-};
-
-const LV2UI_Descriptor osc_inspector_kx = {
-	.URI						= SHERLOCK_OSC_INSPECTOR_KX_URI,
-	.instantiate		= instantiate,
-	.cleanup				= cleanup,
-	.port_event			= port_event,
-	.extension_data	= eoui_kx_extension_data
+	.extension_data	= NULL
 };

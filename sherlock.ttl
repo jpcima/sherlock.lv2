@@ -13,19 +13,15 @@
 # along the source as a COPYING file. If not, obtain it from
 # http://www.perlfoundation.org/artistic_license_2_0.
 
-@prefix owl:	<http://www.w3.org/2002/07/owl#> .
 @prefix foaf:	<http://xmlns.com/foaf/0.1/> .
 @prefix doap:	<http://usefulinc.com/ns/doap#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix lv2:	<http://lv2plug.in/ns/lv2core#> .
-@prefix ui:		<http://lv2plug.in/ns/extensions/ui#> .
 @prefix atom:	<http://lv2plug.in/ns/ext/atom#> .
-@prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
 @prefix time: <http://lv2plug.in/ns/ext/time#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
-@prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 @prefix osc:  <http://open-music-kontrollers.ch/lv2/osc#> .
 @prefix lic:	<http://opensource.org/licenses/> .
@@ -50,65 +46,6 @@ proj:sherlock
 	a doap:Project ;
 	doap:maintainer omk:me ;
 	doap:name "Sherlock Bundle" .
-
-# Atom Inspector UI
-sherlock:atom_inspector_eo
-	a ui:EoUI ;
-	ui:portNotification [
-		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType atom:Object ;
-		ui:notifyType osc:Event ;
-		ui:notifyType midi:MidiEvent ;
-		ui:notifyType time:Position ;
-		ui:notifyType patch:Message ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:extensionData ui:resize ;
-	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map, urid:unmap .
-sherlock:atom_inspector_ui
-	a ui:UI ;
-	ui:portNotification [
-		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType atom:Object ;
-		ui:notifyType osc:Event ;
-		ui:notifyType midi:MidiEvent ;
-		ui:notifyType time:Position ;
-		ui:notifyType patch:Message ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
-  lv2:extensionData ui:idleInterface, ui:showInterface .
-sherlock:atom_inspector_x11
-	a ui:X11UI ;
-	ui:portNotification [
-		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType atom:Object ;
-		ui:notifyType osc:Event ;
-		ui:notifyType midi:MidiEvent ;
-		ui:notifyType time:Position ;
-		ui:notifyType patch:Message ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
-	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface, ui:resize .
-sherlock:atom_inspector_kx
-	a kx:Widget ;
-	ui:portNotification [
-		ui:plugin sherlock:atom_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType atom:Object ;
-		ui:notifyType osc:Event ;
-		ui:notifyType midi:MidiEvent ;
-		ui:notifyType time:Position ;
-		ui:notifyType patch:Message ;
-		ui:protocol atom:eventTransfer ;
-	] ;
-	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
 
 # Atom Inspector Plugin
 sherlock:atom_inspector
@@ -191,49 +128,6 @@ sherlock:atom_inspector
 		lv2:name "Notify" ;
 	] .
 
-# MIDI Inspector UI
-sherlock:midi_inspector_eo
-	a ui:EoUI ;
-	ui:portNotification [
-		ui:plugin sherlock:midi_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType midi:MidiEvent ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:extensionData ui:resize ;
-	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map .
-sherlock:midi_inspector_ui
-	a ui:UI ;
-	ui:portNotification [
-		ui:plugin sherlock:midi_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType midi:MidiEvent ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map ;
-  lv2:extensionData ui:idleInterface, ui:showInterface .
-sherlock:midi_inspector_x11
-	a ui:X11UI ;
-	ui:portNotification [
-		ui:plugin sherlock:midi_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType midi:MidiEvent ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map ;
-	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface, ui:resize .
-sherlock:midi_inspector_kx
-	a kx:Widget ;
-	ui:portNotification [
-		ui:plugin sherlock:midi_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType midi:MidiEvent ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature kx:Host, urid:map .
-
 # MIDI Inspector Plugin
 sherlock:midi_inspector
 	a lv2:Plugin,
@@ -274,49 +168,6 @@ sherlock:midi_inspector
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
 	] .
-
-# OSC Inspector UI
-sherlock:osc_inspector_eo
-	a ui:EoUI ;
-	ui:portNotification [
-		ui:plugin sherlock:osc_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType osc:Event ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:extensionData ui:resize ;
-	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map .
-sherlock:osc_inspector_ui
-	a ui:UI ;
-	ui:portNotification [
-		ui:plugin sherlock:osc_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType osc:Event ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map ;
-  lv2:extensionData ui:idleInterface, ui:showInterface .
-sherlock:osc_inspector_x11
-	a ui:X11UI ;
-	ui:portNotification [
-		ui:plugin sherlock:osc_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType osc:Event ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map ;
-	lv2:optionalFeature ui:resize ;
-  lv2:extensionData ui:idleInterface, ui:resize .
-sherlock:osc_inspector_kx
-	a kx:Widget ;
-	ui:portNotification [
-		ui:plugin sherlock:osc_inspector ;
-		lv2:symbol "notify" ;
-		ui:notifyType osc:Event ;
-		ui:protocol atom:eventTransfer
-	] ;
-	lv2:requiredFeature kx:Host, urid:map .
 
 # OSC Inspector Plugin
 sherlock:osc_inspector

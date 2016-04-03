@@ -1,0 +1,135 @@
+# Copyright (c) 2015 Hanspeter Portner (dev@open-music-kontrollers.ch)
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the Artistic License 2.0 as published by
+# The Perl Foundation.
+#
+# This source is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# Artistic License 2.0 for more details.
+#
+# You should have received a copy of the Artistic License 2.0
+# along the source as a COPYING file. If not, obtain it from
+# http://www.perlfoundation.org/artistic_license_2_0.
+
+@prefix lv2:	<http://lv2plug.in/ns/lv2core#> .
+@prefix ui:		<http://lv2plug.in/ns/extensions/ui#> .
+@prefix atom:	<http://lv2plug.in/ns/ext/atom#> .
+@prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
+@prefix time: <http://lv2plug.in/ns/ext/time#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
+
+@prefix osc:  <http://open-music-kontrollers.ch/lv2/osc#> .
+@prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
+
+# Atom Inspector UI
+sherlock:atom_inspector_1_ui
+	a ui:UI ;
+	ui:portNotification [
+		ui:plugin sherlock:atom_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
+  lv2:extensionData ui:idleInterface, ui:showInterface .
+
+sherlock:atom_inspector_2_kx
+	a kx:Widget ;
+	ui:portNotification [
+		ui:plugin sherlock:atom_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
+		ui:protocol atom:eventTransfer ;
+	] ;
+	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
+
+sherlock:atom_inspector_3_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:atom_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature urid:map, urid:unmap .
+
+# MIDI Inspector UI
+sherlock:midi_inspector_1_ui
+	a ui:UI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType midi:MidiEvent ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+  lv2:extensionData ui:idleInterface, ui:showInterface .
+
+sherlock:midi_inspector_2_kx
+	a kx:Widget ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType midi:MidiEvent ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature kx:Host, urid:map .
+
+sherlock:midi_inspector_3_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType midi:MidiEvent ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature urid:map .
+
+# OSC Inspector UI
+sherlock:osc_inspector_1_ui
+	a ui:UI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType osc:Event ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature ui:idleInterface, urid:map ;
+  lv2:extensionData ui:idleInterface, ui:showInterface .
+
+sherlock:osc_inspector_2_kx
+	a kx:Widget ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType osc:Event ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature kx:Host, urid:map .
+
+sherlock:osc_inspector_3_eo
+	a ui:EoUI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType osc:Event ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature urid:map .
