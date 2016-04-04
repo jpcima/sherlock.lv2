@@ -37,9 +37,9 @@ sherlock:atom_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	@UI_UI_WRAP@ui:ui sherlock:atom_inspector_1_ui ;
-	@KX_UI_WRAP@ui:ui sherlock:atom_inspector_2_kx ;
-	@EO_UI_WRAP@ui:ui sherlock:atom_inspector_3_eo ;
+	ui:ui sherlock:atom_inspector_1_ui ;
+	ui:ui sherlock:atom_inspector_2_kx ;
+	ui:ui sherlock:atom_inspector_3_eo ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:atom_inspector_1_ui
@@ -61,9 +61,9 @@ sherlock:midi_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	@UI_UI_WRAP@ui:ui sherlock:midi_inspector_1_ui ;
-	@KX_UI_WRAP@ui:ui sherlock:midi_inspector_2_kx ;
-	@EO_UI_WRAP@ui:ui sherlock:midi_inspector_3_eo ;
+	ui:ui sherlock:midi_inspector_1_ui ;
+	ui:ui sherlock:midi_inspector_2_kx ;
+	ui:ui sherlock:midi_inspector_3_eo ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:midi_inspector_1_ui
@@ -85,9 +85,9 @@ sherlock:osc_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	@UI_UI_WRAP@ui:ui sherlock:osc_inspector_1_ui ;
-	@KX_UI_WRAP@ui:ui sherlock:osc_inspector_2_kx ;
-	@EO_UI_WRAP@ui:ui sherlock:osc_inspector_3_eo ;
+	ui:ui sherlock:osc_inspector_1_ui ;
+	ui:ui sherlock:osc_inspector_2_kx ;
+	ui:ui sherlock:osc_inspector_3_eo ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:osc_inspector_1_ui
