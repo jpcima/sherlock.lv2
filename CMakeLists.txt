@@ -51,6 +51,7 @@ set_target_properties(sherlock PROPERTIES PREFIX "")
 install(TARGETS sherlock DESTINATION ${DEST})
 
 add_library(sherlock_ui MODULE
+	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_ui.c
 	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_master.c
 	sherlock_ui.c)
 target_link_libraries(sherlock_ui

@@ -20,12 +20,6 @@
 
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 
-#ifdef _WIN32
-#	define SANDBOX_SYMBOL_EXTERN __declspec(dllexport)
-#else
-#	define SANDBOX_SYMBOL_EXTERN __attribute__((visibility("default")))
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,23 +39,23 @@ struct _sandbox_master_driver_t {
 	sandbox_master_subscribe_cb_t subscribe_cb;
 };
 
-SANDBOX_SYMBOL_EXTERN sandbox_master_t *
+sandbox_master_t *
 sandbox_master_new(sandbox_master_driver_t *driver, void *data);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_master_free(sandbox_master_t *sb);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_master_recv(sandbox_master_t *sb);
 
-SANDBOX_SYMBOL_EXTERN bool
+bool
 sandbox_master_send(sandbox_master_t *sb, uint32_t index, uint32_t size,
 	uint32_t format, const void *buf);
 
-SANDBOX_SYMBOL_EXTERN bool
+bool
 sandbox_master_flush(sandbox_master_t *sb);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_master_fd_get(sandbox_master_t *sb, int *fd);
 
 #ifdef __cplusplus

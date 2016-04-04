@@ -18,12 +18,6 @@
 #ifndef _SANDBOX_SLAVE_H
 #define _SANDBOX_SLAVE_H
 
-#ifdef _WIN32
-#	define SANDBOX_SYMBOL_EXTERN __declspec(dllexport)
-#else
-#	define SANDBOX_SYMBOL_EXTERN __attribute__((visibility("default")))
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -43,31 +37,31 @@ struct _sandbox_slave_driver_t {
 	sandbox_slave_driver_resize_t resize_cb;
 };
 
-SANDBOX_SYMBOL_EXTERN sandbox_slave_t *
+sandbox_slave_t *
 sandbox_slave_new(int argc, char **argv, const sandbox_slave_driver_t *driver, void *data);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_slave_free(sandbox_slave_t *sb);
 
-SANDBOX_SYMBOL_EXTERN int
+int
 sandbox_slave_instantiate(sandbox_slave_t *sb, void *parent, void *widget);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_slave_recv(sandbox_slave_t *sb);
 
-SANDBOX_SYMBOL_EXTERN bool
+bool
 sandbox_slave_flush(sandbox_slave_t *sb);
 
-SANDBOX_SYMBOL_EXTERN int
+int
 sandbox_slave_idle(sandbox_slave_t *sb);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_slave_run(sandbox_slave_t *sb);
 
-SANDBOX_SYMBOL_EXTERN void
+void
 sandbox_slave_fd_get(sandbox_slave_t *sb, int *fd);
 
-SANDBOX_SYMBOL_EXTERN const char *
+const char *
 sandbox_slave_title_get(sandbox_slave_t *sb);
 
 #ifdef __cplusplus
