@@ -76,8 +76,7 @@ add_executable(sandbox_efl
 target_link_libraries(sandbox_efl
 	${ELM_LDFLAGS}
 	${NANOMSG_LDFLAGS}
-	${LILV_LDFLAGS}
-	dl)
+	${LILV_LDFLAGS})
 install(TARGETS sandbox_efl DESTINATION ${DEST})
 
 configure_file(${PROJECT_SOURCE_DIR}/manifest.ttl.in ${PROJECT_BINARY_DIR}/manifest.ttl)
