@@ -31,8 +31,11 @@ struct _handle_t {
 	LV2_Atom_Sequence *notify;
 	LV2_Atom_Forge forge;
 
+	LV2_URID time_position;
+	LV2_URID time_frame;
 	LV2_URID midi_event;
-	uint64_t offset;
+
+	int64_t frame;
 };
 
 static LV2_Handle
@@ -54,6 +57,9 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		free(handle);
 		return NULL;
 	}
+
+	handle->time_position = handle->map->map(handle->map->handle, LV2_TIME__Position);
+	handle->time_frame = handle->map->map(handle->map->handle, LV2_TIME__frame);
 
 	handle->midi_event = handle->map->map(handle->map->handle, LV2_MIDI__MidiEvent);
 
@@ -92,6 +98,22 @@ run(LV2_Handle instance, uint32_t nsamples)
 	LV2_Atom_Forge_Frame frame [3];
 	LV2_Atom_Forge_Ref ref;
 
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
+	{
+		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+
+		if(lv2_atom_forge_is_object_type(forge, obj->atom.type))
+		{
+			if(obj->body.otype == handle->time_position)
+			{
+				const LV2_Atom_Long *time_frame = NULL;
+				lv2_atom_object_get(obj, handle->time_frame, &time_frame, NULL);
+				if(time_frame)
+					handle->frame = time_frame->body - ev->time.frames;
+			}
+		}
+	}
+
 	// size of input sequence
 	size_t size = sizeof(LV2_Atom) + handle->control_in->atom.size;
 	
@@ -114,7 +136,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(ref)
 		ref = lv2_atom_forge_tuple(forge, &frame[1]);
 	if(ref)
-		ref = lv2_atom_forge_long(forge, handle->offset);
+		ref = lv2_atom_forge_long(forge, handle->frame);
 	if(ref)
 		ref = lv2_atom_forge_int(forge, nsamples);
 	if(ref)
@@ -147,7 +169,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(!has_midi) // don't send anything
 		lv2_atom_sequence_clear(handle->notify);
 
-	handle->offset += nsamples;
+	handle->frame += nsamples;
 }
 
 static void
