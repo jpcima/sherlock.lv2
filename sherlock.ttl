@@ -62,27 +62,10 @@ sherlock:atom_inspector
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ;
-		atom:supports time:Position ;
-		atom:supports patch:Message ;
-		atom:supports atom:Blank ;
-		atom:supports atom:Bool ;
-		atom:supports atom:Chunk ;
-		atom:supports atom:Double ;
-		atom:supports atom:Float ;
-		atom:supports atom:Int ;
-		atom:supports atom:Long ;
-		atom:supports atom:Literal ;
-		atom:supports atom:Object ;
-		atom:supports atom:Path ;
-		atom:supports atom:Property ;
-		atom:supports atom:Resource ;
-		atom:supports atom:Sequence ;
-		atom:supports atom:String ;
-		atom:supports atom:Tuple ;
-		atom:supports atom:URI ;
-		atom:supports atom:URID ;
-		atom:supports atom:Vector ;
+		atom:supports midi:MidiEvent ,
+			time:Position ,
+			patch:Message ,
+			osc:Event ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
@@ -92,27 +75,10 @@ sherlock:atom_inspector
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ;
-		atom:supports time:Position ;
-		atom:supports patch:Message ;
-		atom:supports atom:Blank ;
-		atom:supports atom:Bool ;
-		atom:supports atom:Chunk ;
-		atom:supports atom:Double ;
-		atom:supports atom:Float ;
-		atom:supports atom:Int ;
-		atom:supports atom:Long ;
-		atom:supports atom:Literal ;
-		atom:supports atom:Object ;
-		atom:supports atom:Path ;
-		atom:supports atom:Property ;
-		atom:supports atom:Resource ;
-		atom:supports atom:Sequence ;
-		atom:supports atom:String ;
-		atom:supports atom:Tuple ;
-		atom:supports atom:URI ;
-		atom:supports atom:URID ;
-		atom:supports atom:Vector ;
+		atom:supports midi:MidiEvent ,
+			time:Position ,
+			patch:Message ,
+			osc:Event ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;
@@ -143,7 +109,8 @@ sherlock:midi_inspector
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ;
+		atom:supports midi:MidiEvent ,
+			time:Position ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
@@ -184,7 +151,8 @@ sherlock:osc_inspector
 	  a lv2:InputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports osc:Event ;
+		atom:supports osc:Event ,
+			time:Position ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
