@@ -804,25 +804,11 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
 		{
 			position_t *pos = malloc(sizeof(position_t));
-			if(pos)
-			{
-				pos->offset = offset->body;
-				pos->nsamples = nsamples->body;
+			if(!pos)
+				return;
 
-				itm = elm_genlist_item_append(ui->list, ui->itc_group,
-					pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
-				elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
-			}
-		}
-
-		LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
-		{
-			size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
-			LV2_Atom_Event *ev = malloc(len);
-			if(!ev)
-				continue;
-
-			memcpy(ev, elmnt, len);
+			pos->offset = offset->body;
+			pos->nsamples = nsamples->body;
 
 			// check item count 
 			if(n + 1 > COUNT_MAX)
@@ -834,22 +820,36 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				}
 				else
 				{
-					break;
+					return;
 				}
 			}
 			else if(elm_check_state_get(ui->autoblock))
 			{
-				break;
+				return;
 			}
-		
-			Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
-				ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
-			elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_item_expanded_set(itm2, EINA_FALSE);
-			n++;
+
+			itm = elm_genlist_item_append(ui->list, ui->itc_group,
+				pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
+
+			LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
+			{
+				size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
+				LV2_Atom_Event *ev = malloc(len);
+				if(!ev)
+					continue;
+
+				memcpy(ev, elmnt, len);
 			
-			// scroll to last item
-			//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
+				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
+					ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+				elm_genlist_item_expanded_set(itm2, EINA_FALSE);
+				n++;
+				
+				// scroll to last item
+				//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
+			}
 		}
 		
 		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body))

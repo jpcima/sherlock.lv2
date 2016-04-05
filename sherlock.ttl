@@ -23,6 +23,7 @@
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 
+@prefix xpress: <http://open-music-kontrollers.ch/lv2/xpress#> .
 @prefix osc:  <http://open-music-kontrollers.ch/lv2/osc#> .
 @prefix lic:	<http://opensource.org/licenses/> .
 @prefix omk:	<http://open-music-kontrollers.ch/ventosus#> .
@@ -33,6 +34,11 @@ osc:Event
 	a rdfs:Class ;
 	rdfs:subClassOf atom:Object ;
 	rdfs:label "OSC Event (Bundle or Message)" .
+
+xpress:Message
+	a rdfs:Class ,
+		rdfs:Datatype ;
+	rdfs:subClassOf atom:Atom .
 
 # Maintainer
 omk:me
@@ -65,7 +71,8 @@ sherlock:atom_inspector
 		atom:supports midi:MidiEvent ,
 			time:Position ,
 			patch:Message ,
-			osc:Event ;
+			osc:Event ,
+		 	xpress:Message	;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
 		lv2:name "Control In" ;
@@ -78,7 +85,8 @@ sherlock:atom_inspector
 		atom:supports midi:MidiEvent ,
 			time:Position ,
 			patch:Message ,
-			osc:Event ;
+			osc:Event ,
+			xpress:Message ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;

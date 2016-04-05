@@ -59,13 +59,19 @@ target_link_libraries(sherlock_ui
 set_target_properties(sherlock_ui PROPERTIES PREFIX "")
 install(TARGETS sherlock_ui DESTINATION ${DEST})
 
+find_package(FLEX)
+flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
+	COMPILE_FLAGS	"--header-file=${PROJECT_BINARY_DIR}/encoder.h --prefix=enc")
+
 add_library(sherlock_eo MODULE
 	sherlock_eo.c
 	atom_inspector_eo.c
 	midi_inspector_eo.c
-	osc_inspector_eo.c)
+	osc_inspector_eo.c
+	${FLEX_encoder_OUTPUTS})
 target_link_libraries(sherlock_eo
-	${ELM_LDFLAGS})
+	${ELM_LDFLAGS}
+	${SRATOM_LDFLAGS})
 set_target_properties(sherlock_eo PROPERTIES PREFIX "")
 install(TARGETS sherlock_eo DESTINATION ${DEST})
 
