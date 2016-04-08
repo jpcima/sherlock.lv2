@@ -416,57 +416,112 @@ _props_string_set_cb(props_t *props, void *value, LV2_URID new_type, const void 
 	strcpy((char *)value, (const char *)new_value);
 }
 
-static inline int
-_signum(LV2_URID urid1, LV2_URID urid2)
+static inline void
+_type_qsort(props_type_t *a, unsigned n)
 {
-	if(urid1 < urid2)
-		return -1;
-	else if(urid1 > urid2)
-		return 1;
+	if(n < 2)
+		return;
+	
+	const props_type_t *p = &a[n/2];
 
-	return 0;
+	unsigned i, j;
+	for(i=0, j=n-1; ; i++, j--)
+	{
+		while(a[i].urid < p->urid)
+			i++;
+
+		while(p->urid < a[j].urid)
+			j--;
+
+		if(i >= j)
+			break;
+
+		const props_type_t t = a[i];
+		a[i] = a[j];
+		a[j] = t;
+	}
+
+	_type_qsort(a, i);
+	_type_qsort(&a[i], n - i);
 }
 
-static int
-_impl_sort(const void *itm1, const void *itm2)
+static inline props_type_t *
+_type_bsearch(LV2_URID p, props_type_t *a, unsigned n)
 {
-	const props_impl_t *impl1 = itm1;
-	const props_impl_t *impl2 = itm2;
+	unsigned start = 0;
+	unsigned end = n;
 
-	return _signum(impl1->property, impl2->property);
+	while(start < end)
+	{
+		const unsigned mid = start + (end - start)/2;
+		props_type_t *dst = &a[mid];
+
+		if(p < dst->urid)
+			end = mid;
+		else if(p > dst->urid)
+			start = mid + 1;
+		else
+			return dst;
+	}
+
+	return NULL;
 }
 
-static int
-_impl_search(const void *itm1, const void *itm2)
+static inline void
+_impl_qsort(props_impl_t *a, unsigned n)
 {
-	const LV2_URID *property = itm1;
-	const props_impl_t *impl = itm2;
+	if(n < 2)
+		return;
+	
+	const props_impl_t *p = &a[n/2];
 
-	return _signum(*property, impl->property);
+	unsigned i, j;
+	for(i=0, j=n-1; ; i++, j--)
+	{
+		while(a[i].property < p->property)
+			i++;
+
+		while(p->property < a[j].property)
+			j--;
+
+		if(i >= j)
+			break;
+
+		const props_impl_t t = a[i];
+		a[i] = a[j];
+		a[j] = t;
+	}
+
+	_impl_qsort(a, i);
+	_impl_qsort(&a[i], n - i);
 }
 
-static int
-_type_sort(const void *itm1, const void *itm2)
+static inline props_impl_t *
+_impl_bsearch(LV2_URID p, props_impl_t *a, unsigned n)
 {
-	const props_type_t *type1 = itm1;
-	const props_type_t *type2 = itm2;
+	unsigned start = 0;
+	unsigned end = n;
 
-	return _signum(type1->urid, type2->urid);
-}
+	while(start < end)
+	{
+		const unsigned mid = start + (end - start)/2;
+		props_impl_t *dst = &a[mid];
 
-static int
-_type_cmp(const void *itm1, const void *itm2)
-{
-	const LV2_URID *urid = itm1;
-	const props_type_t *type = itm2;
+		if(p < dst->property)
+			end = mid;
+		else if(p > dst->property)
+			start = mid + 1;
+		else
+			return dst;
+	}
 
-	return _signum(*urid, type->urid);
+	return NULL;
 }
 
 static inline props_impl_t *
 _props_impl_search(props_t *props, LV2_URID property)
 {
-	return bsearch(&property, props->impls, props->nimpls, sizeof(props_impl_t), _impl_search);
+	return _impl_bsearch(property, props->impls, props->nimpls);
 }
 
 static inline LV2_Atom_Forge_Ref
@@ -831,7 +886,7 @@ props_init(props_t *props, const size_t max_nimpls, const char *subject,
 	ptr++;
 
 	assert(ptr == PROPS_TYPE_N);
-	qsort(props->types, PROPS_TYPE_N, sizeof(props_type_t), _type_sort);
+	_type_qsort(props->types, PROPS_TYPE_N);
 
 	return 1;
 }
@@ -847,8 +902,7 @@ props_register(props_t *props, const props_def_t *def, props_event_t event_mask,
 		return 0;
 
 	const LV2_URID type = props->map->map(props->map->handle, def->type);
-	props_type_t *props_type = bsearch(&type, props->types, PROPS_TYPE_N,
-		sizeof(props_type_t), _type_cmp);
+	const props_type_t *props_type = _type_bsearch(type, props->types, PROPS_TYPE_N);
 
 	if(!props_type)
 		return 0;
@@ -879,7 +933,7 @@ props_register(props_t *props, const props_def_t *def, props_event_t event_mask,
 static inline void
 props_sort(props_t *props)
 {
-	qsort(props->impls, props->nimpls, sizeof(props_impl_t), _impl_sort);
+	_impl_qsort(props->impls, props->nimpls);
 }
 
 static inline int
