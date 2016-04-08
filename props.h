@@ -227,7 +227,6 @@ props_set_writable(props_t *props, LV2_URID property, LV2_URID type, const void 
 static inline LV2_Atom_Forge_Ref
 props_set(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, LV2_URID property);
 
-// rt-safe
 static inline LV2_State_Status
 props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store,
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features);
@@ -249,8 +248,14 @@ _impl_spin_lock(props_impl_t *impl)
 	}
 }
 
+static inline bool
+_impl_try_lock(props_impl_t *impl)
+{
+	return atomic_flag_test_and_set_explicit(&impl->lock, memory_order_acquire) == false;
+}
+
 static inline void
-_impl_spin_unlock(props_impl_t *impl)
+_impl_unlock(props_impl_t *impl)
 {
 	atomic_flag_clear_explicit(&impl->lock, memory_order_release);
 }
@@ -499,13 +504,22 @@ _props_get(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 }
 
 static inline void
-_props_set(props_t *props, props_impl_t *impl, LV2_URID type, const void *value)
+_props_set_spin(props_t *props, props_impl_t *impl, LV2_URID type, const void *value)
 {
 	_impl_spin_lock(impl);
 
 	impl->type->set_cb(props, impl->value, type, value);
 
-	_impl_spin_unlock(impl);
+	_impl_unlock(impl);
+}
+
+static inline void
+_props_set_try(props_t *props, props_impl_t *impl, LV2_URID type, const void *value)
+{
+	if(_impl_try_lock(impl))
+		impl->type->set_cb(props, impl->value, type, value);
+
+	_impl_unlock(impl);
 }
 
 static inline LV2_Atom_Forge_Ref
@@ -959,7 +973,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		props_impl_t *impl = _props_impl_search(props, property->body);
 		if(impl && (impl->access == props->urid.patch_writable) )
 		{
-			_props_set(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
+			_props_set_try(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
 			if(impl->event_cb && (impl->event_mask & PROP_EVENT_SET) )
 				impl->event_cb(props->data, forge, frames, PROP_EVENT_SET, impl);
 			return 1;
@@ -998,7 +1012,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			props_impl_t *impl = _props_impl_search(props, property);
 			if(impl && (impl->access == props->urid.patch_writable) )
 			{
-				_props_set(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
+				_props_set_try(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
 				if(impl->event_cb && (impl->event_mask & PROP_EVENT_SET) )
 					impl->event_cb(props->data, forge, frames, PROP_EVENT_SET, impl);
 			}
@@ -1015,7 +1029,7 @@ props_set_writable(props_t *props, LV2_URID property, LV2_URID type, const void 
 	props_impl_t *impl = _props_impl_search(props, property);
 
 	if(impl)
-		_props_set(props, impl, type, value);
+		_props_set_try(props, impl, type, value);
 }
 
 static inline LV2_Atom_Forge_Ref
@@ -1063,7 +1077,7 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 
 			memcpy(value, impl->value, size);
 
-			_impl_spin_unlock(impl);
+			_impl_unlock(impl);
 
 			if( map_path && (impl->type->urid == forge->Path) )
 			{
@@ -1123,13 +1137,13 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 				char *absolute = map_path->absolute_path(map_path->handle, value);
 				if(absolute)
 				{
-					_props_set(props, impl, type, absolute);
+					_props_set_spin(props, impl, type, absolute);
 					free(absolute);
 				}
 			}
 			else // !Path
 			{
-				_props_set(props, impl, type, value);
+				_props_set_spin(props, impl, type, value);
 			}
 
 			if(impl->event_cb && (impl->event_mask & PROP_EVENT_RESTORE) )
