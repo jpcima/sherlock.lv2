@@ -25,6 +25,8 @@
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/time/time.h"
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"

@@ -297,6 +297,8 @@ _sratom_to_turtle(Sratom*         sratom,
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"atom", (const uint8_t *)LV2_ATOM_PREFIX);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"units", (const uint8_t *)LV2_UNITS_PREFIX);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"ui", (const uint8_t *)LV2_UI_PREFIX);
+	serd_env_set_prefix_from_strings(env, (const uint8_t *)"time", (const uint8_t *)LV2_TIME_URI"#");
+	serd_env_set_prefix_from_strings(env, (const uint8_t *)"patch", (const uint8_t *)LV2_PATCH_PREFIX);
 
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"osc", NS_OSC);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"xpress", NS_XPRESS);
