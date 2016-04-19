@@ -110,6 +110,7 @@ enum {
 	TK_NEWLINE,
 	TK_LT,
 	TK_GT,
+	TK_AMP,
 	TK_NAME,
 	TK_BADCHAR
 };
@@ -160,6 +161,7 @@ eol            [\n\r]
    {eol}       return TK_NEWLINE;
    "<"         return TK_LT;
    ">"         return TK_GT;
+   "&"         return TK_AMP;
    .           return TK_RAW;
 }
 
@@ -173,6 +175,7 @@ eol            [\n\r]
    {eol}       return TK_NEWLINE;
    "<"         return TK_LT;
    ">"         return TK_GT;
+   "&"         return TK_AMP;
    .           return TK_RAW;
 }
 
@@ -259,6 +262,9 @@ ttl_to_markup(const char *utf8, FILE *f)
 				break;
 			case TK_GT:
 				_add_plain("&gt;");
+				break;
+			case TK_AMP:
+				_add_plain("&amp;");
 				break;
 			
 			case TK_BADCHAR:
