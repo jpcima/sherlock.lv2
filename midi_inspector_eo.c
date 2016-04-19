@@ -581,9 +581,11 @@ _content_get(UI *ui, Evas_Object *parent)
 		ui->list = elm_genlist_add(ui->table);
 		if(ui->list)
 		{
+			elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // needef for lazy-loading
+			elm_genlist_mode_set(ui->list, ELM_LIST_LIMIT);
+			elm_genlist_block_count_set(ui->list, 64); // needef for lazy-loading
+			elm_genlist_reorder_mode_set(ui->list, EINA_FALSE);
 			elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // TRUE for lazy-loading
-			elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
 			evas_object_data_set(ui->list, "ui", ui);
 			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);

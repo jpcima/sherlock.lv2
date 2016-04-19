@@ -161,8 +161,38 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 						const char *str = LV2_ATOM_BODY_CONST(itm);
 						if(itm->size == 0)
 							str = "";
-						sprintf(ptr, TYPE(" s:", "%s"), str);
+						sprintf(ptr, TYPE(" s:", ""));
 						ptr += strlen(ptr);
+
+						for(unsigned i=0; i<strlen(str) + 1; i++)
+						{
+							switch(str[i])
+							{
+								case '<':
+									strncpy(ptr, "&lt;", 4);
+									ptr += 4;
+									break;
+								case '>':
+									strncpy(ptr, "&gt;", 4);
+									ptr += 4;
+									break;
+								case '&':
+									strncpy(ptr, "&amp;", 5);
+									ptr += 5;
+									break;
+								case '\n':
+									strncpy(ptr, "\\n", 2);
+									ptr += 2;
+									break;
+								case '\r':
+									strncpy(ptr, "\\r", 2);
+									ptr += 2;
+									break;
+								default:
+									*ptr++ = str[i];
+									break;
+							}
+						}
 					}
 					break;
 				}
@@ -642,9 +672,11 @@ _content_get(UI *ui, Evas_Object *parent)
 		ui->list = elm_genlist_add(ui->table);
 		if(ui->list)
 		{
+			elm_genlist_homogeneous_set(ui->list, EINA_TRUE); // needef for lazy-loading
+			elm_genlist_mode_set(ui->list, ELM_LIST_LIMIT);
+			elm_genlist_block_count_set(ui->list, 64); // needef for lazy-loading
+			elm_genlist_reorder_mode_set(ui->list, EINA_FALSE);
 			elm_genlist_select_mode_set(ui->list, ELM_OBJECT_SELECT_MODE_DEFAULT);
-			elm_genlist_homogeneous_set(ui->list, EINA_FALSE); // TRUE for lazy-loading
-			elm_genlist_mode_set(ui->list, ELM_LIST_SCROLL);
 			evas_object_data_set(ui->list, "ui", ui);
 			evas_object_smart_callback_add(ui->list, "expand,request",
 				_item_expand_request, ui);
