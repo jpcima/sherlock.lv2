@@ -751,7 +751,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 			}
 		}
-
 		
 		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body))
 			_clear_update(ui, n); // only update if there where any events

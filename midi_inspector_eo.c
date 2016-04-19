@@ -844,7 +844,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
 					ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-				elm_genlist_item_expanded_set(itm2, EINA_FALSE);
 				n++;
 				
 				// scroll to last item

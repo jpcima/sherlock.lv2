@@ -908,6 +908,10 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				return;
 			}
 
+			itm = elm_genlist_item_append(ui->list, ui->itc_group,
+				pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
+			elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
+
 			LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
 			{
 				size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
@@ -917,7 +921,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 
 				memcpy(ev, elmnt, len);
 
-				const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_packet,
 					ev, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
@@ -927,10 +930,6 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 				// scroll to last item
 				//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
 			}
-
-			itm = elm_genlist_item_append(ui->list, ui->itc_group,
-				pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
-			elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
 		}
 
 		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body))
