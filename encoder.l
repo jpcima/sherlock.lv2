@@ -102,10 +102,14 @@ enum {
 	TK_STRING_IN,
 	TK_STRING_OUT,
 	TK_STRING_ERR,
+	TK_LONG_STRING_IN,
+	TK_LONG_STRING_OUT,
 	TK_WHITESPACE,
 	TK_RAW,
 	TK_TAB,
 	TK_NEWLINE,
+	TK_LT,
+	TK_GT,
 	TK_NAME,
 	TK_BADCHAR
 };
@@ -122,6 +126,7 @@ number         ({n}|{n}[.]{n}){exp}?
 eol            [\n\r]
 
 %x XSTRING
+%x XLONG_STRING
 %x XURI
 
 %%
@@ -130,6 +135,7 @@ eol            [\n\r]
 "\t"           return TK_TAB;
 {eol}          return TK_NEWLINE;
 "<"            BEGIN(XURI); return TK_URI_IN;
+\"\"\"         BEGIN(XLONG_STRING); return TK_LONG_STRING_IN;
 \"             BEGIN(XSTRING); return TK_STRING_IN;
 {name}:        return TK_SUBJECT;
 "@prefix"      return TK_PREFIX;
@@ -145,11 +151,28 @@ eol            [\n\r]
    .           return TK_RAW;
 }
 
+<XLONG_STRING>
+{
+   \\\"	       return TK_RAW;
+   \"\"\"      BEGIN(0); return TK_LONG_STRING_OUT;
+   {w}         return TK_WHITESPACE;
+   "\t"        return TK_TAB;
+   {eol}       return TK_NEWLINE;
+   "<"         return TK_LT;
+   ">"         return TK_GT;
+   .           return TK_RAW;
+}
+
 <XSTRING>
 {
    \\\"	       return TK_RAW;
    \"          BEGIN(0); return TK_STRING_OUT;
    {eol}	     BEGIN(0); return TK_STRING_ERR;
+   {w}         return TK_WHITESPACE;
+   "\t"        return TK_TAB;
+   {eol}       return TK_NEWLINE;
+   "<"         return TK_LT;
+   ">"         return TK_GT;
    .           return TK_RAW;
 }
 
@@ -219,8 +242,23 @@ ttl_to_markup(const char *utf8, FILE *f)
 				_add_singleton("br");
 				break;
 
+			case TK_LONG_STRING_IN:
+				_add_markup_begin(MARKUP_STRING);
+				_add_plain("\"\"\"");
+				break;
+			case TK_LONG_STRING_OUT:
+				_add_plain("\"\"\"");
+				_add_markup_end(MARKUP_STRING);
+				break;
+
 			case TK_NEWLINE:
 				_add_singleton("br");
+				break;
+			case TK_LT:
+				_add_plain("&lt;");
+				break;
+			case TK_GT:
+				_add_plain("&gt;");
 				break;
 			
 			case TK_BADCHAR:
