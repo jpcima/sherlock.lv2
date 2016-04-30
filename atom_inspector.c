@@ -116,9 +116,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	capacity = handle->control_out->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
 	ref = lv2_atom_forge_raw(forge, handle->control_in, size);
-	if(ref)
-		lv2_atom_forge_pop(forge, &frame);
-	else
+	if(!ref)
 		lv2_atom_sequence_clear(handle->control_out);
 
 	// forge whole sequence as single event
@@ -140,9 +138,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 		if(ref)
 			ref = lv2_atom_forge_int(forge, nsamples);
 		if(ref)
-			ref = lv2_atom_forge_raw(forge, handle->control_in, size);
-		if(ref)
-			lv2_atom_forge_pad(forge, size);
+			ref = lv2_atom_forge_write(forge, handle->control_in, size);
 		if(ref)
 			lv2_atom_forge_pop(forge, &tup_frame);
 

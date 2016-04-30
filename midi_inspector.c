@@ -151,9 +151,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 			if(ref)
 				ref = lv2_atom_forge_frame_time(forge, ev->time.frames);
 			if(ref)
-				ref = lv2_atom_forge_raw(forge, &ev->body, sizeof(LV2_Atom) + ev->body.size);
-			if(ref)
-				lv2_atom_forge_pad(forge, ev->body.size);
+				ref = lv2_atom_forge_write(forge, &ev->body, sizeof(LV2_Atom) + ev->body.size);
 		}
 	}
 
