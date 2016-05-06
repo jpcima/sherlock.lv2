@@ -138,5 +138,5 @@ props:test
 		props:statInt 4 ;
 		props:statFloat "0.4"^^xsd:float ;
 		props:statString "Hello world" ;
-		props:statPath <hello.world> ;
+		props:statPath <manifest.ttl> ;
 	] .
