@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Hanspeter Portner (dev@open-music-kontrollers.ch)
+# Copyright (c) 2015-2016 Hanspeter Portner (dev@open-music-kontrollers.ch)
 #
 # This is free software: you can redistribute it and/or modify
 # it under the terms of the Artistic License 2.0 as published by
@@ -15,7 +15,9 @@
 
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
 @prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
@@ -29,8 +31,10 @@ osc:schedule
 	a lv2:Feature .
 
 osc:Event
-	a rdfs:Class ;
-	rdfs:subClassOf atom:Object ;
+	a rdfs:Class ,
+		rdfs:Datatype ;
+	rdfs:subClassOf atom:Atom ;
+	owl:onDatatype xsd:hexBinary ;
 	rdfs:label "OSC Event (Bundle or Message)" .
 
 # Maintainer

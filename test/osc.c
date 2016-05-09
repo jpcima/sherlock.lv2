@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Hanspeter Portner (dev@open-music-kontrollers.ch)
+ * Copyright (c) 2015-2016 Hanspeter Portner (dev@open-music-kontrollers.ch)
  *
  * This is free software: you can redistribute it and/or modify
  * it under the terms of the Artistic License 2.0 as published by
@@ -15,12 +15,18 @@
  * http://www.perlfoundation.org/artistic_license_2_0.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <lv2_osc.h>
 
-#define OSC_TEST_URI	OSC_PREFIX"test"
+#include <lv2/lv2plug.in/ns/lv2core/lv2.h>
+#include <lv2/lv2plug.in/ns/ext/urid/urid.h>
+#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+
+#define LV2_OSC_TEST_URI    LV2_OSC_PREFIX"test"
 
 typedef struct _plughandle_t plughandle_t;
 
@@ -28,7 +34,9 @@ struct _plughandle_t {
 	LV2_URID_Map *map;
 	LV2_Atom_Forge forge;
 	LV2_Atom_Forge_Ref ref;
-	osc_schedule_t *sched;
+
+	LV2_OSC_Schedule *sched;
+	LV2_URID osc_event;
 
 	const LV2_Atom_Sequence *event_in;
 	LV2_Atom_Sequence *event_out;
@@ -46,7 +54,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	{
 		if(!strcmp(features[i]->URI, LV2_URID__map))
 			handle->map = features[i]->data;
-		else if(!strcmp(features[i]->URI, OSC__schedule))
+		else if(!strcmp(features[i]->URI, LV2_OSC__schedule))
 			handle->sched= features[i]->data;
 	}
 
@@ -57,6 +65,8 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		free(handle);
 		return NULL;
 	}
+
+	handle->osc_event = handle->map->map(handle->map->handle, LV2_OSC__Event);
 
 	lv2_atom_forge_init(&handle->forge, handle->map);
 
@@ -93,9 +103,14 @@ run(LV2_Handle instance, uint32_t nsamples)
 
 	LV2_ATOM_SEQUENCE_FOREACH(handle->event_in, ev)
 	{
-		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+		const LV2_Atom *atom = &ev->body;
 
-		//FIXME
+		if(atom->type == handle->osc_event)
+		{
+			const uint8_t *body = LV2_ATOM_BODY_CONST(atom);
+
+			//TODO
+		}
 	}
 
 	if(handle->ref)
@@ -113,7 +128,7 @@ cleanup(LV2_Handle instance)
 }
 
 const LV2_Descriptor osc_test = {
-	.URI						= OSC_TEST_URI,
+	.URI						= LV2_OSC_TEST_URI,
 	.instantiate		= instantiate,
 	.connect_port		= connect_port,
 	.activate				= NULL,
