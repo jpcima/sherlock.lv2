@@ -19,7 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <lv2_osc.h>
+#include <osc.h>
+#include <writer.h>
+#include <reader.h>
+#include <forge.h>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
@@ -91,6 +94,22 @@ connect_port(LV2_Handle instance, uint32_t port, void *data)
 	}
 }
 
+static inline void
+_osc_packet(plughandle_t *handle, LV2_OSC_Reader *reader, uint64_t timetag, int32_t size)
+{
+	if(osc_reader_is_bundle(reader))
+	{
+		OSC_READER_BUNDLE_FOREACH(reader, itm, size)
+			_osc_packet(handle, reader, itm->timetag, itm->size);
+	}
+	else if(osc_reader_is_message(reader))
+	{
+		OSC_READER_MESSAGE_FOREACH(reader, arg, size)
+			printf("(%c %u) ", *arg->type, arg->size);
+		printf("\n");
+	}
+}
+
 static void
 run(LV2_Handle instance, uint32_t nsamples)
 {
@@ -108,10 +127,15 @@ run(LV2_Handle instance, uint32_t nsamples)
 		if(atom->type == handle->osc_event)
 		{
 			const uint8_t *body = LV2_ATOM_BODY_CONST(atom);
+			LV2_OSC_Reader reader;
+			osc_reader_initialize(&reader, body, atom->size);
 
-			//TODO
+			_osc_packet(handle, &reader, LV2_OSC_IMMEDIATE, atom->size);
 		}
 	}
+
+	if(handle->ref)
+		handle->ref = osc_forge_message_vararg(&handle->forge, handle->osc_event, "/", "");
 
 	if(handle->ref)
 		lv2_atom_forge_pop(&handle->forge, &frame);

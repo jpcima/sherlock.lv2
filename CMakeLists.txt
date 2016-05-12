@@ -22,3 +22,11 @@ install(TARGETS osc DESTINATION ${DEST})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test/manifest.ttl.in ${PROJECT_BINARY_DIR}/manifest.ttl)
 install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${DEST})
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/test/osc.ttl DESTINATION ${DEST})
+
+include(CTest)
+
+if(${BUILD_TESTING})
+	add_executable(osc_test
+		osc_test.c)
+	add_test(NAME API-Test COMMAND osc_test)
+endif()
