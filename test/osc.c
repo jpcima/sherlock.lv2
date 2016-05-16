@@ -135,7 +135,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	}
 
 	if(handle->ref)
-		handle->ref = osc_forge_message_vararg(&handle->forge, handle->osc_event, "/", "");
+		;//FIXME handle->ref = osc_forge_message_vararg(&handle->forge, handle->osc_event, "/", "");
 
 	if(handle->ref)
 		lv2_atom_forge_pop(&handle->forge, &frame);

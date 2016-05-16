@@ -23,6 +23,9 @@
 #include <endian.h>
 
 #include <osc.h>
+#include <util.h>
+
+#include <lv2/lv2plug.in/ns/ext/atom/util.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -405,6 +408,120 @@ osc_writer_message_vararg(LV2_OSC_Writer *writer, const char *path, const char *
 	va_end(args);
 
 	return res;
+}
+
+static inline bool
+osc_writer_packet(LV2_OSC_Writer *writer, LV2_OSC_URID *osc_urid,
+	LV2_URID_Unmap *unmap, uint32_t size, const LV2_Atom_Object_Body *body)
+{
+	if(body->otype == osc_urid->OSC_Bundle)
+	{
+		const LV2_Atom_Object *timetag = NULL;
+		const LV2_Atom_Tuple *items = NULL;
+
+		if(!lv2_osc_bundle_body_get(osc_urid, size, body, &timetag, &items))
+			return false;
+
+		LV2_OSC_Timetag tt;
+		LV2_OSC_Writer_Frame bndl;
+
+		lv2_osc_timetag_get(osc_urid, timetag, &tt);
+		if(!osc_writer_push_bundle(writer, &bndl, lv2_osc_timetag_parse(&tt)))
+			return false;
+
+		LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+		{
+			const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&prop->value;
+			LV2_OSC_Writer_Frame itm;
+
+			if(  !osc_writer_push_item(writer, &itm)
+				|| !osc_writer_packet(writer, osc_urid, unmap, obj->atom.size, &obj->body)
+				|| !osc_writer_pop_item(writer, &itm) )
+			{
+				return false;
+			}
+		}
+
+		return osc_writer_pop_bundle(writer, &bndl);
+	}
+	else if(body->otype == osc_urid->OSC_Message)
+	{
+		const LV2_Atom_String *path = NULL;
+		const LV2_Atom_Tuple *arguments = NULL;
+
+		if(lv2_osc_message_body_get(osc_urid, size, body, &path, &arguments))
+		{
+			if(!osc_writer_add_path(writer, LV2_ATOM_BODY_CONST(path)))
+				return false;
+
+			LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+			{
+				//FIXME write format string
+			}
+
+			LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+			{
+				const LV2_Atom *atom = &prop->value;
+				const LV2_Atom_Object *obj= (const LV2_Atom_Object *)&prop->value;
+
+				if(atom->type == osc_urid->ATOM_Int)
+				{
+					if(!osc_writer_add_int32(writer, ((const LV2_Atom_Int *)atom)->body))
+						return false;
+				}
+				else if(atom->type == osc_urid->ATOM_Float)
+				{
+					if(!osc_writer_add_float(writer, ((const LV2_Atom_Float *)atom)->body))
+						return false;
+				}
+				else if(atom->type == osc_urid->ATOM_String)
+				{
+					if(!osc_writer_add_string(writer, LV2_ATOM_BODY_CONST(atom)))
+						return false;
+				}
+				else if(atom->type == osc_urid->ATOM_Chunk)
+				{
+					if(!osc_writer_add_blob(writer, atom->size, LV2_ATOM_BODY_CONST(atom)))
+						return false;
+				}
+
+				else if(atom->type == osc_urid->ATOM_Long)
+				{
+					if(!osc_writer_add_int64(writer, ((const LV2_Atom_Long *)atom)->body))
+						return false;
+				}
+				else if(atom->type == osc_urid->ATOM_Double)
+				{
+					if(!osc_writer_add_double(writer, ((const LV2_Atom_Double *)atom)->body))
+						return false;
+				}
+				else if( (atom->type == osc_urid->ATOM_Object) && (obj->body.otype == osc_urid->OSC_Timetag) )
+				{
+					LV2_OSC_Timetag tt;
+					lv2_osc_timetag_get(osc_urid, obj, &tt);
+					if(!osc_writer_add_timetag(writer, lv2_osc_timetag_parse(&tt)))
+						return false;
+				}
+
+				else if(atom->type == osc_urid->ATOM_URID)
+				{
+					const char *symbol = unmap->unmap(unmap->handle, ((const LV2_Atom_URID *)atom)->body);
+					if(!symbol || !osc_writer_add_symbol(writer, symbol))
+						return false;
+				}
+				else if(atom->type == osc_urid->MIDI_MidiEvent)
+				{
+					if(!osc_writer_add_midi(writer, atom->size, LV2_ATOM_BODY_CONST(atom)))
+						return false;
+				}
+				//FIXME CHAR, RGBA
+			}
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 #ifdef __cplusplus

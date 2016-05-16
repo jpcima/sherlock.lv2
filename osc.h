@@ -20,11 +20,30 @@
 
 #include <stdint.h>
 
-#define LV2_OSC_URI               "http://open-music-kontrollers.ch/lv2/osc"
-#define LV2_OSC_PREFIX            LV2_OSC_URI "#"	
+#include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 
-#define LV2_OSC__Event            LV2_OSC_PREFIX "Event" // atom type 
-#define LV2_OSC__schedule         LV2_OSC_PREFIX "schedule" // feature
+#define LV2_OSC_URI                 "http://open-music-kontrollers.ch/lv2/osc"
+#define LV2_OSC_PREFIX              LV2_OSC_URI "#"	
+
+#define LV2_OSC__Event              LV2_OSC_PREFIX "Event" // atom message type 
+#define LV2_OSC__schedule           LV2_OSC_PREFIX "schedule" // feature
+
+#define LV2_OSC__Packet             LV2_OSC_PREFIX "Packet" // atom object type
+#define LV2_OSC__packetBody         LV2_OSC_PREFIX "packetBody" // atom object property
+
+#define LV2_OSC__Bundle             LV2_OSC_PREFIX "Bundle" // atom object type
+#define LV2_OSC__bundleTimetag      LV2_OSC_PREFIX "bundleTimetag" // atom object property
+#define LV2_OSC__bundleItems        LV2_OSC_PREFIX "bundleItems"
+
+#define LV2_OSC__Message            LV2_OSC_PREFIX "Message" // atom object type
+#define LV2_OSC__messagePath        LV2_OSC_PREFIX "messagePath" // atom object property
+#define LV2_OSC__messageArguments   LV2_OSC_PREFIX "messageArguments" // atom object property 
+
+#define LV2_OSC__Timetag            LV2_OSC_PREFIX "Timetag" // atom object type
+#define LV2_OSC__timetagIntegral    LV2_OSC_PREFIX "timetagIntegral" // atom object property
+#define LV2_OSC__timetagFraction    LV2_OSC_PREFIX "timetagFraction" // atom object property 
+
+#define LV2_OSC__Impulse            LV2_OSC_PREFIX "Impulse" // atom type
 
 #define LV2_OSC_PADDED_SIZE(size) ( ( (size_t)(size) + 3 ) & ( ~3 ) )
 #define LV2_OSC_IMMEDIATE         1ULL
@@ -37,7 +56,7 @@ typedef void *LV2_OSC_Schedule_Handle;
 
 typedef double (*LV2_OSC_Schedule_OSC2Frames)(
 	LV2_OSC_Schedule_Handle handle,
-	uint64_t timestamp);
+	uint64_t timetag);
 
 typedef uint64_t (*LV2_OSC_Schedule_Frames2OSC)(
 	LV2_OSC_Schedule_Handle handle,
@@ -84,6 +103,43 @@ union swap64_t {
 	uint64_t t;
 	double d;
 };
+
+typedef struct _LV2_OSC_Timetag {
+	uint32_t integral;
+	uint32_t fraction;
+} LV2_OSC_Timetag;
+
+typedef struct _LV2_OSC_URID {
+	LV2_URID OSC_Packet;
+	LV2_URID OSC_packetBody;
+
+	LV2_URID OSC_Bundle;
+	LV2_URID OSC_bundleTimetag;
+	LV2_URID OSC_bundleItems;
+
+	LV2_URID OSC_Message;
+	LV2_URID OSC_messagePath;
+	LV2_URID OSC_messageArguments;
+
+	LV2_URID OSC_Timetag;
+	LV2_URID OSC_timetagIntegral;
+	LV2_URID OSC_timetagFraction;
+
+	LV2_URID OSC_Impulse;
+
+	LV2_URID MIDI_MidiEvent;
+
+	LV2_URID ATOM_Int;
+	LV2_URID ATOM_Long;
+	LV2_URID ATOM_String;
+	LV2_URID ATOM_Float;
+	LV2_URID ATOM_Double;
+	LV2_URID ATOM_URID;
+	LV2_URID ATOM_Bool;
+	LV2_URID ATOM_Tuple;
+	LV2_URID ATOM_Object;
+	LV2_URID ATOM_Chunk;
+} LV2_OSC_URID;
 
 #ifdef __cplusplus
 } // extern "C"
