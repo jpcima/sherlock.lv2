@@ -111,7 +111,7 @@ sherlock:osc_inspector_1_ui
 		ui:notifyType osc:Event ;
 		ui:protocol atom:eventTransfer
 	] ;
-	lv2:requiredFeature ui:idleInterface, urid:map ;
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap ;
   lv2:extensionData ui:idleInterface, ui:showInterface .
 
 sherlock:osc_inspector_2_kx
@@ -122,7 +122,7 @@ sherlock:osc_inspector_2_kx
 		ui:notifyType osc:Event ;
 		ui:protocol atom:eventTransfer
 	] ;
-	lv2:requiredFeature kx:Host, urid:map .
+	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
 
 sherlock:osc_inspector_3_eo
 	a ui:EoUI ;
@@ -132,4 +132,4 @@ sherlock:osc_inspector_3_eo
 		ui:notifyType osc:Event ;
 		ui:protocol atom:eventTransfer
 	] ;
-	lv2:requiredFeature urid:map .
+	lv2:requiredFeature urid:map, urid:unmap .

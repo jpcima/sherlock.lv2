@@ -20,7 +20,7 @@
 
 #include <sherlock.h>
 
-#include <lv2_osc.h>
+#include <osc.lv2/util.h>
 
 typedef struct _handle_t handle_t;
 
@@ -34,7 +34,7 @@ struct _handle_t {
 	LV2_URID time_position;
 	LV2_URID time_frame;
 
-	osc_forge_t oforge;
+	LV2_OSC_URID osc_urid;
 
 	int64_t frame;
 };
@@ -62,7 +62,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->time_position = handle->map->map(handle->map->handle, LV2_TIME__Position);
 	handle->time_frame = handle->map->map(handle->map->handle, LV2_TIME__frame);
 
-	osc_forge_init(&handle->oforge, handle->map);
+	lv2_osc_urid_init(&handle->osc_urid, handle->map);
 	lv2_atom_forge_init(&handle->forge, handle->map);
 
 	return handle;
@@ -147,8 +147,7 @@ run(LV2_Handle instance, uint32_t nsamples)
 	{
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
-		if(  osc_atom_is_bundle(&handle->oforge, obj)
-			|| osc_atom_is_message(&handle->oforge, obj) )
+		if(lv2_osc_is_message_or_bundle_type(&handle->osc_urid, obj->body.otype))
 		{
 			has_osc = true;
 			if(ref)

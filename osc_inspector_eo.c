@@ -19,7 +19,7 @@
 
 #include <sherlock.h>
 
-#include <lv2_osc.h>
+#include <osc.lv2/util.h>
 
 #include <Elementary.h>
 
@@ -35,10 +35,11 @@ struct _UI {
 	LV2UI_Controller controller;
 	
 	LV2_URID_Map *map;
+	LV2_URID_Unmap *unmap;
 	LV2_Atom_Forge forge;
 	LV2_URID event_transfer;
 	LV2_URID midi_event;
-	osc_forge_t oforge;
+	LV2_OSC_URID osc_urid;
 
 	Evas_Object *widget;
 	Evas_Object *table;
@@ -78,10 +79,10 @@ struct _UI {
 #define PUNKT(VAL) "<color=#00b>"VAL"</color>"
 
 static inline char *
-_timestamp_stringify(UI *ui, char *ptr, char *end, const LV2_Atom_Long *atom)
+_timetag_stringify(UI *ui, char *ptr, char *end, uint64_t body)
 {
-	const uint32_t sec = (uint64_t)atom->body >> 32;
-	const uint32_t frac = (uint64_t)atom->body & 0xffffffff;
+	const uint32_t sec = body >> 32;
+	const uint32_t frac = body & 0xffffffff;
 	const double part = frac * 0x1p-32;
 
 	if(sec <= 1UL)
@@ -108,17 +109,16 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 	//FIXME check for buffer overflows!!!
 	const LV2_Atom_Object *obj = (const LV2_Atom_Object *)atom;
 
-	if(osc_atom_is_message(&ui->oforge, obj))
+	if(lv2_osc_is_message_type(&ui->osc_urid, obj->body.otype))
 	{
 		const LV2_Atom_String *path = NULL;
-		const LV2_Atom_String *fmt = NULL;
 		const LV2_Atom_Tuple *tup = NULL;
-		osc_atom_message_unpack(&ui->oforge, obj, &path, &fmt, &tup);
+		lv2_osc_message_get(&ui->osc_urid, obj, &path, &tup);
 
 		sprintf(ptr, CODE_PRE);
 		ptr += strlen(ptr);
 
-		if(path && fmt)
+		if(path)
 		{
 			sprintf(ptr, PATH(" %s"), LV2_ATOM_BODY_CONST(path));
 		}
@@ -128,222 +128,203 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		}
 		ptr += strlen(ptr);
 
-		const LV2_Atom *itm = lv2_atom_tuple_begin(tup);
-		for(const char *type = LV2_ATOM_BODY_CONST(fmt); *type; type++)
+		LV2_ATOM_TUPLE_FOREACH(tup, itm)
 		{
-			bool advance = true;
-
-			switch(*type)
+			switch(lv2_osc_argument_type(&ui->osc_urid, itm))
 			{
-				case 'i':
+				case LV2_OSC_INT32:
 				{
-					if(itm->type == ui->forge.Int)
-					{
-						sprintf(ptr, TYPE(" i:", "%"PRIi32), ((const LV2_Atom_Int *)itm)->body);
-						ptr += strlen(ptr);
-					}
+					sprintf(ptr, TYPE(" i:", "%"PRIi32), ((const LV2_Atom_Int *)itm)->body);
+					ptr += strlen(ptr);
 					break;
 				}
-				case 'f':
+				case LV2_OSC_FLOAT:
 				{
-					if(itm->type == ui->forge.Float)
-					{
-						sprintf(ptr, TYPE(" f:", "%f"), ((const LV2_Atom_Float *)itm)->body);
-						ptr += strlen(ptr);
-					}
+					sprintf(ptr, TYPE(" f:", "%f"), ((const LV2_Atom_Float *)itm)->body);
+					ptr += strlen(ptr);
 					break;
 				}
-				case 's': // fall-through
-				case 'S':
+				case LV2_OSC_STRING: // fall-through
 				{
-					if(itm->type == ui->forge.String)
-					{
-						const char *str = LV2_ATOM_BODY_CONST(itm);
-						if(itm->size == 0)
-							str = "";
-						sprintf(ptr, TYPE(" s:", ""));
-						ptr += strlen(ptr);
+					const char *str = LV2_ATOM_BODY_CONST(itm);
+					if(itm->size == 0)
+						str = "";
+					sprintf(ptr, TYPE(" s:", ""));
+					ptr += strlen(ptr);
 
-						for(unsigned i=0; i<strlen(str) + 1; i++)
+					for(unsigned i=0; i<strlen(str) + 1; i++)
+					{
+						switch(str[i])
 						{
-							switch(str[i])
-							{
-								case '<':
-									strncpy(ptr, "&lt;", 4);
-									ptr += 4;
-									break;
-								case '>':
-									strncpy(ptr, "&gt;", 4);
-									ptr += 4;
-									break;
-								case '&':
-									strncpy(ptr, "&amp;", 5);
-									ptr += 5;
-									break;
-								case '\n':
-									strncpy(ptr, "\\n", 2);
-									ptr += 2;
-									break;
-								case '\r':
-									strncpy(ptr, "\\r", 2);
-									ptr += 2;
-									break;
-								default:
-									*ptr++ = str[i];
-									break;
-							}
+							case '<':
+								strncpy(ptr, "&lt;", 4);
+								ptr += 4;
+								break;
+							case '>':
+								strncpy(ptr, "&gt;", 4);
+								ptr += 4;
+								break;
+							case '&':
+								strncpy(ptr, "&amp;", 5);
+								ptr += 5;
+								break;
+							case '\n':
+								strncpy(ptr, "\\n", 2);
+								ptr += 2;
+								break;
+							case '\r':
+								strncpy(ptr, "\\r", 2);
+								ptr += 2;
+								break;
+							default:
+								*ptr++ = str[i];
+								break;
 						}
 					}
 					break;
 				}
-				case 'b':
+				case LV2_OSC_BLOB:
 				{
-					if(itm->type == ui->forge.Chunk)
+					const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
+					sprintf(ptr, TYPE_PRE(" b:", PUNKT("[")));
+					ptr += strlen(ptr);
+					if(itm->size)
 					{
-						const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
-						sprintf(ptr, TYPE_PRE(" b:", PUNKT("[")));
+						sprintf(ptr, "%02"PRIX8, chunk[0]);
 						ptr += strlen(ptr);
-						if(itm->size)
+
+						for(unsigned i=1; i<itm->size; i++)
 						{
-							sprintf(ptr, "%02"PRIX8, chunk[0]);
+							sprintf(ptr, " %02"PRIX8, chunk[i]);
 							ptr += strlen(ptr);
-
-							for(unsigned i=1; i<itm->size; i++)
-							{
-								sprintf(ptr, " %02"PRIX8, chunk[i]);
-								ptr += strlen(ptr);
-							}
 						}
-						sprintf(ptr, TYPE_POST(PUNKT("]")));
-						ptr += strlen(ptr);
 					}
+					sprintf(ptr, TYPE_POST(PUNKT("]")));
+					ptr += strlen(ptr);
 					break;
 				}
 
-				case 'h':
+				case LV2_OSC_INT64:
 				{
-					if(itm->type == ui->forge.Long)
-					{
-						sprintf(ptr, TYPE(" h:", "%"PRIi64), ((const LV2_Atom_Long *)itm)->body);
-						ptr += strlen(ptr);
-					}
+					sprintf(ptr, TYPE(" h:", "%"PRIi64), ((const LV2_Atom_Long *)itm)->body);
+					ptr += strlen(ptr);
 					break;
 				}
-				case 'd':
+				case LV2_OSC_DOUBLE:
 				{
-					if(itm->type == ui->forge.Double)
-					{
-						sprintf(ptr, TYPE(" d:", "%lf"), ((const LV2_Atom_Double *)itm)->body);
-						ptr += strlen(ptr);
-					}
+					sprintf(ptr, TYPE(" d:", "%lf"), ((const LV2_Atom_Double *)itm)->body);
+					ptr += strlen(ptr);
 					break;
 				}
-				case 't':
+				case LV2_OSC_TIMETAG:
 				{
-					if(itm->type == ui->forge.Long)
-					{
-						ptr = _timestamp_stringify(ui, ptr, end, (const LV2_Atom_Long *)itm);
-					}
+					LV2_OSC_Timetag tt;
+					lv2_osc_timetag_get(&ui->osc_urid, (const LV2_Atom_Object *)itm, &tt);
+					ptr = _timetag_stringify(ui, ptr, end, lv2_osc_timetag_parse(&tt));
 					break;
 				}
 
-				case 'c':
+				case LV2_OSC_SYMBOL:
 				{
-					//if(itm->type == ui->forge.Char)
-					{
-						sprintf(ptr, TYPE(" c:", "%c"), ((const LV2_Atom_Int *)itm)->body);
-						ptr += strlen(ptr);
-					}
+					sprintf(ptr, TYPE(" S:", "%s"), ui->unmap->unmap(ui->unmap->handle, ((const LV2_Atom_URID *)itm)->body));
+					ptr += strlen(ptr);
 					break;
 				}
-				case 'm':
+				case LV2_OSC_MIDI:
 				{
-					if(itm->type == ui->midi_event)
+					const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
+					sprintf(ptr, TYPE_PRE(" m:", PUNKT("[")));
+					ptr += strlen(ptr);
+					if(itm->size)
 					{
-						const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
-						sprintf(ptr, TYPE_PRE(" m:", PUNKT("[")));
+						sprintf(ptr, "%02"PRIX8, chunk[0]);
 						ptr += strlen(ptr);
-						if(itm->size)
+
+						for(unsigned i=1; i<itm->size; i++)
 						{
-							sprintf(ptr, "%02"PRIX8, chunk[0]);
+							sprintf(ptr, " %02"PRIX8, chunk[i]);
 							ptr += strlen(ptr);
-
-							for(unsigned i=1; i<itm->size; i++)
-							{
-								sprintf(ptr, " %02"PRIX8, chunk[i]);
-								ptr += strlen(ptr);
-							}
 						}
-						sprintf(ptr, TYPE_POST(PUNKT("]")));
-						ptr += strlen(ptr);
 					}
+					sprintf(ptr, TYPE_POST(PUNKT("]")));
+					ptr += strlen(ptr);
+					break;
+				}
+				case LV2_OSC_CHAR:
+				{
+					sprintf(ptr, TYPE(" c:", "%c"), ((const LV2_Atom_Int *)itm)->body);
+					ptr += strlen(ptr);
+					break;
+				}
+				case LV2_OSC_RGBA:
+				{
+					const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
+					sprintf(ptr, TYPE_PRE(" r:", PUNKT("[")));
+					ptr += strlen(ptr);
+					if(itm->size)
+					{
+						sprintf(ptr, "%02"PRIX8, chunk[0]);
+						ptr += strlen(ptr);
+
+						for(unsigned i=1; i<itm->size; i++)
+						{
+							sprintf(ptr, " %02"PRIX8, chunk[i]);
+							ptr += strlen(ptr);
+						}
+					}
+					sprintf(ptr, TYPE_POST(PUNKT("]")));
+					ptr += strlen(ptr);
 					break;
 				}
 
-				case 'T':
+				case LV2_OSC_TRUE:
 				{
 					//if(itm->type == ui->forge.Bool)
 					{
 						sprintf(ptr, TYPE(" T:", "true"));
 						ptr += strlen(ptr);
 					}
-					advance = false;
 					break;
 				}
-				case 'F':
+				case LV2_OSC_FALSE:
 				{
 					//if(itm->type == ui->forge.Bool)
 					{
 						sprintf(ptr, TYPE(" F:", "false"));
 						ptr += strlen(ptr);
 					}
-					advance = false;
 					break;
 				}
-				case 'N':
+				case LV2_OSC_NIL:
 				{
 					//if(itm->type == 0)
 					{
 						sprintf(ptr, TYPE(" N:", "nil"));
 						ptr += strlen(ptr);
 					}
-					advance = false;
 					break;
 				}
-				case 'I':
+				case LV2_OSC_IMPULSE:
 				{
 					//if(itm->type == ui->forge.Impulse)
 					{
 						sprintf(ptr, TYPE(" I:", "impulse"));
 						ptr += strlen(ptr);
 					}
-					advance = false;
-					break;
-				}
-
-				default:
-				{
-					{
-						sprintf(ptr, TYPE(" %c:", "unknown"), *type);
-						ptr += strlen(ptr);
-					}
 					break;
 				}
 			}
-
-			if(advance && !lv2_atom_tuple_is_end(LV2_ATOM_BODY(tup), tup->atom.size, itm))
-				itm = lv2_atom_tuple_next(itm);
 		}
 
 		sprintf(ptr, CODE_POST);
 
 		return ptr + strlen(ptr);
 	}
-	else if(osc_atom_is_bundle(&ui->oforge, obj))
+	else if(lv2_osc_is_bundle_type(&ui->osc_urid, obj->body.otype))
 	{
-		const LV2_Atom_Long *timestamp = NULL;
+		const LV2_Atom_Object *timetag = NULL;
 		const LV2_Atom_Tuple *tup = NULL;
-		osc_atom_bundle_unpack(&ui->oforge, obj, &timestamp, &tup);
+		lv2_osc_bundle_get(&ui->osc_urid, obj, &timetag, &tup);
 		
 		sprintf(ptr, CODE_PRE);
 		ptr += strlen(ptr);
@@ -351,7 +332,9 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		sprintf(ptr, BUNDLE(" #bundle"));
 		ptr += strlen(ptr);
 
-		ptr = _timestamp_stringify(ui, ptr, end, timestamp);
+		LV2_OSC_Timetag tt;
+		lv2_osc_timetag_get(&ui->osc_urid, timetag, &tt);
+		ptr = _timetag_stringify(ui, ptr, end, lv2_osc_timetag_parse(&tt));
 
 		sprintf(ptr, CODE_POST);
 
@@ -530,11 +513,11 @@ _item_expanded(void *data, Evas_Object *obj, void *event_info)
 		_obj = udata;
 	}
 
-	if(_obj && osc_atom_is_bundle(&ui->oforge, _obj))
+	if(_obj && lv2_osc_is_bundle_type(&ui->osc_urid, _obj->body.otype))
 	{
-		const LV2_Atom_Long *timestamp = NULL;
+		const LV2_Atom_Object *timetag = NULL;
 		const LV2_Atom_Tuple *tup = NULL;
-		osc_atom_bundle_unpack(&ui->oforge, _obj, &timestamp, &tup);
+		lv2_osc_bundle_get(&ui->osc_urid, _obj, &timetag, &tup);
 
 		if(tup)
 		{
@@ -545,7 +528,7 @@ _item_expanded(void *data, Evas_Object *obj, void *event_info)
 				Elm_Object_Item *itm2 = elm_genlist_item_append(obj, ui->itc_item,
 					_obj2, itm, ELM_GENLIST_ITEM_TREE, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-				if(osc_atom_is_bundle(&ui->oforge, _obj2))
+				if(lv2_osc_is_bundle_type(&ui->osc_urid, _obj2->body.otype))
 					elm_genlist_item_expanded_set(itm2, EINA_TRUE);
 			}
 		}
@@ -815,11 +798,13 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	{
 		if(!strcmp(features[i]->URI, LV2_URID__map))
 			ui->map = features[i]->data;
+		if(!strcmp(features[i]->URI, LV2_URID__unmap))
+			ui->unmap = features[i]->data;
 		else if(!strcmp(features[i]->URI, LV2_UI__parent))
 			parent = features[i]->data;
   }
 
-	if(!ui->map)
+	if(!ui->map || !ui->unmap)
 	{
 		fprintf(stderr, "LV2 URID extension not supported\n");
 		free(ui);
@@ -834,7 +819,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	ui->event_transfer = ui->map->map(ui->map->handle, LV2_ATOM__eventTransfer);
 	ui->midi_event = ui->map->map(ui->map->handle, LV2_MIDI__MidiEvent);
 	lv2_atom_forge_init(&ui->forge, ui->map);
-	osc_forge_init(&ui->oforge, ui->map);
+	lv2_osc_urid_init(&ui->osc_urid, ui->map);
 
 	ui->itc_packet = elm_genlist_item_class_new();
 	if(ui->itc_packet)
