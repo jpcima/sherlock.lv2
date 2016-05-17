@@ -86,7 +86,22 @@ static inline LV2_Atom_Forge_Ref
 lv2_osc_forge_blob(LV2_Atom_Forge* forge, LV2_OSC_URID *osc_urid,
 	const uint8_t *buf, uint32_t size)
 {
-	return lv2_osc_forge_chunk(forge, forge->Chunk, buf, size);
+	return lv2_osc_forge_chunk(forge, osc_urid->ATOM_Chunk, buf, size);
+}
+
+static inline LV2_Atom_Forge_Ref
+lv2_osc_forge_char(LV2_Atom_Forge* forge, LV2_OSC_URID *osc_urid,
+	char val)
+{
+	return lv2_osc_forge_chunk(forge, osc_urid->OSC_Char, (const uint8_t *)&val, 1);
+}
+
+static inline LV2_Atom_Forge_Ref
+lv2_osc_forge_rgba(LV2_Atom_Forge* forge, LV2_OSC_URID *osc_urid,
+	uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+	const uint8_t val [4] = {r, g, b, a};
+	return lv2_osc_forge_chunk(forge, osc_urid->OSC_RGBA, val, 4);
 }
 
 static inline LV2_Atom_Forge_Ref
@@ -267,12 +282,18 @@ lv2_osc_forge_message_varlist(LV2_Atom_Forge *forge, LV2_OSC_URID *osc_urid,
 			}
 			case LV2_OSC_CHAR:
 			{
-				//FIXME
+				if(!(ref = lv2_osc_forge_char(forge, osc_urid, (char)va_arg(args, int))))
+					return 0;
 				break;
 			}
 			case LV2_OSC_RGBA:
 			{
-				//FIXME
+				if(!(ref = lv2_osc_forge_rgba(forge, osc_urid,
+						(uint8_t)va_arg(args, unsigned),
+						(uint8_t)va_arg(args, unsigned),
+						(uint8_t)va_arg(args, unsigned),
+						(uint8_t)va_arg(args, unsigned))))
+					return 0;
 				break;
 			}
 		}
@@ -415,18 +436,20 @@ lv2_osc_forge_packet(LV2_Atom_Forge *forge, LV2_OSC_URID *osc_urid,
 					}
 					case LV2_OSC_MIDI:
 					{
-						if(!(ref = lv2_osc_forge_blob(forge, osc_urid, arg->b, arg->size)))
+						if(!(ref = lv2_osc_forge_midi(forge, osc_urid, &arg->b[1], arg->size - 1)))
 							return 0;
 						break;
 					}
 					case LV2_OSC_CHAR:
 					{
-						//FIXME
+						if(!(ref = lv2_osc_forge_char(forge, osc_urid, arg->c)))
+							return 0;
 						break;
 					}
 					case LV2_OSC_RGBA:
 					{
-						//FIXME
+						if(!(ref = lv2_osc_forge_rgba(forge, osc_urid, arg->R, arg->G, arg->B, arg->A)))
+							return 0;
 						break;
 					}
 				}

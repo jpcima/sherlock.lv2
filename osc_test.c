@@ -5,13 +5,30 @@
 #include <osc.h>
 #include <reader.h>
 #include <writer.h>
+#include <forge.h>
 
 #define BUF_SIZE 8192
+#define MAX_URIDS 512
 
 typedef void (*test_t)(LV2_OSC_Writer *writer);
+typedef struct _urid_t urid_t;
+typedef struct _handle_t handle_t;
 
+struct _urid_t {
+	LV2_URID urid;
+	char *uri;
+};
+
+struct _handle_t {
+	urid_t urids [MAX_URIDS];
+	LV2_URID urid;
+};
+
+static handle_t __handle;
 static uint8_t buf0 [BUF_SIZE];
 static uint8_t buf1 [BUF_SIZE];
+static uint8_t buf2 [BUF_SIZE];
+static const LV2_Atom_Object *obj2= (const LV2_Atom_Object *)buf2;
 
 const uint8_t raw_0 [] = {
 	'/', 0x0, 0x0, 0x0,
@@ -98,6 +115,53 @@ const uint8_t raw_7 [] = {
 	0x0, 0x0, 0x0, 0x8,
 		'/', 0x0, 0x0, 0x0,
 		',', 0x0, 0x0, 0x0
+};
+
+static LV2_URID
+_map(LV2_URID_Map_Handle instance, const char *uri)
+{
+	handle_t *handle = instance;
+
+	urid_t *itm;
+	for(itm=handle->urids; itm->urid; itm++)
+	{
+		if(!strcmp(itm->uri, uri))
+			return itm->urid;
+	}
+
+	assert(handle->urid + 1 < MAX_URIDS);
+
+	// create new
+	itm->urid = ++handle->urid;
+	itm->uri = strdup(uri);
+
+	return itm->urid;
+}
+
+static const char *
+_unmap(LV2_URID_Unmap_Handle instance, LV2_URID urid)
+{
+	handle_t *handle = instance;
+
+	urid_t *itm;
+	for(itm=handle->urids; itm->urid; itm++)
+	{
+		if(itm->urid == urid)
+			return itm->uri;
+	}
+
+	// not found
+	return NULL;
+}
+
+static LV2_URID_Map map = {
+	.handle = &__handle,
+	.map = _map
+};
+
+static LV2_URID_Unmap unmap = {
+	.handle = &__handle,
+	.unmap = _unmap
 };
 
 static void
@@ -193,21 +257,39 @@ _clone(LV2_OSC_Reader *reader, LV2_OSC_Writer *writer, size_t size)
 static void
 _test_a(LV2_OSC_Writer *writer, const uint8_t *raw, size_t size)
 {
+	LV2_OSC_URID osc_urid;
+	lv2_osc_urid_init(&osc_urid, &map);
+
+	// check writer against raw bytes
 	size_t len;
 	assert(osc_writer_finalize(writer, &len) == buf0);
 	assert(len == size);
-	//_dump(raw, buf0, size);
 	assert(memcmp(raw, buf0, size) == 0);
 
+	// check reader & writer
 	LV2_OSC_Reader reader;
 	osc_reader_initialize(&reader, buf0, size);
 	osc_writer_initialize(writer, buf1, BUF_SIZE);
-
 	_clone(&reader, writer, size);
 
+	// check cloned against raw bytes
 	assert(osc_writer_finalize(writer, &len) == buf1);
 	assert(len == size);
-	//_dump(raw, buf0, size);
+	assert(memcmp(raw, buf1, size) == 0);
+
+	// check forge 
+	LV2_Atom_Forge forge;
+	lv2_atom_forge_init(&forge, &map);
+	lv2_atom_forge_set_buffer(&forge, buf2, BUF_SIZE);
+	assert(lv2_osc_forge_packet(&forge, &osc_urid, &map, buf0, size));
+
+	// check deforge 
+	osc_writer_initialize(writer, buf1, BUF_SIZE);
+	assert(osc_writer_packet(writer, &osc_urid, &unmap, obj2->atom.size, &obj2->body));
+
+	// check deforged against raw bytes
+	assert(osc_writer_finalize(writer, &len) == buf1);
+	assert(len == size);
 	assert(memcmp(raw, buf1, size) == 0);
 }
 

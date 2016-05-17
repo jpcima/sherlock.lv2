@@ -429,9 +429,9 @@ osc_writer_packet(LV2_OSC_Writer *writer, LV2_OSC_URID *osc_urid,
 		if(!osc_writer_push_bundle(writer, &bndl, lv2_osc_timetag_parse(&tt)))
 			return false;
 
-		LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+		LV2_ATOM_TUPLE_FOREACH(items, atom)
 		{
-			const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&prop->value;
+			const LV2_Atom_Object *obj= (const LV2_Atom_Object *)atom;
 			LV2_OSC_Writer_Frame itm;
 
 			if(  !osc_writer_push_item(writer, &itm)
@@ -454,15 +454,19 @@ osc_writer_packet(LV2_OSC_Writer *writer, LV2_OSC_URID *osc_urid,
 			if(!osc_writer_add_path(writer, LV2_ATOM_BODY_CONST(path)))
 				return false;
 
-			LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+			char fmt [128]; //TODO how big?
+			char *ptr = fmt;
+			LV2_ATOM_TUPLE_FOREACH(arguments, atom)
 			{
-				//FIXME write format string
+				*ptr++ = lv2_osc_argument_type(osc_urid, atom);
 			}
+			*ptr = '\0';
+			if(!osc_writer_add_format(writer, fmt))
+				return false;
 
-			LV2_ATOM_OBJECT_BODY_FOREACH(body, size, prop)
+			LV2_ATOM_TUPLE_FOREACH(arguments, atom)
 			{
-				const LV2_Atom *atom = &prop->value;
-				const LV2_Atom_Object *obj= (const LV2_Atom_Object *)&prop->value;
+				const LV2_Atom_Object *obj= (const LV2_Atom_Object *)atom;
 
 				if(atom->type == osc_urid->ATOM_Int)
 				{
@@ -503,6 +507,8 @@ osc_writer_packet(LV2_OSC_Writer *writer, LV2_OSC_URID *osc_urid,
 						return false;
 				}
 
+				// there is nothing to do for: true, false, nil, impulse
+
 				else if(atom->type == osc_urid->ATOM_URID)
 				{
 					const char *symbol = unmap->unmap(unmap->handle, ((const LV2_Atom_URID *)atom)->body);
@@ -511,10 +517,24 @@ osc_writer_packet(LV2_OSC_Writer *writer, LV2_OSC_URID *osc_urid,
 				}
 				else if(atom->type == osc_urid->MIDI_MidiEvent)
 				{
-					if(!osc_writer_add_midi(writer, atom->size, LV2_ATOM_BODY_CONST(atom)))
+					uint8_t *m = NULL;
+					if(!osc_writer_add_midi_inline(writer, atom->size + 1, &m))
+						return false;
+					m[0] = 0x0; // port
+					memcpy(&m[1], LV2_ATOM_BODY_CONST(atom), atom->size);
+				}
+				else if(atom->type == osc_urid->OSC_Char)
+				{
+					const char c = *(const char *)LV2_ATOM_BODY_CONST(atom);
+					if(!osc_writer_add_char(writer, c))
 						return false;
 				}
-				//FIXME CHAR, RGBA
+				else if(atom->type == osc_urid->OSC_RGBA)
+				{
+					const uint8_t *rgba = LV2_ATOM_BODY_CONST(atom);
+					if(!osc_writer_add_rgba(writer, rgba[0], rgba[1], rgba[2], rgba[3]))
+						return false;
+				}
 			}
 		}
 

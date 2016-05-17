@@ -141,6 +141,51 @@ lv2_osc_is_message_or_bundle_type(LV2_OSC_URID *osc_urid, LV2_URID type)
 		|| lv2_osc_is_bundle_type(osc_urid, type);
 }
 
+static inline LV2_OSC_Type
+lv2_osc_argument_type(LV2_OSC_URID *osc_urid, const LV2_Atom *atom)
+{
+	const LV2_Atom_Object *obj = (const LV2_Atom_Object *)atom;
+
+	if(atom->type == osc_urid->ATOM_Int)
+		return LV2_OSC_INT32;
+	else if(atom->type == osc_urid->ATOM_Float)
+		return LV2_OSC_FLOAT;
+	else if(atom->type == osc_urid->ATOM_String)
+		return LV2_OSC_STRING;
+	else if(atom->type == osc_urid->ATOM_Chunk)
+		return LV2_OSC_BLOB;
+
+	else if(atom->type == osc_urid->ATOM_Long)
+		return LV2_OSC_INT64;
+	else if(atom->type == osc_urid->ATOM_Double)
+		return LV2_OSC_DOUBLE;
+	else if( (atom->type == osc_urid->ATOM_Object) && (obj->body.otype == osc_urid->OSC_Timetag) )
+		return LV2_OSC_TIMETAG;
+
+	else if(atom->type == osc_urid->ATOM_Bool)
+	{
+		if(((const LV2_Atom_Bool *)atom)->body)
+			return LV2_OSC_TRUE;
+		else
+			return LV2_OSC_FALSE;
+	}
+	else if( (atom->type == 0) && (atom->size == 0) )
+		return LV2_OSC_NIL;
+	else if(atom->type == osc_urid->OSC_Impulse)
+		return LV2_OSC_IMPULSE;
+
+	else if(atom->type == osc_urid->ATOM_URID)
+		return LV2_OSC_SYMBOL;
+	else if(atom->type == osc_urid->MIDI_MidiEvent)
+		return LV2_OSC_MIDI;
+	else if(atom->type == osc_urid->OSC_Char)
+		return LV2_OSC_CHAR;
+	else if(atom->type == osc_urid->OSC_RGBA)
+		return LV2_OSC_RGBA;
+
+	return '\0';
+}
+
 /**
    TODO
 */
