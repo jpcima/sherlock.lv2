@@ -31,7 +31,6 @@
 #define LV2_OSC__schedule           LV2_OSC_PREFIX "schedule" // feature
 
 #define LV2_OSC__Packet             LV2_OSC_PREFIX "Packet" // atom object type
-#define LV2_OSC__packetBody         LV2_OSC_PREFIX "packetBody" // atom object property
 
 #define LV2_OSC__Bundle             LV2_OSC_PREFIX "Bundle" // atom object type
 #define LV2_OSC__bundleTimetag      LV2_OSC_PREFIX "bundleTimetag" // atom object property
@@ -115,7 +114,6 @@ typedef struct _LV2_OSC_Timetag {
 
 typedef struct _LV2_OSC_URID {
 	LV2_URID OSC_Packet;
-	LV2_URID OSC_packetBody;
 
 	LV2_URID OSC_Bundle;
 	LV2_URID OSC_bundleTimetag;
@@ -151,7 +149,6 @@ static inline void
 lv2_osc_urid_init(LV2_OSC_URID *osc_urid, LV2_URID_Map *map)
 {
 	osc_urid->OSC_Packet = map->map(map->handle, LV2_OSC__Packet);
-	osc_urid->OSC_packetBody = map->map(map->handle, LV2_OSC__packetBody);
 
 	osc_urid->OSC_Bundle = map->map(map->handle, LV2_OSC__Bundle);
 	osc_urid->OSC_bundleTimetag = map->map(map->handle, LV2_OSC__bundleTimetag);

@@ -18,9 +18,9 @@
 #ifndef LV2_OSC_FORGE_H
 #define LV2_OSC_FORGE_H
 
-#include <osc.h>
-#include <util.h>
-#include <reader.h>
+#include <osc.lv2/osc.h>
+#include <osc.lv2/util.h>
+#include <osc.lv2/reader.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 
@@ -328,9 +328,9 @@ lv2_osc_forge_packet(LV2_Atom_Forge *forge, LV2_OSC_URID *osc_urid,
 	LV2_Atom_Forge_Frame frame [2];
 	LV2_Atom_Forge_Ref ref;
 
-	osc_reader_initialize(&reader, buf, size);
+	lv2_osc_reader_initialize(&reader, buf, size);
 
-	if(osc_reader_is_bundle(&reader))
+	if(lv2_osc_reader_is_bundle(&reader))
 	{
 		LV2_OSC_Item *itm = OSC_READER_BUNDLE_BEGIN(&reader, size);
 		
@@ -348,7 +348,7 @@ lv2_osc_forge_packet(LV2_Atom_Forge *forge, LV2_OSC_URID *osc_urid,
 			return ref;
 		}
 	}
-	else if(osc_reader_is_message(&reader))
+	else if(lv2_osc_reader_is_message(&reader))
 	{
 		LV2_OSC_Arg *arg = OSC_READER_MESSAGE_BEGIN(&reader, size);
 

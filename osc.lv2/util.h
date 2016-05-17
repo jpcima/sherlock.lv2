@@ -21,13 +21,16 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include <osc.h>
+#include <osc.lv2/osc.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef void (*LV2_OSC_Method)(const char *path,
+	const LV2_Atom_Tuple *arguments, void *data);
 
 // characters not allowed in OSC path string
 static const char invalid_path_chars [] = {
@@ -288,6 +291,55 @@ lv2_osc_message_get(LV2_OSC_URID *osc_urid, const LV2_Atom_Object *obj,
 {
 	return lv2_osc_message_body_get(osc_urid, obj->atom.size, &obj->body,
 		path, arguments);
+}
+
+static inline bool
+lv2_osc_body_unroll(LV2_OSC_URID *osc_urid, uint32_t size, const LV2_Atom_Object_Body *body,
+	LV2_OSC_Method method, void *data)
+{
+	if(body->otype == osc_urid->OSC_Bundle)
+	{
+		const LV2_Atom_Object *timetag = NULL;
+		const LV2_Atom_Tuple *items = NULL;
+
+		if(!lv2_osc_bundle_body_get(osc_urid, size, body, &timetag, &items))
+			return false;
+
+		LV2_OSC_Timetag tt;
+		lv2_osc_timetag_get(osc_urid, timetag, &tt);
+
+		LV2_ATOM_TUPLE_FOREACH(items, atom)
+		{
+			const LV2_Atom_Object *obj= (const LV2_Atom_Object *)atom;
+
+			if(!lv2_osc_body_unroll(osc_urid, obj->atom.size, &obj->body, method, data))
+				return false;
+		}
+
+		return true;
+	}
+	else if(body->otype == osc_urid->OSC_Message)
+	{
+		const LV2_Atom_String *path = NULL;
+		const LV2_Atom_Tuple *arguments = NULL;
+
+		if(!lv2_osc_message_body_get(osc_urid, size, body, &path, &arguments))
+			return false;
+
+		if(method)
+			method(LV2_ATOM_BODY_CONST(path), arguments, data);
+
+		return true;
+	}
+
+	return false;
+}
+
+static inline bool
+lv2_osc_unroll(LV2_OSC_URID *osc_urid, const LV2_Atom_Object *obj,
+	LV2_OSC_Method method, void *data)
+{
+	return lv2_osc_body_unroll(osc_urid, obj->atom.size, &obj->body, method, data);
 }
 
 #ifdef __cplusplus

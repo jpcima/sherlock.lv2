@@ -2,10 +2,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <osc.h>
-#include <reader.h>
-#include <writer.h>
-#include <forge.h>
+#include <osc.lv2/osc.h>
+#include <osc.lv2/reader.h>
+#include <osc.lv2/writer.h>
+#include <osc.lv2/forge.h>
 
 #define BUF_SIZE 8192
 #define MAX_URIDS 512
@@ -175,60 +175,60 @@ _dump(const uint8_t *src, const uint8_t *dst, size_t size)
 static void
 _clone(LV2_OSC_Reader *reader, LV2_OSC_Writer *writer, size_t size)
 {
-	if(osc_reader_is_bundle(reader))
+	if(lv2_osc_reader_is_bundle(reader))
 	{
 		LV2_OSC_Item *itm = OSC_READER_BUNDLE_BEGIN(reader, size);
 		assert(itm);
 
 		LV2_OSC_Writer_Frame frame_bndl;
-		assert(osc_writer_push_bundle(writer, &frame_bndl, itm->timetag));
+		assert(lv2_osc_writer_push_bundle(writer, &frame_bndl, itm->timetag));
 
 		OSC_READER_BUNDLE_ITERATE(reader, itm)
 		{
 			LV2_OSC_Reader reader2;
-			osc_reader_initialize(&reader2, itm->body, itm->size);
+			lv2_osc_reader_initialize(&reader2, itm->body, itm->size);
 
 			LV2_OSC_Writer_Frame frame_itm;
-			assert(osc_writer_push_item(writer, &frame_itm));
+			assert(lv2_osc_writer_push_item(writer, &frame_itm));
 			_clone(&reader2, writer, itm->size);
-			assert(osc_writer_pop_item(writer, &frame_itm));
+			assert(lv2_osc_writer_pop_item(writer, &frame_itm));
 		}
 
-		assert(osc_writer_pop_bundle(writer, &frame_bndl));
+		assert(lv2_osc_writer_pop_bundle(writer, &frame_bndl));
 	}
-	else if(osc_reader_is_message(reader))
+	else if(lv2_osc_reader_is_message(reader))
 	{
 		LV2_OSC_Arg *arg = OSC_READER_MESSAGE_BEGIN(reader, size);
 		assert(arg);
 
-		assert(osc_writer_add_path(writer, arg->path));
-		assert(osc_writer_add_format(writer, arg->type));
+		assert(lv2_osc_writer_add_path(writer, arg->path));
+		assert(lv2_osc_writer_add_format(writer, arg->type));
 
 		OSC_READER_MESSAGE_ITERATE(reader, arg)
 		{
 			switch((LV2_OSC_Type)*arg->type)
 			{
 				case LV2_OSC_INT32:
-					assert(osc_writer_add_int32(writer, arg->i));
+					assert(lv2_osc_writer_add_int32(writer, arg->i));
 					break;
 				case LV2_OSC_FLOAT:
-					assert(osc_writer_add_float(writer, arg->f));
+					assert(lv2_osc_writer_add_float(writer, arg->f));
 					break;
 				case LV2_OSC_STRING:
-					assert(osc_writer_add_string(writer, arg->s));
+					assert(lv2_osc_writer_add_string(writer, arg->s));
 					break;
 				case LV2_OSC_BLOB:
-					assert(osc_writer_add_blob(writer, arg->size, arg->b));
+					assert(lv2_osc_writer_add_blob(writer, arg->size, arg->b));
 					break;
 
 				case LV2_OSC_INT64:
-					assert(osc_writer_add_int64(writer, arg->h));
+					assert(lv2_osc_writer_add_int64(writer, arg->h));
 					break;
 				case LV2_OSC_DOUBLE:
-					assert(osc_writer_add_double(writer, arg->d));
+					assert(lv2_osc_writer_add_double(writer, arg->d));
 					break;
 				case LV2_OSC_TIMETAG:
-					assert(osc_writer_add_timetag(writer, arg->t));
+					assert(lv2_osc_writer_add_timetag(writer, arg->t));
 					break;
 
 				case LV2_OSC_TRUE:
@@ -238,16 +238,16 @@ _clone(LV2_OSC_Reader *reader, LV2_OSC_Writer *writer, size_t size)
 					break;
 
 				case LV2_OSC_MIDI:
-					assert(osc_writer_add_midi(writer, arg->size, arg->m));
+					assert(lv2_osc_writer_add_midi(writer, arg->size, arg->m));
 					break;
 				case LV2_OSC_SYMBOL:
-					assert(osc_writer_add_symbol(writer, arg->S));
+					assert(lv2_osc_writer_add_symbol(writer, arg->S));
 					break;
 				case LV2_OSC_CHAR:
-					assert(osc_writer_add_char(writer, arg->c));
+					assert(lv2_osc_writer_add_char(writer, arg->c));
 					break;
 				case LV2_OSC_RGBA:
-					assert(osc_writer_add_rgba(writer, arg->R, arg->G, arg->B, arg->A));
+					assert(lv2_osc_writer_add_rgba(writer, arg->R, arg->G, arg->B, arg->A));
 					break;
 			}
 		}
@@ -262,18 +262,18 @@ _test_a(LV2_OSC_Writer *writer, const uint8_t *raw, size_t size)
 
 	// check writer against raw bytes
 	size_t len;
-	assert(osc_writer_finalize(writer, &len) == buf0);
+	assert(lv2_osc_writer_finalize(writer, &len) == buf0);
 	assert(len == size);
 	assert(memcmp(raw, buf0, size) == 0);
 
 	// check reader & writer
 	LV2_OSC_Reader reader;
-	osc_reader_initialize(&reader, buf0, size);
-	osc_writer_initialize(writer, buf1, BUF_SIZE);
+	lv2_osc_reader_initialize(&reader, buf0, size);
+	lv2_osc_writer_initialize(writer, buf1, BUF_SIZE);
 	_clone(&reader, writer, size);
 
 	// check cloned against raw bytes
-	assert(osc_writer_finalize(writer, &len) == buf1);
+	assert(lv2_osc_writer_finalize(writer, &len) == buf1);
 	assert(len == size);
 	assert(memcmp(raw, buf1, size) == 0);
 
@@ -284,11 +284,11 @@ _test_a(LV2_OSC_Writer *writer, const uint8_t *raw, size_t size)
 	assert(lv2_osc_forge_packet(&forge, &osc_urid, &map, buf0, size));
 
 	// check deforge 
-	osc_writer_initialize(writer, buf1, BUF_SIZE);
-	assert(osc_writer_packet(writer, &osc_urid, &unmap, obj2->atom.size, &obj2->body));
+	lv2_osc_writer_initialize(writer, buf1, BUF_SIZE);
+	assert(lv2_osc_writer_packet(writer, &osc_urid, &unmap, obj2->atom.size, &obj2->body));
 
 	// check deforged against raw bytes
-	assert(osc_writer_finalize(writer, &len) == buf1);
+	assert(lv2_osc_writer_finalize(writer, &len) == buf1);
 	assert(len == size);
 	assert(memcmp(raw, buf1, size) == 0);
 }
@@ -296,14 +296,14 @@ _test_a(LV2_OSC_Writer *writer, const uint8_t *raw, size_t size)
 static void
 test_0_a(LV2_OSC_Writer *writer)
 {
-	assert(osc_writer_message_vararg(writer, "/", ""));
+	assert(lv2_osc_writer_message_vararg(writer, "/", ""));
 	_test_a(writer, raw_0, sizeof(raw_0));
 }
 
 static void
 test_1_a(LV2_OSC_Writer *writer)
 {
-	assert(osc_writer_message_vararg(writer, "/ping", "ifs",
+	assert(lv2_osc_writer_message_vararg(writer, "/ping", "ifs",
 		12, 3.4f, "world"));
 	_test_a(writer, raw_1, sizeof(raw_1));
 }
@@ -311,7 +311,7 @@ test_1_a(LV2_OSC_Writer *writer)
 static void
 test_2_a(LV2_OSC_Writer *writer)
 {
-	assert(osc_writer_message_vararg(writer, "/ping", "hdS",
+	assert(lv2_osc_writer_message_vararg(writer, "/ping", "hdS",
 		12, 3.4, "http://example.com"));
 	_test_a(writer, raw_2, sizeof(raw_2));
 }
@@ -319,7 +319,7 @@ test_2_a(LV2_OSC_Writer *writer)
 static void
 test_3_a(LV2_OSC_Writer *writer)
 {
-	assert(osc_writer_message_vararg(writer, "/ping", "TFNI"));
+	assert(lv2_osc_writer_message_vararg(writer, "/ping", "TFNI"));
 	_test_a(writer, raw_3, sizeof(raw_3));
 }
 
@@ -327,7 +327,7 @@ static void
 test_4_a(LV2_OSC_Writer *writer)
 {
 	uint8_t m [] = {0x00, 0x90, 24, 0x7f};
-	assert(osc_writer_message_vararg(writer, "/midi", "m", 4, m));
+	assert(lv2_osc_writer_message_vararg(writer, "/midi", "m", 4, m));
 	_test_a(writer, raw_4, sizeof(raw_4));
 }
 
@@ -335,7 +335,7 @@ static void
 test_5_a(LV2_OSC_Writer *writer)
 {
 	uint8_t b [] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6};
-	assert(osc_writer_message_vararg(writer, "/blob", "b", 6, b));
+	assert(lv2_osc_writer_message_vararg(writer, "/blob", "b", 6, b));
 	_test_a(writer, raw_5, sizeof(raw_5));
 }
 
@@ -344,15 +344,15 @@ test_6_a(LV2_OSC_Writer *writer)
 {
 	LV2_OSC_Writer_Frame frame_bndl, frame_itm;
 
-	assert(osc_writer_push_bundle(writer, &frame_bndl, LV2_OSC_IMMEDIATE));
+	assert(lv2_osc_writer_push_bundle(writer, &frame_bndl, LV2_OSC_IMMEDIATE));
 	{
-		assert(osc_writer_push_item(writer, &frame_itm));
+		assert(lv2_osc_writer_push_item(writer, &frame_itm));
 		{
-			assert(osc_writer_message_vararg(writer, "/", ""));
+			assert(lv2_osc_writer_message_vararg(writer, "/", ""));
 		}
-		assert(osc_writer_pop_item(writer, &frame_itm));
+		assert(lv2_osc_writer_pop_item(writer, &frame_itm));
 	}
-	assert(osc_writer_pop_bundle(writer, &frame_bndl));
+	assert(lv2_osc_writer_pop_bundle(writer, &frame_bndl));
 
 	_test_a(writer, raw_6, sizeof(raw_6));
 }
@@ -362,29 +362,29 @@ test_7_a(LV2_OSC_Writer *writer)
 {
 	LV2_OSC_Writer_Frame frame_bndl[2], frame_itm[2];
 
-	assert(osc_writer_push_bundle(writer, &frame_bndl[0], LV2_OSC_IMMEDIATE));
+	assert(lv2_osc_writer_push_bundle(writer, &frame_bndl[0], LV2_OSC_IMMEDIATE));
 	{
-		assert(osc_writer_push_item(writer, &frame_itm[0]));
+		assert(lv2_osc_writer_push_item(writer, &frame_itm[0]));
 		{
-			assert(osc_writer_push_bundle(writer, &frame_bndl[1], LV2_OSC_IMMEDIATE));
+			assert(lv2_osc_writer_push_bundle(writer, &frame_bndl[1], LV2_OSC_IMMEDIATE));
 			{
-				assert(osc_writer_push_item(writer, &frame_itm[1]));
+				assert(lv2_osc_writer_push_item(writer, &frame_itm[1]));
 				{
-					assert(osc_writer_message_vararg(writer, "/", ""));
+					assert(lv2_osc_writer_message_vararg(writer, "/", ""));
 				}
-				assert(osc_writer_pop_item(writer, &frame_itm[1]));
+				assert(lv2_osc_writer_pop_item(writer, &frame_itm[1]));
 			}
-			assert(osc_writer_pop_bundle(writer, &frame_bndl[1]));
+			assert(lv2_osc_writer_pop_bundle(writer, &frame_bndl[1]));
 		}
-		assert(osc_writer_pop_item(writer, &frame_itm[0]));
+		assert(lv2_osc_writer_pop_item(writer, &frame_itm[0]));
 
-		assert(osc_writer_push_item(writer, &frame_itm[0]));
+		assert(lv2_osc_writer_push_item(writer, &frame_itm[0]));
 		{
-			assert(osc_writer_message_vararg(writer, "/", ""));
+			assert(lv2_osc_writer_message_vararg(writer, "/", ""));
 		}
-		assert(osc_writer_pop_item(writer, &frame_itm[0]));
+		assert(lv2_osc_writer_pop_item(writer, &frame_itm[0]));
 	}
-	assert(osc_writer_pop_bundle(writer, &frame_bndl[0]));
+	assert(lv2_osc_writer_pop_bundle(writer, &frame_bndl[0]));
 
 	_test_a(writer, raw_7, sizeof(raw_7));
 }
@@ -414,7 +414,7 @@ main(int argc, char **argv)
 		memset(buf0, 0x0, BUF_SIZE);
 		memset(buf1, 0x0, BUF_SIZE);
 
-		osc_writer_initialize(&writer, buf0, BUF_SIZE);
+		lv2_osc_writer_initialize(&writer, buf0, BUF_SIZE);
 
 		cb(&writer);
 	}

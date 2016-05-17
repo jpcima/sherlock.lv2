@@ -22,7 +22,7 @@
 #include <string.h>
 #include <endian.h>
 
-#include <osc.h>
+#include <osc.lv2/osc.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,7 +75,7 @@ struct _LV2_OSC_Arg {
 };
 
 static inline void
-osc_reader_initialize(LV2_OSC_Reader *reader, const uint8_t *buf, size_t size)
+lv2_osc_reader_initialize(LV2_OSC_Reader *reader, const uint8_t *buf, size_t size)
 {
 	reader->buf = buf;
 	reader->ptr = buf;
@@ -83,15 +83,15 @@ osc_reader_initialize(LV2_OSC_Reader *reader, const uint8_t *buf, size_t size)
 }
 
 static inline bool
-osc_reader_overflow(LV2_OSC_Reader *reader, size_t size)
+lv2_osc_reader_overflow(LV2_OSC_Reader *reader, size_t size)
 {
 	return reader->ptr + size > reader->end;
 }
 
 static inline bool
-osc_reader_be32toh(LV2_OSC_Reader *reader, union swap32_t *s32)
+lv2_osc_reader_be32toh(LV2_OSC_Reader *reader, union swap32_t *s32)
 {
-	if(osc_reader_overflow(reader, 4))
+	if(lv2_osc_reader_overflow(reader, 4))
 		return false;
 
 	s32->u = *(const uint32_t *)reader->ptr;
@@ -102,9 +102,9 @@ osc_reader_be32toh(LV2_OSC_Reader *reader, union swap32_t *s32)
 }
 
 static inline bool
-osc_reader_be64toh(LV2_OSC_Reader *reader, union swap64_t *s64)
+lv2_osc_reader_be64toh(LV2_OSC_Reader *reader, union swap64_t *s64)
 {
-	if(osc_reader_overflow(reader, 8))
+	if(lv2_osc_reader_overflow(reader, 8))
 		return false;
 
 	s64->u = *(const uint64_t *)reader->ptr;
@@ -115,10 +115,10 @@ osc_reader_be64toh(LV2_OSC_Reader *reader, union swap64_t *s64)
 }
 
 static inline bool
-osc_reader_get_int32(LV2_OSC_Reader *reader, int32_t *i)
+lv2_osc_reader_get_int32(LV2_OSC_Reader *reader, int32_t *i)
 {
 	union swap32_t s32;
-	if(!osc_reader_be32toh(reader, &s32))
+	if(!lv2_osc_reader_be32toh(reader, &s32))
 		return false;
 
 	*i = s32.i;
@@ -127,10 +127,10 @@ osc_reader_get_int32(LV2_OSC_Reader *reader, int32_t *i)
 }
 
 static inline bool
-osc_reader_get_float(LV2_OSC_Reader *reader, float *f)
+lv2_osc_reader_get_float(LV2_OSC_Reader *reader, float *f)
 {
 	union swap32_t s32;
-	if(!osc_reader_be32toh(reader, &s32))
+	if(!lv2_osc_reader_be32toh(reader, &s32))
 		return false;
 
 	*f = s32.f;
@@ -139,10 +139,10 @@ osc_reader_get_float(LV2_OSC_Reader *reader, float *f)
 }
 
 static inline bool
-osc_reader_get_int64(LV2_OSC_Reader *reader, int64_t *h)
+lv2_osc_reader_get_int64(LV2_OSC_Reader *reader, int64_t *h)
 {
 	union swap64_t s64;
-	if(!osc_reader_be64toh(reader, &s64))
+	if(!lv2_osc_reader_be64toh(reader, &s64))
 		return false;
 
 	*h = s64.h;
@@ -151,10 +151,10 @@ osc_reader_get_int64(LV2_OSC_Reader *reader, int64_t *h)
 }
 
 static inline bool
-osc_reader_get_timetag(LV2_OSC_Reader *reader, uint64_t *t)
+lv2_osc_reader_get_timetag(LV2_OSC_Reader *reader, uint64_t *t)
 {
 	union swap64_t s64;
-	if(!osc_reader_be64toh(reader, &s64))
+	if(!lv2_osc_reader_be64toh(reader, &s64))
 		return false;
 
 	*t = s64.u;
@@ -163,10 +163,10 @@ osc_reader_get_timetag(LV2_OSC_Reader *reader, uint64_t *t)
 }
 
 static inline bool
-osc_reader_get_double(LV2_OSC_Reader *reader, double *d)
+lv2_osc_reader_get_double(LV2_OSC_Reader *reader, double *d)
 {
 	union swap64_t s64;
-	if(!osc_reader_be64toh(reader, &s64))
+	if(!lv2_osc_reader_be64toh(reader, &s64))
 		return false;
 
 	*d = s64.d;
@@ -175,11 +175,11 @@ osc_reader_get_double(LV2_OSC_Reader *reader, double *d)
 }
 
 static inline bool
-osc_reader_get_string(LV2_OSC_Reader *reader, const char **s)
+lv2_osc_reader_get_string(LV2_OSC_Reader *reader, const char **s)
 {
 	const char *str = (const char *)reader->ptr;
 	const size_t padded = LV2_OSC_PADDED_SIZE(strlen(str) + 1);
-	if(osc_reader_overflow(reader, padded ))
+	if(lv2_osc_reader_overflow(reader, padded ))
 		return false;
 
 	*s = str;
@@ -189,15 +189,15 @@ osc_reader_get_string(LV2_OSC_Reader *reader, const char **s)
 }
 
 static inline bool
-osc_reader_get_symbol(LV2_OSC_Reader *reader, const char **S)
+lv2_osc_reader_get_symbol(LV2_OSC_Reader *reader, const char **S)
 {
-	return osc_reader_get_string(reader, S);
+	return lv2_osc_reader_get_string(reader, S);
 }
 
 static inline bool
-osc_reader_get_midi(LV2_OSC_Reader *reader, const uint8_t **m)
+lv2_osc_reader_get_midi(LV2_OSC_Reader *reader, const uint8_t **m)
 {
-	if(osc_reader_overflow(reader, 4))
+	if(lv2_osc_reader_overflow(reader, 4))
 		return false;
 
 	*m = reader->ptr;
@@ -207,13 +207,13 @@ osc_reader_get_midi(LV2_OSC_Reader *reader, const uint8_t **m)
 }
 
 static inline bool
-osc_reader_get_blob(LV2_OSC_Reader *reader, int32_t *len, const uint8_t **body)
+lv2_osc_reader_get_blob(LV2_OSC_Reader *reader, int32_t *len, const uint8_t **body)
 {
-	if(!osc_reader_get_int32(reader, len))
+	if(!lv2_osc_reader_get_int32(reader, len))
 		return false;
 
 	const size_t padded = LV2_OSC_PADDED_SIZE(*len);
-	if(osc_reader_overflow(reader, padded))
+	if(lv2_osc_reader_overflow(reader, padded))
 		return false;
 
 	*body = reader->ptr;
@@ -223,9 +223,9 @@ osc_reader_get_blob(LV2_OSC_Reader *reader, int32_t *len, const uint8_t **body)
 }
 
 static inline bool
-osc_reader_get_rgba(LV2_OSC_Reader *reader, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a)
+lv2_osc_reader_get_rgba(LV2_OSC_Reader *reader, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a)
 {
-	if(osc_reader_overflow(reader, 4))
+	if(lv2_osc_reader_overflow(reader, 4))
 		return false;
 
 	*r = reader->ptr[0];
@@ -238,10 +238,10 @@ osc_reader_get_rgba(LV2_OSC_Reader *reader, uint8_t *r, uint8_t *g, uint8_t *b, 
 }
 
 static inline bool
-osc_reader_get_char(LV2_OSC_Reader *reader, char *c)
+lv2_osc_reader_get_char(LV2_OSC_Reader *reader, char *c)
 {
 	int32_t i;
-	if(!osc_reader_get_int32(reader, &i))
+	if(!lv2_osc_reader_get_int32(reader, &i))
 		return false;
 
 	*c = i;
@@ -250,12 +250,12 @@ osc_reader_get_char(LV2_OSC_Reader *reader, char *c)
 }
 
 static inline LV2_OSC_Item *
-osc_reader_item_raw(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
+lv2_osc_reader_item_raw(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
 {
-	if(!osc_reader_get_int32(reader, &itm->size))
+	if(!lv2_osc_reader_get_int32(reader, &itm->size))
 		return NULL;
 
-	if(osc_reader_overflow(reader, itm->size))
+	if(lv2_osc_reader_overflow(reader, itm->size))
 		return NULL;
 
 	itm->body = reader->ptr;
@@ -264,64 +264,64 @@ osc_reader_item_raw(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
 }
 
 static inline LV2_OSC_Item *
-osc_reader_item_begin(LV2_OSC_Reader *reader, LV2_OSC_Item *itm, size_t len)
+lv2_osc_reader_item_begin(LV2_OSC_Reader *reader, LV2_OSC_Item *itm, size_t len)
 {
-	if(osc_reader_overflow(reader, len))
+	if(lv2_osc_reader_overflow(reader, len))
 		return NULL;
 
 	itm->end = reader->ptr + len;
 
-	if(osc_reader_overflow(reader, 16))
+	if(lv2_osc_reader_overflow(reader, 16))
 		return NULL;
 
 	if(strncmp((const char *)reader->ptr, "#bundle", 8))
 		return NULL;
 	reader->ptr += 8;
 
-	if(!osc_reader_get_timetag(reader, &itm->timetag))
+	if(!lv2_osc_reader_get_timetag(reader, &itm->timetag))
 		return NULL;
 
-	return osc_reader_item_raw(reader, itm);
+	return lv2_osc_reader_item_raw(reader, itm);
 }
 
 static inline bool
-osc_reader_item_is_end(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
+lv2_osc_reader_item_is_end(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
 {
 	return reader->ptr > itm->end;
 }
 
 static inline LV2_OSC_Item *
-osc_reader_item_next(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
+lv2_osc_reader_item_next(LV2_OSC_Reader *reader, LV2_OSC_Item *itm)
 {
 	reader->ptr += itm->size;
 
-	return osc_reader_item_raw(reader, itm);
+	return lv2_osc_reader_item_raw(reader, itm);
 }
 
 #define OSC_READER_BUNDLE_BEGIN(reader, len) \
-	osc_reader_item_begin( \
+	lv2_osc_reader_item_begin( \
 		(reader), \
 		&(LV2_OSC_Item){ .size = 0, .body = NULL, .timetag = 1ULL, .end = NULL }, \
 		len)
 
 #define OSC_READER_BUNDLE_ITERATE(reader, itm) \
 	for(itm = itm; \
-		itm && !osc_reader_item_is_end((reader), (itm)); \
-		itm = osc_reader_item_next((reader), (itm)))
+		itm && !lv2_osc_reader_item_is_end((reader), (itm)); \
+		itm = lv2_osc_reader_item_next((reader), (itm)))
 
 #define OSC_READER_BUNDLE_FOREACH(reader, itm, len) \
 	for(LV2_OSC_Item *(itm) = OSC_READER_BUNDLE_BEGIN((reader), (len)); \
-		itm && !osc_reader_item_is_end((reader), (itm)); \
-		itm = osc_reader_item_next((reader), (itm)))
+		itm && !lv2_osc_reader_item_is_end((reader), (itm)); \
+		itm = lv2_osc_reader_item_next((reader), (itm)))
 
 static inline LV2_OSC_Arg *
-osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
+lv2_osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 {
 	switch( (LV2_OSC_Type)*arg->type)
 	{
 		case LV2_OSC_INT32:
 		{
-			if(!osc_reader_get_int32(reader, &arg->i))
+			if(!lv2_osc_reader_get_int32(reader, &arg->i))
 				return NULL;
 			arg->size = 4;
 
@@ -329,7 +329,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_FLOAT:
 		{
-			if(!osc_reader_get_float(reader, &arg->f))
+			if(!lv2_osc_reader_get_float(reader, &arg->f))
 				return NULL;
 			arg->size = 4;
 
@@ -337,7 +337,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_STRING:
 		{
-			if(!osc_reader_get_string(reader, &arg->s))
+			if(!lv2_osc_reader_get_string(reader, &arg->s))
 				return NULL;
 			arg->size = strlen(arg->s) + 1;
 
@@ -345,7 +345,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_BLOB:
 		{
-			if(!osc_reader_get_blob(reader, &arg->size, &arg->b))
+			if(!lv2_osc_reader_get_blob(reader, &arg->size, &arg->b))
 				return NULL;
 			//arg->size = arg->size;
 
@@ -360,7 +360,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 
 		case LV2_OSC_INT64:
 		{
-			if(!osc_reader_get_int64(reader, &arg->h))
+			if(!lv2_osc_reader_get_int64(reader, &arg->h))
 				return NULL;
 			arg->size = 8;
 
@@ -368,7 +368,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_DOUBLE:
 		{
-			if(!osc_reader_get_double(reader, &arg->d))
+			if(!lv2_osc_reader_get_double(reader, &arg->d))
 				return NULL;
 			arg->size = 8;
 
@@ -376,7 +376,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_TIMETAG:
 		{
-			if(!osc_reader_get_timetag(reader, &arg->t))
+			if(!lv2_osc_reader_get_timetag(reader, &arg->t))
 				return NULL;
 			arg->size = 8;
 
@@ -385,7 +385,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 
 		case LV2_OSC_MIDI:
 		{
-			if(!osc_reader_get_midi(reader, &arg->m))
+			if(!lv2_osc_reader_get_midi(reader, &arg->m))
 				return NULL;
 			arg->size = 4;
 
@@ -393,7 +393,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_SYMBOL:
 		{
-			if(!osc_reader_get_symbol(reader, &arg->S))
+			if(!lv2_osc_reader_get_symbol(reader, &arg->S))
 				return NULL;
 			arg->size = strlen(arg->S) + 1;
 
@@ -401,7 +401,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_CHAR:
 		{
-			if(!osc_reader_get_char(reader, &arg->c))
+			if(!lv2_osc_reader_get_char(reader, &arg->c))
 				return NULL;
 			arg->size = 4;
 
@@ -409,7 +409,7 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 		}
 		case LV2_OSC_RGBA:
 		{
-			if(!osc_reader_get_rgba(reader, &arg->R, &arg->G, &arg->B, &arg->A))
+			if(!lv2_osc_reader_get_rgba(reader, &arg->R, &arg->G, &arg->B, &arg->A))
 				return NULL;
 			arg->size = 4;
 
@@ -421,17 +421,17 @@ osc_reader_arg_raw(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 }
 
 static inline LV2_OSC_Arg *
-osc_reader_arg_begin(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg, size_t len)
+lv2_osc_reader_arg_begin(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg, size_t len)
 {
-	if(osc_reader_overflow(reader, len))
+	if(lv2_osc_reader_overflow(reader, len))
 		return NULL;
 
 	arg->end = reader->ptr + len;
 
-	if(!osc_reader_get_string(reader, &arg->path)) //TODO check for validity
+	if(!lv2_osc_reader_get_string(reader, &arg->path)) //TODO check for validity
 		return NULL;
 
-	if(!osc_reader_get_string(reader, &arg->type)) //TODO check for validity
+	if(!lv2_osc_reader_get_string(reader, &arg->type)) //TODO check for validity
 		return NULL;
 
 	if(*arg->type != ',')
@@ -439,60 +439,60 @@ osc_reader_arg_begin(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg, size_t len)
 
 	arg->type++; // skip ','
 
-	return osc_reader_arg_raw(reader, arg);
+	return lv2_osc_reader_arg_raw(reader, arg);
 }
 
 static inline bool
-osc_reader_arg_is_end(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
+lv2_osc_reader_arg_is_end(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 {
 	return (*arg->type == '\0') || (reader->ptr > arg->end);
 }
 
 static inline LV2_OSC_Arg *
-osc_reader_arg_next(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
+lv2_osc_reader_arg_next(LV2_OSC_Reader *reader, LV2_OSC_Arg *arg)
 {
 	arg->type++;
 
-	return osc_reader_arg_raw(reader, arg);
+	return lv2_osc_reader_arg_raw(reader, arg);
 }
 
 #define OSC_READER_MESSAGE_BEGIN(reader, len) \
-	osc_reader_arg_begin( \
+	lv2_osc_reader_arg_begin( \
 		(reader), \
 		&(LV2_OSC_Arg){ .type = NULL, .size = 0, .path = NULL, .end = NULL }, \
 		len)
 
 #define OSC_READER_MESSAGE_ITERATE(reader, arg) \
 	for(arg = arg; \
-		arg && !osc_reader_arg_is_end((reader), (arg)); \
-		arg = osc_reader_arg_next((reader), (arg)))
+		arg && !lv2_osc_reader_arg_is_end((reader), (arg)); \
+		arg = lv2_osc_reader_arg_next((reader), (arg)))
 
 #define OSC_READER_MESSAGE_FOREACH(reader, arg, len) \
 	for(LV2_OSC_Arg *(arg) = OSC_READER_MESSAGE_BEGIN((reader), (len)); \
-		arg && !osc_reader_arg_is_end((reader), (arg)); \
-		arg = osc_reader_arg_next((reader), (arg)))
+		arg && !lv2_osc_reader_arg_is_end((reader), (arg)); \
+		arg = lv2_osc_reader_arg_next((reader), (arg)))
 
 static inline bool
-osc_reader_arg_varlist(LV2_OSC_Reader *reader, const char *fmt, va_list args)
+lv2_osc_reader_arg_varlist(LV2_OSC_Reader *reader, const char *fmt, va_list args)
 {
 	for(const char *type = fmt; *type; type++)
 	{
 		switch( (LV2_OSC_Type)*type)
 		{
 			case LV2_OSC_INT32:
-				if(!osc_reader_get_int32(reader, va_arg(args, int32_t *)))
+				if(!lv2_osc_reader_get_int32(reader, va_arg(args, int32_t *)))
 					return false;
 				break;
 			case LV2_OSC_FLOAT:
-				if(!osc_reader_get_float(reader, va_arg(args, float *)))
+				if(!lv2_osc_reader_get_float(reader, va_arg(args, float *)))
 					return false;
 				break;
 			case LV2_OSC_STRING:
-				if(!osc_reader_get_string(reader, va_arg(args, const char **)))
+				if(!lv2_osc_reader_get_string(reader, va_arg(args, const char **)))
 					return false;
 				break;
 			case LV2_OSC_BLOB:
-				if(!osc_reader_get_blob(reader, va_arg(args, int32_t *), va_arg(args, const uint8_t **)))
+				if(!lv2_osc_reader_get_blob(reader, va_arg(args, int32_t *), va_arg(args, const uint8_t **)))
 					return false;
 				break;
 
@@ -503,32 +503,32 @@ osc_reader_arg_varlist(LV2_OSC_Reader *reader, const char *fmt, va_list args)
 				break;
 
 			case LV2_OSC_INT64:
-				if(!osc_reader_get_int64(reader, va_arg(args, int64_t *)))
+				if(!lv2_osc_reader_get_int64(reader, va_arg(args, int64_t *)))
 					return false;
 				break;
 			case LV2_OSC_DOUBLE:
-				if(!osc_reader_get_double(reader, va_arg(args, double *)))
+				if(!lv2_osc_reader_get_double(reader, va_arg(args, double *)))
 					return false;
 				break;
 			case LV2_OSC_TIMETAG:
-				if(!osc_reader_get_timetag(reader, va_arg(args, uint64_t *)))
+				if(!lv2_osc_reader_get_timetag(reader, va_arg(args, uint64_t *)))
 					return false;
 				break;
 
 			case LV2_OSC_MIDI:
-				if(!osc_reader_get_midi(reader, va_arg(args, const uint8_t **)))
+				if(!lv2_osc_reader_get_midi(reader, va_arg(args, const uint8_t **)))
 					return false;
 				break;
 			case LV2_OSC_SYMBOL:
-				if(!osc_reader_get_symbol(reader, va_arg(args, const char **)))
+				if(!lv2_osc_reader_get_symbol(reader, va_arg(args, const char **)))
 					return false;
 				break;
 			case LV2_OSC_CHAR:
-				if(!osc_reader_get_char(reader, va_arg(args, char *)))
+				if(!lv2_osc_reader_get_char(reader, va_arg(args, char *)))
 					return false;
 				break;
 			case LV2_OSC_RGBA:
-				if(!osc_reader_get_rgba(reader, va_arg(args, uint8_t *), va_arg(args, uint8_t *),
+				if(!lv2_osc_reader_get_rgba(reader, va_arg(args, uint8_t *), va_arg(args, uint8_t *),
 						va_arg(args, uint8_t *), va_arg(args, uint8_t *)))
 					return false;
 				break;
@@ -539,12 +539,12 @@ osc_reader_arg_varlist(LV2_OSC_Reader *reader, const char *fmt, va_list args)
 }
 
 static inline bool
-osc_reader_arg_vararg(LV2_OSC_Reader *reader, const char *fmt, ...)
+lv2_osc_reader_arg_vararg(LV2_OSC_Reader *reader, const char *fmt, ...)
 {
   va_list args;
   va_start(args, fmt);
 
-	const bool res = osc_reader_arg_varlist(reader, fmt, args);
+	const bool res = lv2_osc_reader_arg_varlist(reader, fmt, args);
 
 	va_end(args);
 
@@ -552,13 +552,13 @@ osc_reader_arg_vararg(LV2_OSC_Reader *reader, const char *fmt, ...)
 }
 
 static inline bool
-osc_reader_is_bundle(LV2_OSC_Reader *reader)
+lv2_osc_reader_is_bundle(LV2_OSC_Reader *reader)
 {
 	return strncmp((const char *)reader->ptr, "#bundle", 8) == 0;
 }
 
 static inline bool
-osc_reader_is_message(LV2_OSC_Reader *reader)
+lv2_osc_reader_is_message(LV2_OSC_Reader *reader)
 {
 	return reader->ptr[0] == '/'; //FIXME check path
 }
