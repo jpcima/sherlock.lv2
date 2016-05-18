@@ -38,7 +38,7 @@ extern "C" {
  *****************************************************************************/
 
 // definitions
-#define PROPS_TYPE_N 9
+#define PROPS_TYPE_N 10
 
 // unions
 typedef union _props_raw_t props_raw_t;
@@ -73,6 +73,7 @@ typedef void (*props_type_set_cb_t)(
 	props_impl_t *impl,
 	void *value,
 	LV2_URID new_type,
+	uint32_t sz,
 	const void *new_value);
 
 union _props_raw_t {
@@ -184,6 +185,7 @@ struct _props_t {
 		LV2_URID atom_string;
 		LV2_URID atom_path;
 		LV2_URID atom_uri;
+		LV2_URID atom_chunk;
 
 		LV2_URID units_unit;
 	} urid;
@@ -283,7 +285,7 @@ _props_bool_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_int_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 	int32_t *ref = value;
@@ -310,7 +312,7 @@ _props_long_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_long_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 	int64_t *ref = value;
@@ -337,7 +339,7 @@ _props_float_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_float_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 	float *ref = value;
@@ -364,7 +366,7 @@ _props_double_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_double_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 	double *ref = value;
@@ -391,7 +393,7 @@ _props_urid_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_urid_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 	uint32_t *ref = value;
@@ -433,7 +435,7 @@ _props_uri_get_cb(LV2_Atom_Forge *forge, const void *value)
 }
 static void
 _props_string_set_cb(props_impl_t *impl, void *value,
-	LV2_URID new_type, const void *new_value)
+	LV2_URID new_type, uint32_t sz, const void *new_value)
 {
 	const props_t *props = impl->props;
 
@@ -441,6 +443,39 @@ _props_string_set_cb(props_impl_t *impl, void *value,
 		|| (new_type == props->urid.atom_path)
 		|| (new_type == props->urid.atom_uri) )
 		strncpy((char *)value, (const char *)new_value, impl->def->max_size);
+}
+
+static uint32_t
+_props_chunk_size_cb(const void *value)
+{
+	const uint32_t sz = *(uint32_t *)value;
+	return sz;
+}
+static LV2_Atom_Forge_Ref
+_props_chunk_get_cb(LV2_Atom_Forge *forge, const void *value)
+{
+	const uint32_t sz = *(uint32_t *)value;
+	const uint8_t *src = value + sizeof(uint32_t);
+	LV2_Atom_Forge_Ref ref;
+
+	return (ref = lv2_atom_forge_atom(forge, sz, forge->Chunk))
+		&& (ref = lv2_atom_forge_write(forge, src, sz));
+}
+static void
+_props_chunk_set_cb(props_impl_t *impl, void *value,
+	LV2_URID new_type, uint32_t sz, const void *new_value)
+{
+	const props_t *props = impl->props;
+
+	if(new_type == props->urid.atom_chunk)
+	{
+		*(uint32_t *)value = sz; // set chunk size
+		uint8_t *dst = value + sizeof(uint32_t);
+		const uint32_t msz = sz < impl->def->max_size - sizeof(uint32_t)
+			? sz
+			: impl->def->max_size - sizeof(uint32_t);
+		memcpy(dst, new_value, msz);
+	}
 }
 
 static inline void
@@ -603,9 +638,9 @@ _props_stash(props_t *props, props_impl_t *impl)
 }
 
 static inline void
-_props_set(props_t *props, props_impl_t *impl, LV2_URID type, const void *value)
+_props_set(props_t *props, props_impl_t *impl, LV2_URID type, uint32_t sz, const void *value)
 {
-	impl->type->set_cb(impl, impl->value, type, value);
+	impl->type->set_cb(impl, impl->value, type, sz, value);
 	_props_stash(props, impl);
 }
 
@@ -841,6 +876,7 @@ props_init(props_t *props, const size_t max_nimpls, const char *subject,
 	props->urid.atom_string = map->map(map->handle, LV2_ATOM__String);
 	props->urid.atom_path = map->map(map->handle, LV2_ATOM__Path);
 	props->urid.atom_uri = map->map(map->handle, LV2_ATOM__URI);
+	props->urid.atom_chunk = map->map(map->handle, LV2_ATOM__Chunk);
 
 	props->urid.units_unit = map->map(map->handle, LV2_UNITS__unit);
 
@@ -915,6 +951,14 @@ props_init(props_t *props, const size_t max_nimpls, const char *subject,
 	props->types[ptr].size_cb = _props_string_size_cb;
 	props->types[ptr].get_cb = _props_uri_get_cb;
 	props->types[ptr].set_cb = _props_string_set_cb;
+	ptr++;
+
+	// URI
+	props->types[ptr].urid = props->urid.atom_chunk;
+	props->types[ptr].size = 0;
+	props->types[ptr].size_cb = _props_chunk_size_cb;
+	props->types[ptr].get_cb = _props_chunk_get_cb;
+	props->types[ptr].set_cb = _props_chunk_set_cb;
 	ptr++;
 
 	assert(ptr == PROPS_TYPE_N);
@@ -1076,7 +1120,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		props_impl_t *impl = _props_impl_search(props, property->body);
 		if(impl && (impl->access == props->urid.patch_writable) )
 		{
-			_props_set(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
+			_props_set(props, impl, value->type, value->size, LV2_ATOM_BODY_CONST(value));
 
 			const props_def_t *def = impl->def;
 			if(def->event_cb && (def->event_mask & PROP_EVENT_SET) )
@@ -1118,7 +1162,7 @@ props_advance(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 			props_impl_t *impl = _props_impl_search(props, property);
 			if(impl && (impl->access == props->urid.patch_writable) )
 			{
-				_props_set(props, impl, value->type, LV2_ATOM_BODY_CONST(value));
+				_props_set(props, impl, value->type, value->size, LV2_ATOM_BODY_CONST(value));
 
 				const props_def_t *def = impl->def;
 				if(def->event_cb && (def->event_mask & PROP_EVENT_SET) )
@@ -1196,7 +1240,7 @@ props_save(props_t *props, LV2_Atom_Forge *forge, LV2_State_Store_Function store
 					? value + 7 // skip "file://"
 					: value;
 				char *abstract = map_path->abstract_path(map_path->handle, path);
-				if(abstract)
+				if(abstract && strcmp(abstract, path))
 				{
 					store(state, impl->property, abstract, strlen(abstract) + 1, impl->type->urid, flags);
 					free(abstract);
@@ -1249,13 +1293,13 @@ props_restore(props_t *props, LV2_Atom_Forge *forge, LV2_State_Retrieve_Function
 				char *absolute = map_path->absolute_path(map_path->handle, value);
 				if(absolute)
 				{
-					_props_set(props, impl, type, absolute);
+					_props_set(props, impl, type, strlen(absolute) + 1, absolute);
 					free(absolute);
 				}
 			}
 			else // !Path
 			{
-				_props_set(props, impl, type, value);
+				_props_set(props, impl, type, size, value);
 			}
 
 			const props_def_t *def = impl->def;
