@@ -219,7 +219,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 				case LV2_OSC_TIMETAG:
 				{
 					LV2_OSC_Timetag tt;
-					lv2_osc_timetag_get(&ui->osc_urid, (const LV2_Atom_Object *)itm, &tt);
+					lv2_osc_timetag_get(&ui->osc_urid, itm, &tt);
 					ptr = _timetag_stringify(ui, ptr, end, lv2_osc_timetag_parse(&tt));
 					break;
 				}
@@ -333,7 +333,7 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 		ptr += strlen(ptr);
 
 		LV2_OSC_Timetag tt;
-		lv2_osc_timetag_get(&ui->osc_urid, timetag, &tt);
+		lv2_osc_timetag_get(&ui->osc_urid, &timetag->atom, &tt);
 		ptr = _timetag_stringify(ui, ptr, end, lv2_osc_timetag_parse(&tt));
 
 		sprintf(ptr, CODE_POST);
