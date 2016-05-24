@@ -252,27 +252,15 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 				}
 				case LV2_OSC_CHAR:
 				{
-					sprintf(ptr, TYPE(" c:", "%c"), ((const LV2_Atom_Int *)itm)->body);
+					const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, itm);
+					sprintf(ptr, TYPE(" c:", "%c"), str[0]);
 					ptr += strlen(ptr);
 					break;
 				}
 				case LV2_OSC_RGBA:
 				{
-					const uint8_t *chunk = LV2_ATOM_BODY_CONST(itm);
-					sprintf(ptr, TYPE_PRE(" r:", PUNKT("[")));
-					ptr += strlen(ptr);
-					if(itm->size)
-					{
-						sprintf(ptr, "%02"PRIX8, chunk[0]);
-						ptr += strlen(ptr);
-
-						for(unsigned i=1; i<itm->size; i++)
-						{
-							sprintf(ptr, " %02"PRIX8, chunk[i]);
-							ptr += strlen(ptr);
-						}
-					}
-					sprintf(ptr, TYPE_POST(PUNKT("]")));
+					const char *str = LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, itm);
+					sprintf(ptr, TYPE(" r:", "%s"), str);
 					ptr += strlen(ptr);
 					break;
 				}
