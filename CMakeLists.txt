@@ -11,13 +11,14 @@ include_directories(${PROJECT_SOURCE_DIR}/symap)
 set(CMAKE_C_FLAGS "-std=gnu11 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-z,nodelete ${CMAKE_MODULE_LINKER_FLAGS}")
-
-set(SHERLOCK_MAJOR_VERSION 0)
-set(SHERLOCK_MINOR_VERSION 1)
-set(SHERLOCK_MICRO_VERSION 3)
-set(SHERLOCK_VERSION "${SHERLOCK_MAJOR_VERSION}.${SHERLOCK_MINOR_VERSION}.${SHERLOCK_MICRO_VERSION}")
-add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
 add_definitions("-D_GNU_SOURCE=1") # asprintf
+
+file(STRINGS "VERSION" SHERLOCK_VERSION)
+string(REPLACE "." ";" VERSION_LIST ${SHERLOCK_VERSION})
+list(GET VERSION_LIST 0 SHERLOCK_MAJOR_VERSION)
+list(GET VERSION_LIST 1 SHERLOCK_MINOR_VERSION)
+list(GET VERSION_LIST 2 SHERLOCK_MICRO_VERSION)
+add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
 
 set(DEST lib/lv2/sherlock.lv2)
 
