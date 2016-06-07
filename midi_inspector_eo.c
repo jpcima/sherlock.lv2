@@ -48,7 +48,14 @@ struct _UI {
 	char string_buf [STRING_BUF_SIZE];
 	char *logo_path;
 
-	int count_max;
+	PROPS_T(props, MAX_NPROPS);
+	struct {
+		LV2_URID overwrite;
+		LV2_URID block;
+		LV2_URID follow;
+	} urid;
+	state_t state;
+	state_t stash;
 };
 
 typedef struct _midi_msg_t midi_msg_t;
@@ -522,7 +529,7 @@ _clear_update(UI *ui, int count)
 		return;
 
 	char *buf = ui->string_buf;
-	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, ui->count_max);
+	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, ui->state.count);
 	elm_object_text_set(ui->clear, buf);
 }
 
@@ -568,6 +575,70 @@ _content_del(void *data, Evas *e, Evas_Object *obj, void *event_info)
 	evas_object_del(ui->widget);
 }
 
+static inline void
+_discover(UI *ui)
+{
+	union {
+		LV2_Atom atom;
+		uint8_t raw [128];
+	} buf;
+
+	lv2_atom_forge_set_buffer(&ui->forge, buf.raw, 512);
+	LV2_Atom_Forge_Frame frame;
+
+	if(lv2_atom_forge_object(&ui->forge, &frame, 0, ui->props.urid.patch_get))
+	{
+		lv2_atom_forge_pop(&ui->forge, &frame);
+
+		ui->write_function(ui->controller, 0, lv2_atom_total_size(&buf.atom),
+			ui->event_transfer, &buf.atom);
+	}
+}
+
+static inline void
+_check_changed(UI *ui, LV2_URID property)
+{
+	union {
+		LV2_Atom_Event ev;
+		uint8_t raw [128];
+	} buf;
+
+	lv2_atom_forge_set_buffer(&ui->forge, buf.raw, 512);
+
+	LV2_Atom_Forge_Ref ref = 1;
+	props_set(&ui->props, &ui->forge, 0, property, &ref);
+
+	ui->write_function(ui->controller, 0, lv2_atom_total_size(&buf.ev.body),
+		ui->event_transfer, &buf.ev.body);
+}
+
+static void
+_autoclear_changed(void *data, Evas_Object *obj, void *event)
+{
+	UI *ui = data;
+
+	ui->state.overwrite = elm_check_state_get(ui->autoclear) ? 1 : 0;
+	_check_changed(ui, ui->urid.overwrite);
+}
+
+static void
+_autoblock_changed(void *data, Evas_Object *obj, void *event)
+{
+	UI *ui = data;
+
+	ui->state.block = elm_check_state_get(ui->autoblock) ? 1 : 0;
+	_check_changed(ui, ui->urid.block);
+}
+
+static void
+_autofollow_changed(void *data, Evas_Object *obj, void *event)
+{
+	UI *ui = data;
+
+	ui->state.follow = elm_check_state_get(ui->autofollow) ? 1 : 0;
+	_check_changed(ui, ui->urid.follow);
+}
+
 static Evas_Object *
 _content_get(UI *ui, Evas_Object *parent)
 {
@@ -610,6 +681,7 @@ _content_get(UI *ui, Evas_Object *parent)
 		if(ui->autoclear)
 		{
 			elm_object_text_set(ui->autoclear, "overwrite");
+			evas_object_smart_callback_add(ui->autoclear, "changed", _autoclear_changed, ui);
 			evas_object_size_hint_weight_set(ui->autoclear, 0.f, 0.f);
 			evas_object_size_hint_align_set(ui->autoclear, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->autoclear);
@@ -620,6 +692,7 @@ _content_get(UI *ui, Evas_Object *parent)
 		if(ui->autoblock)
 		{
 			elm_object_text_set(ui->autoblock, "block");
+			evas_object_smart_callback_add(ui->autoblock, "changed", _autoblock_changed, ui);
 			evas_object_size_hint_weight_set(ui->autoblock, 0.f, 0.f);
 			evas_object_size_hint_align_set(ui->autoblock, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->autoblock);
@@ -630,6 +703,7 @@ _content_get(UI *ui, Evas_Object *parent)
 		if(ui->autofollow)
 		{
 			elm_object_text_set(ui->autofollow, "follow");
+			evas_object_smart_callback_add(ui->autofollow, "changed", _autofollow_changed, ui);
 			evas_object_size_hint_weight_set(ui->autofollow, 0.f, 0.f);
 			evas_object_size_hint_align_set(ui->autofollow, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->autofollow);
@@ -780,8 +854,24 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	}
 	*(Evas_Object **)widget = ui->widget;
 
-	ui->count_max = 2048;
-	
+	if(!props_init(&ui->props, MAX_NPROPS, plugin_uri, ui->map, ui))
+	{
+		fprintf(stderr, "failed to allocate property structure\n");
+		free(ui);
+		return NULL;
+	}
+
+	if(  !props_register(&ui->props, &stat_count, &ui->state.count, &ui->stash.count)
+		|| !(ui->urid.overwrite = props_register(&ui->props, &stat_overwrite, &ui->state.overwrite, &ui->stash.overwrite))
+		|| !(ui->urid.block = props_register(&ui->props, &stat_block, &ui->state.block, &ui->stash.block))
+		|| !(ui->urid.follow = props_register(&ui->props, &stat_follow, &ui->state.follow, &ui->stash.follow)) )
+	{
+		free(ui);
+		return NULL;
+	}
+
+	_discover(ui);
+
 	return ui;
 }
 
@@ -807,74 +897,96 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 	const void *buf)
 {
 	UI *ui = handle;
-			
-	if( (i == 2) && (urid == ui->event_transfer) && ui->list)
+
+	if(urid != ui->event_transfer)
+		return;
+
+	switch(i)
 	{
-		const LV2_Atom_Tuple *tup = buf;
-		const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
-		const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
-		const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
-		int n = elm_genlist_items_count(ui->list);
-
-		Elm_Object_Item *itm = NULL;
-		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
+		case 0:
+		case 1:
 		{
-			position_t *pos = malloc(sizeof(position_t));
-			if(!pos)
-				return;
-
-			pos->offset = offset->body;
-			pos->nsamples = nsamples->body;
-
-			// check item count 
-			if(n + 1 > ui->count_max)
+			LV2_Atom_Forge_Ref ref = 1;
+			if(props_advance(&ui->props, &ui->forge, 0, (const LV2_Atom_Object *)buf, &ref))
 			{
-				if(elm_check_state_get(ui->autoclear))
+				elm_check_state_set(ui->autoclear, ui->state.overwrite);
+				elm_check_state_set(ui->autoblock, ui->state.block);
+				elm_check_state_set(ui->autofollow, ui->state.follow);
+				_clear_update(ui, elm_genlist_items_count(ui->list));
+			}
+
+			break;
+		}
+		case 2:
+		{
+			const LV2_Atom_Tuple *tup = buf;
+			const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
+			const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
+			const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
+			int n = elm_genlist_items_count(ui->list);
+
+			Elm_Object_Item *itm = NULL;
+			if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body)) // there are events
+			{
+				position_t *pos = malloc(sizeof(position_t));
+				if(!pos)
+					return;
+
+				pos->offset = offset->body;
+				pos->nsamples = nsamples->body;
+
+				// check item count 
+				if(n + 1 > ui->state.count)
 				{
-					elm_genlist_clear(ui->list);
-					n = 0;
+					if(ui->state.overwrite)
+					{
+						elm_genlist_clear(ui->list);
+						n = 0;
+					}
+					else
+					{
+						return;
+					}
 				}
-				else
+				else if(ui->state.block)
 				{
 					return;
 				}
-			}
-			else if(elm_check_state_get(ui->autoblock))
-			{
-				return;
-			}
 
-			itm = elm_genlist_item_append(ui->list, ui->itc_group,
-				pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
-			elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
+				itm = elm_genlist_item_append(ui->list, ui->itc_group,
+					pos, NULL, ELM_GENLIST_ITEM_GROUP, NULL, NULL);
+				elm_genlist_item_select_mode_set(itm, ELM_OBJECT_SELECT_MODE_NONE);
 
-			LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
-			{
-				size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
-				LV2_Atom_Event *ev = malloc(len);
-				if(!ev)
-					continue;
-
-				memcpy(ev, elmnt, len);
-			
-				Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
-					ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
-				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
-				n++;
-
-				if(n == 1) // always select first element
-					elm_genlist_item_selected_set(itm2, EINA_TRUE);
-				
-				if(elm_check_state_get(ui->autofollow)) // scroll to last item
+				LV2_ATOM_SEQUENCE_FOREACH(seq, elmnt)
 				{
-					elm_genlist_item_show(itm2, ELM_GENLIST_ITEM_SCROLLTO_BOTTOM);
-					elm_genlist_item_selected_set(itm2, EINA_TRUE);
+					size_t len = sizeof(LV2_Atom_Event) + elmnt->body.size;
+					LV2_Atom_Event *ev = malloc(len);
+					if(!ev)
+						continue;
+
+					memcpy(ev, elmnt, len);
+				
+					Elm_Object_Item *itm2 = elm_genlist_item_append(ui->list, ui->itc_midi,
+						ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+					elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
+					n++;
+
+					if(n == 1) // always select first element
+						elm_genlist_item_selected_set(itm2, EINA_TRUE);
+					
+					if(ui->state.follow) // scroll to last item
+					{
+						elm_genlist_item_show(itm2, ELM_GENLIST_ITEM_SCROLLTO_BOTTOM);
+						elm_genlist_item_selected_set(itm2, EINA_TRUE);
+					}
 				}
 			}
+			
+			if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body))
+				_clear_update(ui, n); // only update if there where any events
+
+			break;
 		}
-		
-		if(seq->atom.size > sizeof(LV2_Atom_Sequence_Body))
-			_clear_update(ui, n); // only update if there where any events
 	}
 }
 

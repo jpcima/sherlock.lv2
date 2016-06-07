@@ -37,6 +37,10 @@ struct _handle_t {
 	LV2_OSC_URID osc_urid;
 
 	int64_t frame;
+
+	PROPS_T(props, MAX_NPROPS);
+	state_t state;
+	state_t stash;
 };
 
 static LV2_Handle
@@ -64,6 +68,22 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 
 	lv2_osc_urid_init(&handle->osc_urid, handle->map);
 	lv2_atom_forge_init(&handle->forge, handle->map);
+
+	if(!props_init(&handle->props, MAX_NPROPS, descriptor->URI, handle->map, handle))
+	{
+		fprintf(stderr, "failed to allocate property structure\n");
+		free(handle);
+		return NULL;
+	}
+
+	if(  !props_register(&handle->props, &stat_count, &handle->state.count, &handle->stash.count)
+		|| !props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite)
+		|| !props_register(&handle->props, &stat_block, &handle->state.block, &handle->stash.block)
+		|| !props_register(&handle->props, &stat_follow, &handle->state.follow, &handle->stash.follow) )
+	{
+		free(handle);
+		return NULL;
+	}
 
 	return handle;
 }
@@ -98,30 +118,41 @@ run(LV2_Handle instance, uint32_t nsamples)
 	LV2_Atom_Forge_Frame frame [3];
 	LV2_Atom_Forge_Ref ref;
 
-	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
-	{
-		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
-
-		if(lv2_atom_forge_is_object_type(forge, obj->atom.type))
-		{
-			if(obj->body.otype == handle->time_position)
-			{
-				const LV2_Atom_Long *time_frame = NULL;
-				lv2_atom_object_get(obj, handle->time_frame, &time_frame, NULL);
-				if(time_frame)
-					handle->frame = time_frame->body - ev->time.frames;
-			}
-		}
-	}
-
 	// size of input sequence
-	size_t size = sizeof(LV2_Atom) + handle->control_in->atom.size;
+	const size_t size = lv2_atom_total_size(&handle->control_in->atom);
 	
 	// copy whole input sequence to through port
 	capacity = handle->control_out->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
-	ref = lv2_atom_forge_raw(forge, handle->control_in, size);
-	if(!ref)
+	ref = lv2_atom_forge_sequence_head(forge, frame, 0);
+
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
+	{
+		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+		const int64_t frames = ev->time.frames;
+
+		// copy all events to through port
+		if(ref)
+			ref = lv2_atom_forge_frame_time(forge, frames);
+		if(ref)
+			ref = lv2_atom_forge_raw(forge, &obj->atom, lv2_atom_total_size(&obj->atom));
+		if(ref)
+			lv2_atom_forge_pad(forge, obj->atom.size);
+
+		if(  !props_advance(&handle->props, forge, frames, obj, &ref)
+			&& lv2_atom_forge_is_object_type(forge, obj->atom.type)
+			&& (obj->body.otype == handle->time_position) )
+		{
+			const LV2_Atom_Long *time_frame = NULL;
+			lv2_atom_object_get(obj, handle->time_frame, &time_frame, NULL);
+			if(time_frame)
+				handle->frame = time_frame->body - frames;
+		}
+	}
+
+	if(ref)
+		lv2_atom_forge_pop(forge, frame);
+	else
 		lv2_atom_sequence_clear(handle->control_out);
 
 	// forge whole sequence as single event
@@ -180,6 +211,39 @@ cleanup(LV2_Handle instance)
 	free(handle);
 }
 
+static LV2_State_Status
+_state_save(LV2_Handle instance, LV2_State_Store_Function store,
+	LV2_State_Handle state, uint32_t flags,
+	const LV2_Feature *const *features)
+{
+	handle_t *handle = instance;
+
+	return props_save(&handle->props, &handle->forge, store, state, flags, features);
+}
+
+static LV2_State_Status
+_state_restore(LV2_Handle instance, LV2_State_Retrieve_Function retrieve,
+	LV2_State_Handle state, uint32_t flags,
+	const LV2_Feature *const *features)
+{
+	handle_t *handle = instance;
+
+	return props_restore(&handle->props, &handle->forge, retrieve, state, flags, features);
+}
+
+static const LV2_State_Interface state_iface = {
+	.save = _state_save,
+	.restore = _state_restore
+};
+
+static const void *
+extension_data(const char *uri)
+{
+	if(!strcmp(uri, LV2_STATE__interface))
+		return &state_iface;
+	return NULL;
+}
+
 const LV2_Descriptor osc_inspector = {
 	.URI						= SHERLOCK_OSC_INSPECTOR_URI,
 	.instantiate		= instantiate,
@@ -188,5 +252,5 @@ const LV2_Descriptor osc_inspector = {
 	.run						= run,
 	.deactivate			= NULL,
 	.cleanup				= cleanup,
-	.extension_data	= NULL
+	.extension_data	= extension_data 
 };

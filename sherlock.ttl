@@ -16,19 +16,22 @@
 @prefix foaf:	<http://xmlns.com/foaf/0.1/> .
 @prefix doap:	<http://usefulinc.com/ns/doap#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix lv2:	<http://lv2plug.in/ns/lv2core#> .
+@prefix rdf: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
 @prefix atom:	<http://lv2plug.in/ns/ext/atom#> .
 @prefix midi:	<http://lv2plug.in/ns/ext/midi#> .
 @prefix time: <http://lv2plug.in/ns/ext/time#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
 
 @prefix xpress: <http://open-music-kontrollers.ch/lv2/xpress#> .
-@prefix osc:  <http://open-music-kontrollers.ch/lv2/osc#> .
-@prefix lic:	<http://opensource.org/licenses/> .
-@prefix omk:	<http://open-music-kontrollers.ch/ventosus#> .
+@prefix osc: <http://open-music-kontrollers.ch/lv2/osc#> .
+@prefix lic: <http://opensource.org/licenses/> .
+@prefix omk: <http://open-music-kontrollers.ch/ventosus#> .
 @prefix proj:	<http://open-music-kontrollers.ch/lv2/> .
-@prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
+@prefix sherlock: <http://open-music-kontrollers.ch/lv2/sherlock#> .
 
 osc:Event
 	a rdfs:Class ;
@@ -53,6 +56,35 @@ proj:sherlock
 	doap:maintainer omk:me ;
 	doap:name "Sherlock Bundle" .
 
+sherlock:count
+	a lv2:Parameter ;
+	rdfs:label "Max. events" ;
+	rdfs:comment "Maximum number of events shown" ;
+	rdfs:range atom:Int ;
+	lv2:scalePoint [ rdfs:label "1k" ; rdf:value 1024 ] ;
+	lv2:scalePoint [ rdfs:label "2k" ; rdf:value 2048 ] ;
+	lv2:scalePoint [ rdfs:label "4k" ; rdf:value 4096 ] ;
+	lv2:scalePoint [ rdfs:label "8k" ; rdf:value 8192 ] ;
+	lv2:scalePoint [ rdfs:label "16k" ; rdf:value 16384 ] .
+
+sherlock:overwrite
+	a lv2:Parameter ;
+	rdfs:label "Overwrite" ;
+	rdfs:comment "Overwrite buffer when maximum number of events reached" ;
+	rdfs:range atom:Bool .
+
+sherlock:block
+	a lv2:Parameter ;
+	rdfs:label "Block" ;
+	rdfs:comment "Block addition of newly received events" ;
+	rdfs:range atom:Bool .
+
+sherlock:follow
+	a lv2:Parameter ;
+	rdfs:label "Follow" ;
+	rdfs:comment "Automatically scroll to and show last added event" ;
+	rdfs:range atom:Bool .
+
 # Atom Inspector Plugin
 sherlock:atom_inspector
 	a lv2:Plugin,
@@ -61,7 +93,8 @@ sherlock:atom_inspector
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
-	lv2:requiredFeature urid:map ;
+	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:extensionData state:interface;
 
 	lv2:port [
 		# input event port
@@ -100,6 +133,19 @@ sherlock:atom_inspector
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+	] ;
+
+	patch:writable
+		sherlock:count ,
+		sherlock:overwrite,
+		sherlock:block ,
+		sherlock:follow ;
+
+	state:state [
+		sherlock:count 2048 ;
+		sherlock:overwrite false ;
+		sherlock:block false ;
+		sherlock:follow false ;
 	] .
 
 # MIDI Inspector Plugin
@@ -110,7 +156,8 @@ sherlock:midi_inspector
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
-	lv2:requiredFeature urid:map ;
+	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:extensionData state:interface;
 
 	lv2:port [
 		# input event port
@@ -118,6 +165,7 @@ sherlock:midi_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ,
+			patch:Message ,
 			time:Position ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
@@ -128,7 +176,8 @@ sherlock:midi_inspector
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ;
+		atom:supports midi:MidiEvent ,
+			patch:Message ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;
@@ -142,6 +191,19 @@ sherlock:midi_inspector
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+	] ;
+
+	patch:writable
+		sherlock:count ,
+		sherlock:overwrite ,
+		sherlock:block ,
+		sherlock:follow ;
+
+	state:state [
+		sherlock:count 2048 ;
+		sherlock:overwrite false ;
+		sherlock:block false ;
+		sherlock:follow false ;
 	] .
 
 # OSC Inspector Plugin
@@ -152,7 +214,8 @@ sherlock:osc_inspector
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
 	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
-	lv2:requiredFeature urid:map ;
+	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:extensionData state:interface;
 
 	lv2:port [
 		# input event port
@@ -160,6 +223,7 @@ sherlock:osc_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports osc:Event ,
+			patch:Message ,
 			time:Position ;
 		lv2:index 0 ;
 		lv2:symbol "control_in" ;
@@ -170,7 +234,8 @@ sherlock:osc_inspector
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports osc:Event ;
+		atom:supports osc:Event ,
+			patch:Message ;
 		lv2:index 1 ;
 		lv2:symbol "control_out" ;
 		lv2:name "Control Out" ;
@@ -184,4 +249,17 @@ sherlock:osc_inspector
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+	] ;
+
+	patch:writable
+		sherlock:count ,
+		sherlock:overwrite ,
+		sherlock:block ,
+		sherlock:follow ;
+
+	state:state [
+		sherlock:count 2048 ;
+		sherlock:overwrite false ;
+		sherlock:block false ;
+		sherlock:follow false ;
 	] .
