@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Hanspeter Portner (dev@open-music-kontrollers.ch)
+ * Copyright (c) 2015-2016 Hanspeter Portner (dev@open-music-kontrollers.ch)
  *
  * This is free software: you can redistribute it and/or modify
  * it under the terms of the Artistic License 2.0 as published by
@@ -690,7 +690,7 @@ _content_get(UI *ui, Evas_Object *parent)
 						"Sherlock - MIDI Inspector"
 						"</color></br><align=left>"
 						"Version "SHERLOCK_VERSION"</br></br>"
-						"Copyright (c) 2015 Hanspeter Portner</br></br>"
+						"Copyright (c) 2015-2016 Hanspeter Portner</br></br>"
 						"This is free and libre software</br>"
 						"Released under Artistic License 2.0</br>"
 						"By Open Music Kontrollers</br></br>"
