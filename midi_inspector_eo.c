@@ -19,7 +19,6 @@
 
 #include <Elementary.h>
 
-#define COUNT_MAX 2048 // maximal amount of events shown
 #define STRING_BUF_SIZE 2048
 #define STRING_MAX 256
 #define STRING_OFF (STRING_MAX - 4)
@@ -40,6 +39,7 @@ struct _UI {
 	Evas_Object *clear;
 	Evas_Object *autoclear;
 	Evas_Object *autoblock;
+	Evas_Object *autofollow;
 	Evas_Object *popup;
 
 	Elm_Genlist_Item_Class *itc_midi;
@@ -47,6 +47,8 @@ struct _UI {
 
 	char string_buf [STRING_BUF_SIZE];
 	char *logo_path;
+
+	int count_max;
 };
 
 typedef struct _midi_msg_t midi_msg_t;
@@ -520,7 +522,7 @@ _clear_update(UI *ui, int count)
 		return;
 
 	char *buf = ui->string_buf;
-	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, COUNT_MAX);
+	sprintf(buf, "Clear (%"PRIi32" of %"PRIi32")", count, ui->count_max);
 	elm_object_text_set(ui->clear, buf);
 }
 
@@ -590,7 +592,7 @@ _content_get(UI *ui, Evas_Object *parent)
 			evas_object_size_hint_weight_set(ui->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 			evas_object_size_hint_align_set(ui->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
 			evas_object_show(ui->list);
-			elm_table_pack(ui->table, ui->list, 0, 0, 4, 1);
+			elm_table_pack(ui->table, ui->list, 0, 0, 5, 1);
 		}
 
 		ui->clear = elm_button_add(ui->table);
@@ -624,6 +626,16 @@ _content_get(UI *ui, Evas_Object *parent)
 			elm_table_pack(ui->table, ui->autoblock, 2, 1, 1, 1);
 		}
 
+		ui->autofollow = elm_check_add(ui->table);
+		if(ui->autofollow)
+		{
+			elm_object_text_set(ui->autofollow, "follow");
+			evas_object_size_hint_weight_set(ui->autofollow, 0.f, 0.f);
+			evas_object_size_hint_align_set(ui->autofollow, EVAS_HINT_FILL, EVAS_HINT_FILL);
+			evas_object_show(ui->autofollow);
+			elm_table_pack(ui->table, ui->autofollow, 3, 1, 1, 1);
+		}
+
 		Evas_Object *info = elm_button_add(ui->table);
 		if(info)
 		{
@@ -631,7 +643,7 @@ _content_get(UI *ui, Evas_Object *parent)
 			evas_object_size_hint_weight_set(info, 0.f, 0.f);
 			evas_object_size_hint_align_set(info, 1.f, EVAS_HINT_FILL);
 			evas_object_show(info);
-			elm_table_pack(ui->table, info, 3, 1, 1, 1);
+			elm_table_pack(ui->table, info, 4, 1, 1, 1);
 				
 			Evas_Object *icon = elm_icon_add(info);
 			if(icon)
@@ -767,6 +779,8 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		return NULL;
 	}
 	*(Evas_Object **)widget = ui->widget;
+
+	ui->count_max = 2048;
 	
 	return ui;
 }
@@ -813,7 +827,7 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 			pos->nsamples = nsamples->body;
 
 			// check item count 
-			if(n + 1 > COUNT_MAX)
+			if(n + 1 > ui->count_max)
 			{
 				if(elm_check_state_get(ui->autoclear))
 				{
@@ -847,9 +861,15 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 					ev, itm, ELM_GENLIST_ITEM_NONE, NULL, NULL);
 				elm_genlist_item_select_mode_set(itm2, ELM_OBJECT_SELECT_MODE_DEFAULT);
 				n++;
+
+				if(n == 1) // always select first element
+					elm_genlist_item_selected_set(itm2, EINA_TRUE);
 				
-				// scroll to last item
-				//elm_genlist_item_show(itm, ELM_GENLIST_ITEM_SCROLLTO_MIDDLE);
+				if(elm_check_state_get(ui->autofollow)) // scroll to last item
+				{
+					elm_genlist_item_show(itm2, ELM_GENLIST_ITEM_SCROLLTO_BOTTOM);
+					elm_genlist_item_selected_set(itm2, EINA_TRUE);
+				}
 			}
 		}
 		
