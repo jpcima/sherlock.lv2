@@ -156,40 +156,17 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 				case LV2_OSC_STRING: // fall-through
 				{
 					const char *str = LV2_ATOM_BODY_CONST(itm);
-					if(itm->size == 0)
-						str = "";
-					sprintf(ptr, TYPE(" s:", ""));
-					ptr += strlen(ptr);
-
-					for(unsigned i=0; i<strlen(str) + 1; i++)
+					char *markup = elm_entry_utf8_to_markup(str);
+					if(markup)
 					{
-						switch(str[i])
-						{
-							case '<':
-								strncpy(ptr, "&lt;", 4);
-								ptr += 4;
-								break;
-							case '>':
-								strncpy(ptr, "&gt;", 4);
-								ptr += 4;
-								break;
-							case '&':
-								strncpy(ptr, "&amp;", 5);
-								ptr += 5;
-								break;
-							case '\n':
-								strncpy(ptr, "\\n", 2);
-								ptr += 2;
-								break;
-							case '\r':
-								strncpy(ptr, "\\r", 2);
-								ptr += 2;
-								break;
-							default:
-								*ptr++ = str[i];
-								break;
-						}
+						sprintf(ptr, TYPE(" s:", "%s"), markup);
+						free(markup);
 					}
+					else
+					{
+						sprintf(ptr, TYPE(" s:", ""));
+					}
+					ptr += strlen(ptr);
 					break;
 				}
 				case LV2_OSC_BLOB:
@@ -235,7 +212,17 @@ _atom_stringify(UI *ui, char *ptr, char *end, const LV2_Atom *atom)
 
 				case LV2_OSC_SYMBOL:
 				{
-					sprintf(ptr, TYPE(" S:", "%s"), ui->unmap->unmap(ui->unmap->handle, ((const LV2_Atom_URID *)itm)->body));
+					const char *str = ui->unmap->unmap(ui->unmap->handle, ((const LV2_Atom_URID *)itm)->body);
+					char *markup = str ? elm_entry_utf8_to_markup(str) : NULL;
+					if(markup)
+					{
+						sprintf(ptr, TYPE(" S:", "%s"), markup);
+						free(markup);
+					}
+					else
+					{
+						sprintf(ptr, TYPE(" S:", ""));
+					}
 					ptr += strlen(ptr);
 					break;
 				}
