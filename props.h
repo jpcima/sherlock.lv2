@@ -793,12 +793,16 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 
 			if(def->scale_points)
 			{
+				LV2_Atom_Forge_Frame tuple_frame;
+				if(ref)
+					ref = lv2_atom_forge_key(forge, props->urid.lv2_scale_point);
+				if(ref)
+					ref = lv2_atom_forge_tuple(forge, &tuple_frame);
+
 				for(const props_scale_point_t *sp = def->scale_points; sp->label; sp++)
 				{
 					LV2_Atom_Forge_Frame scale_point_frame;
 
-					if(ref)
-						ref = lv2_atom_forge_key(forge, props->urid.lv2_scale_point);
 					if(ref)
 						ref = lv2_atom_forge_object(forge, &scale_point_frame, 0, 0);
 					{
@@ -815,6 +819,9 @@ _props_reg(props_t *props, LV2_Atom_Forge *forge, uint32_t frames, props_impl_t 
 					if(ref)
 						lv2_atom_forge_pop(forge, &scale_point_frame);
 				}
+
+				if(ref)
+					lv2_atom_forge_pop(forge, &tuple_frame);
 			}
 		}
 		if(ref)
