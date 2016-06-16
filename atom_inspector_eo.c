@@ -30,6 +30,7 @@
 #define STRING_OFF (STRING_MAX - 4)
 
 #define NS_RDF (const uint8_t*)"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+#define NS_RDFS (const uint8_t*)"http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
 #define NS_OSC (const uint8_t*)"http://open-music-kontrollers.ch/lv2/osc#"
 #define NS_XPRESS (const uint8_t*)"http://open-music-kontrollers.ch/lv2/xpress#"
@@ -298,6 +299,7 @@ _sratom_to_turtle(Sratom*         sratom,
 	SerdChunk str  = { NULL, 0 };
 
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"rdf", NS_RDF);
+	serd_env_set_prefix_from_strings(env, (const uint8_t *)"rdfs", NS_RDFS);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"xsd", NS_XSD);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"lv2", (const uint8_t *)LV2_CORE_PREFIX);
 	serd_env_set_prefix_from_strings(env, (const uint8_t *)"midi", (const uint8_t *)LV2_MIDI_PREFIX);
