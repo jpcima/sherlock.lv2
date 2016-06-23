@@ -61,6 +61,8 @@ sherlock:count
 	rdfs:label "Max. events" ;
 	rdfs:comment "Maximum number of events shown" ;
 	rdfs:range atom:Int ;
+	lv2:minimum 1024 ;
+	lv2:maximum 16384 ;
 	lv2:scalePoint [ rdfs:label "1k" ; rdf:value 1024 ] ;
 	lv2:scalePoint [ rdfs:label "2k" ; rdf:value 2048 ] ;
 	lv2:scalePoint [ rdfs:label "4k" ; rdf:value 4096 ] ;
