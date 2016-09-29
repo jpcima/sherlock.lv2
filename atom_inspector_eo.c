@@ -420,7 +420,7 @@ _discover(UI *ui)
 {
 	union {
 		LV2_Atom atom;
-		uint8_t raw [128];
+		uint8_t raw [512];
 	} buf;
 
 	lv2_atom_forge_set_buffer(&ui->forge, buf.raw, 512);
@@ -440,7 +440,7 @@ _check_changed(UI *ui, LV2_URID property)
 {
 	union {
 		LV2_Atom_Event ev;
-		uint8_t raw [128];
+		uint8_t raw [512];
 	} buf;
 
 	lv2_atom_forge_set_buffer(&ui->forge, buf.raw, 512);
@@ -807,6 +807,9 @@ port_event(LV2UI_Handle handle, uint32_t i, uint32_t size, uint32_t urid,
 		case 0:
 		case 1:
 		{
+			uint8_t raw [512];
+			lv2_atom_forge_set_buffer(&ui->forge, raw, 512);
+
 			LV2_Atom_Forge_Ref ref = 1;
 			if(props_advance(&ui->props, &ui->forge, 0, (const LV2_Atom_Object *)buf, &ref))
 			{
