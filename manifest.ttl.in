@@ -40,6 +40,7 @@ sherlock:atom_inspector
 	ui:ui sherlock:atom_inspector_1_ui ;
 	ui:ui sherlock:atom_inspector_2_kx ;
 	ui:ui sherlock:atom_inspector_3_eo ;
+	ui:ui sherlock:atom_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:atom_inspector_1_ui
@@ -54,6 +55,10 @@ sherlock:atom_inspector_3_eo
 	a ui:EoUI ;
 	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .
+sherlock:atom_inspector_4_nk
+	a ui:X11UI ;
+	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	rdfs:seeAlso <sherlock_ui.ttl> .
 
 # MIDI Inspector Plugin
 sherlock:midi_inspector
@@ -64,6 +69,7 @@ sherlock:midi_inspector
 	ui:ui sherlock:midi_inspector_1_ui ;
 	ui:ui sherlock:midi_inspector_2_kx ;
 	ui:ui sherlock:midi_inspector_3_eo ;
+	ui:ui sherlock:midi_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:midi_inspector_1_ui
@@ -78,6 +84,10 @@ sherlock:midi_inspector_3_eo
 	a ui:EoUI ;
 	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .
+sherlock:midi_inspector_4_nk
+	a ui:X11UI ;
+	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	rdfs:seeAlso <sherlock_ui.ttl> .
 
 # OSC Inspector Plugin
 sherlock:osc_inspector
@@ -88,6 +98,7 @@ sherlock:osc_inspector
 	ui:ui sherlock:osc_inspector_1_ui ;
 	ui:ui sherlock:osc_inspector_2_kx ;
 	ui:ui sherlock:osc_inspector_3_eo ;
+	ui:ui sherlock:osc_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:osc_inspector_1_ui
@@ -101,4 +112,8 @@ sherlock:osc_inspector_2_kx
 sherlock:osc_inspector_3_eo
 	a ui:EoUI ;
 	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	rdfs:seeAlso <sherlock_ui.ttl> .
+sherlock:osc_inspector_4_nk
+	a ui:X11UI ;
+	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .

@@ -42,16 +42,19 @@
 #define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_1_ui"
 #define SHERLOCK_ATOM_INSPECTOR_KX_URI	SHERLOCK_URI"#atom_inspector_2_kx"
 #define SHERLOCK_ATOM_INSPECTOR_EO_URI	SHERLOCK_URI"#atom_inspector_3_eo"
+#define SHERLOCK_ATOM_INSPECTOR_NK_URI	SHERLOCK_URI"#atom_inspector_4_nk"
 
 #define SHERLOCK_MIDI_INSPECTOR_URI			SHERLOCK_URI"#midi_inspector"
 #define SHERLOCK_MIDI_INSPECTOR_UI_URI	SHERLOCK_URI"#midi_inspector_1_ui"
 #define SHERLOCK_MIDI_INSPECTOR_KX_URI	SHERLOCK_URI"#midi_inspector_2_kx"
 #define SHERLOCK_MIDI_INSPECTOR_EO_URI	SHERLOCK_URI"#midi_inspector_3_eo"
+#define SHERLOCK_MIDI_INSPECTOR_NK_URI	SHERLOCK_URI"#midi_inspector_4_nk"
 
 #define SHERLOCK_OSC_INSPECTOR_URI			SHERLOCK_URI"#osc_inspector"
 #define SHERLOCK_OSC_INSPECTOR_UI_URI		SHERLOCK_URI"#osc_inspector_1_ui"
 #define SHERLOCK_OSC_INSPECTOR_KX_URI		SHERLOCK_URI"#osc_inspector_2_kx"
 #define SHERLOCK_OSC_INSPECTOR_EO_URI		SHERLOCK_URI"#osc_inspector_3_eo"
+#define SHERLOCK_OSC_INSPECTOR_NK_URI		SHERLOCK_URI"#osc_inspector_4_nk"
 
 extern const LV2_Descriptor atom_inspector;
 extern const LV2UI_Descriptor atom_inspector_ui;

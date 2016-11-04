@@ -70,6 +70,20 @@ sherlock:atom_inspector_3_eo
 	] ;
 	lv2:requiredFeature urid:map, urid:unmap .
 
+sherlock:atom_inspector_4_nk
+	a ui:X11UI ;
+	ui:portNotification [
+		ui:plugin sherlock:atom_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType atom:Object ;
+		ui:notifyType osc:Event ;
+		ui:notifyType midi:MidiEvent ;
+		ui:notifyType time:Position ;
+		ui:notifyType patch:Message ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:requiredFeature urid:map, urid:unmap, ui:idleInterface .
+
 # MIDI Inspector UI
 sherlock:midi_inspector_1_ui
 	a ui:UI ;
@@ -102,6 +116,17 @@ sherlock:midi_inspector_3_eo
 	] ;
 	lv2:requiredFeature urid:map .
 
+sherlock:midi_inspector_4_nk
+	a ui:X11UI ;
+	ui:portNotification [
+		ui:plugin sherlock:midi_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType midi:MidiEvent ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:optionalFeature ui:resize ;
+	lv2:requiredFeature urid:map, urid:unmap, ui:idleInterface .
+
 # OSC Inspector UI
 sherlock:osc_inspector_1_ui
 	a ui:UI ;
@@ -133,3 +158,14 @@ sherlock:osc_inspector_3_eo
 		ui:protocol atom:eventTransfer
 	] ;
 	lv2:requiredFeature urid:map, urid:unmap .
+
+sherlock:osc_inspector_4_nk
+	a ui:X11UI ;
+	ui:portNotification [
+		ui:plugin sherlock:osc_inspector ;
+		lv2:symbol "notify" ;
+		ui:notifyType osc:Event ;
+		ui:protocol atom:eventTransfer
+	] ;
+	lv2:optionalFeature ui:resize ;
+	lv2:requiredFeature urid:map, urid:unmap, ui:idleInterface .

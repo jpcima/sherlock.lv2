@@ -7,11 +7,26 @@ include_directories(${PROJECT_SOURCE_DIR}/libosc)
 include_directories(${PROJECT_SOURCE_DIR}/osc.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/sandbox_ui.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/props.lv2)
+include_directories(${PROJECT_SOURCE_DIR}/pugl)
 include_directories(${PROJECT_SOURCE_DIR}/symap)
 
+set(CMAKE_C_FLAGS "-fdata-sections -ffunction-sections ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-std=gnu11 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
-set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-z,nodelete ${CMAKE_MODULE_LINKER_FLAGS}")
+set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-z,defs ${CMAKE_MODULE_LINKER_FLAGS}")
+	set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-z,nodelete ${CMAKE_MODULE_LINKER_FLAGS}")
+elseif(WIN32)
+	set(CMAKE_C_FLAGS "-mstackrealign ${CMAKE_C_FLAGS}")
+endif()
+
+if(APPLE)
+	set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-dead_strip ${CMAKE_MODULE_LINKER_FLAGS}")
+else()
+	set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--gc-sections -Wl,-s ${CMAKE_MODULE_LINKER_FLAGS}")
+endif()
+
 add_definitions("-D_GNU_SOURCE=1") # asprintf
 
 file(STRINGS "VERSION" SHERLOCK_VERSION)
@@ -77,6 +92,20 @@ target_link_libraries(sherlock_eo
 set_target_properties(sherlock_eo PROPERTIES PREFIX "")
 install(TARGETS sherlock_eo DESTINATION ${DEST})
 
+add_definitions("-DPUGL_HAVE_GL")
+add_library(sherlock_nk MODULE
+	sherlock_nk.c
+	midi_inspector_nk.c
+	atom_inspector_nk.c
+	osc_inspector_nk.c
+	pugl/pugl/pugl_x11.c)
+target_link_libraries(sherlock_nk
+	${NANOMSG_LDFLAGS}
+	${SRATOM_LDFLAGS}
+	X11 GL m)
+set_target_properties(sherlock_nk PROPERTIES PREFIX "")
+install(TARGETS sherlock_nk DESTINATION ${DEST})
+
 add_executable(sandbox_efl
 	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_slave.c
 	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_efl.c
@@ -92,3 +121,4 @@ install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/sherlock.ttl DESTINATION ${DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/sherlock_ui.ttl DESTINATION ${DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/omk_logo_256x256.png DESTINATION ${DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/nuklear/extra_font/Cousine-Regular.ttf DESTINATION ${DEST})
