@@ -16,22 +16,10 @@
  */
 
 #include <ctype.h>
+#include <inttypes.h>
 
 #include <sherlock.h>
 #include <sherlock_nk.h>
-
-#define ful 0xff
-#define one 0xbb
-#define two 0x66
-#define non 0x0
-static const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
-static const struct nk_color gray			= {.r = two, .g = two, .b = two, .a = ful};
-static const struct nk_color yellow		= {.r = one, .g = one, .b = non, .a = ful};
-static const struct nk_color magenta	= {.r = one, .g = two, .b = one, .a = ful};
-static const struct nk_color green		= {.r = non, .g = one, .b = non, .a = ful};
-static const struct nk_color blue			= {.r = non, .g = one, .b = one, .a = ful};
-static const struct nk_color orange		= {.r = one, .g = two, .b = non, .a = ful};
-static const struct nk_color violet		= {.r = two, .g = two, .b = one, .a = ful};
 
 #define NS_RDF (const uint8_t*)"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_RDFS (const uint8_t*)"http://www.w3.org/2000/01/rdf-schema#"

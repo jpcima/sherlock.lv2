@@ -17,25 +17,12 @@
 
 #include <time.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include <sherlock.h>
 #include <sherlock_nk.h>
 
 #include <osc.lv2/util.h>
-
-#define ful 0xff
-#define one 0xbb
-#define two 0x66
-#define non 0x0
-static const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
-static const struct nk_color gray			= {.r = two, .g = two, .b = two, .a = ful};
-static const struct nk_color yellow		= {.r = one, .g = one, .b = non, .a = ful};
-static const struct nk_color magenta	= {.r = one, .g = two, .b = one, .a = ful};
-static const struct nk_color green		= {.r = non, .g = one, .b = non, .a = ful};
-static const struct nk_color blue			= {.r = non, .g = one, .b = one, .a = ful};
-static const struct nk_color orange		= {.r = one, .g = two, .b = non, .a = ful};
-static const struct nk_color violet		= {.r = two, .g = two, .b = one, .a = ful};
-static const struct nk_color red			= {.r = one, .g = non, .b = non, .a = ful};
 
 typedef struct _mem_t mem_t;
 
