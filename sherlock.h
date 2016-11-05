@@ -34,42 +34,20 @@
 #include <stdio.h>
 #include <props.h>
 	
-#define LV2_OSC__OscEvent								"http://opensoundcontrol.org#OscEvent"
-
 #define SHERLOCK_URI										"http://open-music-kontrollers.ch/lv2/sherlock"
 
 #define SHERLOCK_ATOM_INSPECTOR_URI			SHERLOCK_URI"#atom_inspector"
-#define SHERLOCK_ATOM_INSPECTOR_UI_URI	SHERLOCK_URI"#atom_inspector_1_ui"
-#define SHERLOCK_ATOM_INSPECTOR_KX_URI	SHERLOCK_URI"#atom_inspector_2_kx"
-#define SHERLOCK_ATOM_INSPECTOR_EO_URI	SHERLOCK_URI"#atom_inspector_3_eo"
 #define SHERLOCK_ATOM_INSPECTOR_NK_URI	SHERLOCK_URI"#atom_inspector_4_nk"
 
 #define SHERLOCK_MIDI_INSPECTOR_URI			SHERLOCK_URI"#midi_inspector"
-#define SHERLOCK_MIDI_INSPECTOR_UI_URI	SHERLOCK_URI"#midi_inspector_1_ui"
-#define SHERLOCK_MIDI_INSPECTOR_KX_URI	SHERLOCK_URI"#midi_inspector_2_kx"
-#define SHERLOCK_MIDI_INSPECTOR_EO_URI	SHERLOCK_URI"#midi_inspector_3_eo"
 #define SHERLOCK_MIDI_INSPECTOR_NK_URI	SHERLOCK_URI"#midi_inspector_4_nk"
 
 #define SHERLOCK_OSC_INSPECTOR_URI			SHERLOCK_URI"#osc_inspector"
-#define SHERLOCK_OSC_INSPECTOR_UI_URI		SHERLOCK_URI"#osc_inspector_1_ui"
-#define SHERLOCK_OSC_INSPECTOR_KX_URI		SHERLOCK_URI"#osc_inspector_2_kx"
-#define SHERLOCK_OSC_INSPECTOR_EO_URI		SHERLOCK_URI"#osc_inspector_3_eo"
 #define SHERLOCK_OSC_INSPECTOR_NK_URI		SHERLOCK_URI"#osc_inspector_4_nk"
 
 extern const LV2_Descriptor atom_inspector;
-extern const LV2UI_Descriptor atom_inspector_ui;
-extern const LV2UI_Descriptor atom_inspector_kx;
-extern const LV2UI_Descriptor atom_inspector_eo;
-
 extern const LV2_Descriptor midi_inspector;
-extern const LV2UI_Descriptor midi_inspector_ui;
-extern const LV2UI_Descriptor midi_inspector_kx;
-extern const LV2UI_Descriptor midi_inspector_eo;
-
 extern const LV2_Descriptor osc_inspector;
-extern const LV2UI_Descriptor osc_inspector_ui;
-extern const LV2UI_Descriptor osc_inspector_kx;
-extern const LV2UI_Descriptor osc_inspector_eo;
 
 typedef struct _position_t position_t;
 typedef struct _state_t state_t;

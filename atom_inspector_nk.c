@@ -20,10 +20,10 @@
 #include <sherlock.h>
 #include <sherlock_nk.h>
 
-static const uint8_t ful = 0xff;
-static const uint8_t one = 0xbb;
-static const uint8_t two = 0x66;
-static const uint8_t non = 0x0;
+#define ful 0xff
+#define one 0xbb
+#define two 0x66
+#define non 0x0
 static const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
 static const struct nk_color gray			= {.r = two, .g = two, .b = two, .a = ful};
 static const struct nk_color yellow		= {.r = one, .g = one, .b = non, .a = ful};

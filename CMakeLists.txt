@@ -3,12 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 project(sherlock.lv2)
 
 include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/libosc)
 include_directories(${PROJECT_SOURCE_DIR}/osc.lv2)
-include_directories(${PROJECT_SOURCE_DIR}/sandbox_ui.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/props.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/pugl)
-include_directories(${PROJECT_SOURCE_DIR}/symap)
 
 set(CMAKE_FIND_FRAMEWORK FIRST)
 
@@ -50,65 +47,16 @@ if(NOT DEFINED PLUGIN_DEST)
 	set(PLUGIN_DEST lib/lv2/sherlock.lv2)
 endif()
 
+set(LIBS_UI ${LIBS_UI} m)
+
 find_package(PkgConfig) # ${PKG_CONFIG_FOUND}
 
 pkg_search_module(LV2 REQUIRED lv2>=1.10)
 include_directories(${LV2_INCLUDE_DIRS})
 
-pkg_search_module(ELM REQUIRED elementary>=1.8)
-include_directories(${ELM_INCLUDE_DIRS})
-
-pkg_search_module(NANOMSG REQUIRED libnanomsg nanomsg)
-include_directories(${NANOMSG_INCLUDE_DIRS})
-
 pkg_search_module(SRATOM REQUIRED sratom-0>=0.4.0)
 include_directories(${SRATOM_INCLUDE_DIRS})
-
-pkg_search_module(LILV REQUIRED lilv-0>=0.20.0)
-include_directories(${LILV_INCLUDE_DIRS})
-if((${LILV_VERSION} VERSION_EQUAL "0.22.0") OR (${LILV_VERSION} VERSION_GREATER "0.22.0"))
-	add_definitions("-DLILV_0_22")
-endif()
-
-add_library(sherlock MODULE
-	sherlock.c
-	atom_inspector.c
-	midi_inspector.c
-	osc_inspector.c)
-set_target_properties(sherlock PROPERTIES PREFIX "")
-if(NOT WIN32)
-	set_target_properties(sherlock PROPERTIES LINK_FLAGS "-Wl,-e,lv2_descriptor")
-endif()
-install(TARGETS sherlock DESTINATION ${PLUGIN_DEST})
-
-add_library(sherlock_ui MODULE
-	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_ui.c
-	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_master.c
-	sherlock_ui.c)
-target_link_libraries(sherlock_ui
-	${NANOMSG_LDFLAGS}
-	${SRATOM_LDFLAGS})
-set_target_properties(sherlock_ui PROPERTIES PREFIX "")
-install(TARGETS sherlock_ui DESTINATION ${PLUGIN_DEST})
-
-find_package(FLEX)
-flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
-	COMPILE_FLAGS	"--header-file=${PROJECT_BINARY_DIR}/encoder.h --prefix=enc")
-
-add_library(sherlock_eo MODULE
-	sherlock_eo.c
-	atom_inspector_eo.c
-	midi_inspector_eo.c
-	osc_inspector_eo.c
-	${FLEX_encoder_OUTPUTS})
-target_link_libraries(sherlock_eo
-	${ELM_LDFLAGS}
-	${SRATOM_LDFLAGS})
-set_target_properties(sherlock_eo PROPERTIES PREFIX "")
-install(TARGETS sherlock_eo DESTINATION ${PLUGIN_DEST})
-
-set(LIBS_UI m)
-set(TAR_UI nuk_ui.c)
+set(LIBS_UI ${LIBS_UI} ${SRATOM_LDFLAGS})
 
 find_package(OpenGL)
 if(${OPENGL_FOUND})
@@ -161,14 +109,29 @@ else() # GNU/Linux
 
 	set(TAR_UI ${TAR_UI} pugl/pugl/pugl_x11.c)
 endif()
+
+add_library(sherlock MODULE
+	sherlock.c
+	atom_inspector.c
+	midi_inspector.c
+	osc_inspector.c)
+set_target_properties(sherlock PROPERTIES PREFIX "")
+if(NOT WIN32)
+	set_target_properties(sherlock PROPERTIES LINK_FLAGS "-Wl,-e,lv2_descriptor")
+endif()
+install(TARGETS sherlock DESTINATION ${PLUGIN_DEST})
+
+#find_package(FLEX)
+#flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
+#	COMPILE_FLAGS	"--header-file=${PROJECT_BINARY_DIR}/encoder.h --prefix=enc")
+
 add_library(sherlock_nk MODULE
 	sherlock_nk.c
 	midi_inspector_nk.c
 	atom_inspector_nk.c
 	osc_inspector_nk.c
-	pugl/pugl/pugl_x11.c)
+	${TAR_UI})
 target_link_libraries(sherlock_nk
-	${SRATOM_LDFLAGS}
 	${LIBS_UI})
 set_target_properties(sherlock_nk PROPERTIES PREFIX "")
 if(NOT WIN32)
@@ -176,19 +139,9 @@ if(NOT WIN32)
 endif()
 install(TARGETS sherlock_nk DESTINATION ${PLUGIN_DEST})
 
-add_executable(sandbox_efl
-	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_slave.c
-	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_efl.c
-	${PROJECT_SOURCE_DIR}/symap/symap.c)
-target_link_libraries(sandbox_efl
-	${ELM_LDFLAGS}
-	${NANOMSG_LDFLAGS}
-	${LILV_LDFLAGS})
-install(TARGETS sandbox_efl DESTINATION ${PLUGIN_DEST})
-
 configure_file(${PROJECT_SOURCE_DIR}/manifest.ttl.in ${PROJECT_BINARY_DIR}/manifest.ttl)
 install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${PLUGIN_DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/sherlock.ttl DESTINATION ${PLUGIN_DEST})
 install(FILES ${PROJECT_SOURCE_DIR}/sherlock_ui.ttl DESTINATION ${PLUGIN_DEST})
-install(FILES ${PROJECT_SOURCE_DIR}/omk_logo_256x256.png DESTINATION ${PLUGIN_DEST})
+
 install(FILES ${PROJECT_SOURCE_DIR}/nuklear/extra_font/Cousine-Regular.ttf DESTINATION ${PLUGIN_DEST})

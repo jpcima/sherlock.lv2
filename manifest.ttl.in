@@ -14,22 +14,10 @@
 # http://www.perlfoundation.org/artistic_license_2_0.
 
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
-@prefix owl:	<http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
-@prefix kx:		<http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 @prefix sherlock:	<http://open-music-kontrollers.ch/lv2/sherlock#> .
-
-# to please sord_validate
-ui:EoUI
-	a rdfs:Class, owl:Class ;
-	rdfs:subClassOf ui:UI .
-kx:Widget
-	a rdfs:Class, owl:Class ;
-	rdfs:subClassOf ui:UI .
-kx:Host
-	a lv2:Feature .
 
 # Atom Inspector Plugin
 sherlock:atom_inspector
@@ -37,24 +25,9 @@ sherlock:atom_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	ui:ui sherlock:atom_inspector_1_ui ;
-	ui:ui sherlock:atom_inspector_2_kx ;
-	ui:ui sherlock:atom_inspector_3_eo ;
 	ui:ui sherlock:atom_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
-sherlock:atom_inspector_1_ui
-	a ui:UI ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:atom_inspector_2_kx
-	a kx:Widget ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:atom_inspector_3_eo
-	a ui:EoUI ;
-	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
 sherlock:atom_inspector_4_nk
 	a ui:@SHERLOCK_UI_TYPE@ ;
 	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
@@ -66,24 +39,9 @@ sherlock:midi_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	ui:ui sherlock:midi_inspector_1_ui ;
-	ui:ui sherlock:midi_inspector_2_kx ;
-	ui:ui sherlock:midi_inspector_3_eo ;
 	ui:ui sherlock:midi_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
-sherlock:midi_inspector_1_ui
-	a ui:UI ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:midi_inspector_2_kx
-	a kx:Widget ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:midi_inspector_3_eo
-	a ui:EoUI ;
-	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
 sherlock:midi_inspector_4_nk
 	a ui:@SHERLOCK_UI_TYPE@ ;
 	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
@@ -95,24 +53,9 @@ sherlock:osc_inspector
 	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
 	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
 	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	ui:ui sherlock:osc_inspector_1_ui ;
-	ui:ui sherlock:osc_inspector_2_kx ;
-	ui:ui sherlock:osc_inspector_3_eo ;
 	ui:ui sherlock:osc_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
-sherlock:osc_inspector_1_ui
-	a ui:UI ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:osc_inspector_2_kx
-	a kx:Widget ;
-	ui:binary <sherlock_ui@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
-sherlock:osc_inspector_3_eo
-	a ui:EoUI ;
-	ui:binary <sherlock_eo@CMAKE_SHARED_MODULE_SUFFIX@> ;
-	rdfs:seeAlso <sherlock_ui.ttl> .
 sherlock:osc_inspector_4_nk
 	a ui:@SHERLOCK_UI_TYPE@ ;
 	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
