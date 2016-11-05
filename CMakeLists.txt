@@ -47,20 +47,13 @@ if(NOT DEFINED PLUGIN_DEST)
 	set(PLUGIN_DEST lib/lv2/sherlock.lv2)
 endif()
 
-set(LIBS_UI ${LIBS_UI} m)
-
 find_package(PkgConfig) # ${PKG_CONFIG_FOUND}
+
+
+set(LIBS_UI m)
 
 pkg_search_module(LV2 REQUIRED lv2>=1.10)
 include_directories(${LV2_INCLUDE_DIRS})
-
-pkg_search_module(SRATOM REQUIRED sratom-0>=0.4.0)
-include_directories(${SRATOM_INCLUDE_DIRS})
-if(DEFINED STATIC_SRATOM)
-	set(LIBS_UI ${STATIC_SRATOM} ${STATIC_SORD} ${STATIC_SERD} ${LIBS_UI})
-else()
-	set(LIBS_UI ${LIBS_UI} ${SRATOM_LDFLAGS})
-endif()
 
 find_package(OpenGL)
 if(${OPENGL_FOUND})
@@ -113,6 +106,15 @@ else() # GNU/Linux
 
 	set(TAR_UI ${TAR_UI} pugl/pugl/pugl_x11.c)
 endif()
+
+pkg_search_module(SRATOM REQUIRED sratom-0>=0.4.0)
+include_directories(${SRATOM_INCLUDE_DIRS})
+if(DEFINED STATIC_SRATOM)
+	set(LIBS_UI ${STATIC_SRATOM} ${STATIC_SORD} ${STATIC_SERD} ${LIBS_UI})
+else()
+	set(LIBS_UI ${LIBS_UI} ${SRATOM_LDFLAGS})
+endif()
+
 
 add_library(sherlock MODULE
 	sherlock.c
