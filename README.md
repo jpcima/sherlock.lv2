@@ -8,21 +8,13 @@ Get more information at: [http://open-music-kontrollers.ch/lv2/sherlock](http://
 
 ### Build status
 
-[![Build Status](https://travis-ci.org/OpenMusicKontrollers/sherlock.lv2.svg)](https://travis-ci.org/OpenMusicKontrollers/sherlock.lv2)
-
-### Plugins
-
-#### Atom Inspector
-
-##### Screenshot 
-
-![Screeny](http://open-music-kontrollers.ch/lv2/sherlock/sherlock_atom_inspector.png "")
+[![build status](https://gitlab.com/OpenMusicKontrollers/sherlock.lv2/badges/master/build.svg)](https://gitlab.com/OpenMusicKontrollers/sherlock.lv2/commits/master)
 
 ### Dependencies
 
 * [LV2](http://lv2plug.in) (LV2 Plugin Standard)
-* [EFL](http://docs.enlightenment.org/stable/elementary/) (Enlightenment Foundation Libraries)
-* [Elementary](http://docs.enlightenment.org/stable/efl/) (Lightweight GUI Toolkit)
+* [pugl](http://drobilla.net/software/pugl) (Portable API for OpenGL GUIs)
+* [nuklear](https://github.com/vurtun/nuklear) (Immediate-mode GUI)
 
 ### Build / install
 
