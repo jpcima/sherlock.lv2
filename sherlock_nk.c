@@ -372,7 +372,6 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 				const uint32_t sz = lv2_atom_total_size(atom);
 
 				lv2_atom_forge_write(&handle->mem, atom, sz);
-				handle->count += 1;
 
 				if(handle->state.follow)
 					handle->bottom = true; // signal scrolling to bottom

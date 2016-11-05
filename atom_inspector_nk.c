@@ -198,6 +198,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 						nk_layout_row_end(ctx);
 
 						last = body;
+						counter += 1;
 					}
 
 					if(handle->bottom)
@@ -205,9 +206,9 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 						ttl_dirty = true;
 						handle->selected = last;
 					}
-
-					counter += 1;
 				}
+
+				handle->count = counter;
 
 				const struct nk_panel *panel = nk_window_get_panel(ctx);
 				if(handle->bottom)
@@ -255,7 +256,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			}
 
 			nk_layout_row_dynamic(ctx, wbounds.h, 1);
-			const nk_flags flags = NK_EDIT_EDITOR | NK_EDIT_READ_ONLY;
+			const nk_flags flags = NK_EDIT_EDITOR;
 			const nk_flags mode = nk_edit_buffer(ctx, flags, &handle->edit, nk_filter_default);
 			(void)mode;
 

@@ -475,10 +475,11 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 							_empty(ctx);
 						}
 					}
+					counter += 1;
 				}
-
-				counter += 1;
 			}
+
+			handle->count = counter;
 
 			const struct nk_panel *panel = nk_window_get_panel(ctx);
 			if(handle->bottom)

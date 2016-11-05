@@ -369,10 +369,12 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 					nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
 
 					_osc_packet(handle, ctx, obj, off);
-				}
 
-				counter += 1;
+					counter += 1;
+				}
 			}
+
+			handle->count = counter;
 
 			const struct nk_panel *panel = nk_window_get_panel(ctx);
 			if(handle->bottom)
