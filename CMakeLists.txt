@@ -56,7 +56,11 @@ include_directories(${LV2_INCLUDE_DIRS})
 
 pkg_search_module(SRATOM REQUIRED sratom-0>=0.4.0)
 include_directories(${SRATOM_INCLUDE_DIRS})
-set(LIBS_UI ${LIBS_UI} ${SRATOM_LDFLAGS})
+if(DEFINED STATIC_SRATOM)
+	set(LIBS_UI ${STATIC_SRATOM} ${STATIC_SORD} ${STATIC_SERD} ${LIBS_UI})
+else()
+	set(LIBS_UI ${LIBS_UI} ${SRATOM_LDFLAGS})
+endif()
 
 find_package(OpenGL)
 if(${OPENGL_FOUND})
