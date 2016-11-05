@@ -10,6 +10,8 @@ include_directories(${PROJECT_SOURCE_DIR}/props.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/pugl)
 include_directories(${PROJECT_SOURCE_DIR}/symap)
 
+set(CMAKE_FIND_FRAMEWORK FIRST)
+
 set(CMAKE_C_FLAGS "-fdata-sections -ffunction-sections ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-std=gnu11 -Wextra -Wno-unused-parameter -ffast-math -fvisibility=hidden ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wshadow -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes ${CMAKE_C_FLAGS}")
@@ -29,6 +31,14 @@ endif()
 
 add_definitions("-D_GNU_SOURCE=1") # asprintf
 
+if(WIN32)
+	set(SHERLOCK_UI_TYPE "WindowsUI")
+elseif(APPLE)
+	set(SHERLOCK_UI_TYPE "CocoaUI")
+else()
+	set(SHERLOCK_UI_TYPE "X11UI")
+endif()
+
 file(STRINGS "VERSION" SHERLOCK_VERSION)
 string(REPLACE "." ";" VERSION_LIST ${SHERLOCK_VERSION})
 list(GET VERSION_LIST 0 SHERLOCK_MAJOR_VERSION)
@@ -36,7 +46,9 @@ list(GET VERSION_LIST 1 SHERLOCK_MINOR_VERSION)
 list(GET VERSION_LIST 2 SHERLOCK_MICRO_VERSION)
 add_definitions("-DSHERLOCK_VERSION=\"${SHERLOCK_VERSION}\"")
 
-set(DEST lib/lv2/sherlock.lv2)
+if(NOT DEFINED PLUGIN_DEST)
+	set(PLUGIN_DEST lib/lv2/sherlock.lv2)
+endif()
 
 find_package(PkgConfig) # ${PKG_CONFIG_FOUND}
 
@@ -64,7 +76,10 @@ add_library(sherlock MODULE
 	midi_inspector.c
 	osc_inspector.c)
 set_target_properties(sherlock PROPERTIES PREFIX "")
-install(TARGETS sherlock DESTINATION ${DEST})
+if(NOT WIN32)
+	set_target_properties(sherlock PROPERTIES LINK_FLAGS "-Wl,-e,lv2_descriptor")
+endif()
+install(TARGETS sherlock DESTINATION ${PLUGIN_DEST})
 
 add_library(sherlock_ui MODULE
 	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_ui.c
@@ -74,7 +89,7 @@ target_link_libraries(sherlock_ui
 	${NANOMSG_LDFLAGS}
 	${SRATOM_LDFLAGS})
 set_target_properties(sherlock_ui PROPERTIES PREFIX "")
-install(TARGETS sherlock_ui DESTINATION ${DEST})
+install(TARGETS sherlock_ui DESTINATION ${PLUGIN_DEST})
 
 find_package(FLEX)
 flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
@@ -90,9 +105,62 @@ target_link_libraries(sherlock_eo
 	${ELM_LDFLAGS}
 	${SRATOM_LDFLAGS})
 set_target_properties(sherlock_eo PROPERTIES PREFIX "")
-install(TARGETS sherlock_eo DESTINATION ${DEST})
+install(TARGETS sherlock_eo DESTINATION ${PLUGIN_DEST})
 
+set(LIBS_UI m)
+set(TAR_UI nuk_ui.c)
+
+find_package(OpenGL)
+if(${OPENGL_FOUND})
+	set(LIBS_UI ${LIBS_UI} ${OPENGL_LIBRARIES})
+else() # try pkg-config
+	pkg_search_module(GL REQUIRED gl)
+	if(${GL_FOUND})
+		set(LIBS_UI ${LIBS_UI} ${GL_LDFLAGS})
+	else()
+		message(FATAL_ERROR "OpenGL not found")
+	endif()
+endif()
 add_definitions("-DPUGL_HAVE_GL")
+
+if(WIN32)
+	find_library(GDI32_LIBRARY NAMES gdi32)
+	if(GDI32_LIBRARY)
+		set(LIBS_UI ${LIBS_UI} ${GDI32_LIBRARY})
+	else()
+		message(FATAL_ERROR "gdi32 library not found")
+	endif()
+
+	find_library(USER32_LIBRARY NAMES user32)
+	if(USER32_LIBRARY)
+		set(LIBS_UI ${LIBS_UI} ${USER32_LIBRARY})
+	else()
+		message(FATAL_ERROR "user32 library not found")
+	endif()
+
+	set(TAR_UI ${TAR_UI} pugl/pugl/pugl_win.cpp)
+
+elseif(APPLE)
+	find_library(COCOA_LIBRARY NAMES Cocoa)
+	if(COCOA_LIBRARY)
+		set(LIBS_UI ${LIBS_UI} ${COCOA_LIBRARY})
+	else()
+		message(FATAL_ERROR "Cocoa framework not found")
+	endif()
+
+	set(TAR_UI ${TAR_UI} pugl/pugl/pugl_osx.m)
+
+else() # GNU/Linux
+	pkg_search_module(X11 REQUIRED x11>=1.6)
+	include_directories(${X11_INCLUDE_DIRS})
+	set(LIBS_UI ${LIBS_UI} ${X11_LDFLAGS})
+
+	pkg_search_module(XEXT REQUIRED xext>=1.3)
+	include_directories(${XEXT_INCLUDE_DIRS})
+	set(LIBS_UI ${LIBS_UI} ${XEXT_LDFLAGS})
+
+	set(TAR_UI ${TAR_UI} pugl/pugl/pugl_x11.c)
+endif()
 add_library(sherlock_nk MODULE
 	sherlock_nk.c
 	midi_inspector_nk.c
@@ -100,11 +168,13 @@ add_library(sherlock_nk MODULE
 	osc_inspector_nk.c
 	pugl/pugl/pugl_x11.c)
 target_link_libraries(sherlock_nk
-	${NANOMSG_LDFLAGS}
 	${SRATOM_LDFLAGS}
-	X11 GL m)
+	${LIBS_UI})
 set_target_properties(sherlock_nk PROPERTIES PREFIX "")
-install(TARGETS sherlock_nk DESTINATION ${DEST})
+if(NOT WIN32)
+	set_target_properties(sherlock_nk PROPERTIES LINK_FLAGS "-Wl,-e,lv2ui_descriptor")
+endif()
+install(TARGETS sherlock_nk DESTINATION ${PLUGIN_DEST})
 
 add_executable(sandbox_efl
 	${PROJECT_SOURCE_DIR}/sandbox_ui.lv2/sandbox_slave.c
@@ -114,11 +184,11 @@ target_link_libraries(sandbox_efl
 	${ELM_LDFLAGS}
 	${NANOMSG_LDFLAGS}
 	${LILV_LDFLAGS})
-install(TARGETS sandbox_efl DESTINATION ${DEST})
+install(TARGETS sandbox_efl DESTINATION ${PLUGIN_DEST})
 
 configure_file(${PROJECT_SOURCE_DIR}/manifest.ttl.in ${PROJECT_BINARY_DIR}/manifest.ttl)
-install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${DEST})
-install(FILES ${PROJECT_SOURCE_DIR}/sherlock.ttl DESTINATION ${DEST})
-install(FILES ${PROJECT_SOURCE_DIR}/sherlock_ui.ttl DESTINATION ${DEST})
-install(FILES ${PROJECT_SOURCE_DIR}/omk_logo_256x256.png DESTINATION ${DEST})
-install(FILES ${PROJECT_SOURCE_DIR}/nuklear/extra_font/Cousine-Regular.ttf DESTINATION ${DEST})
+install(FILES ${PROJECT_BINARY_DIR}/manifest.ttl DESTINATION ${PLUGIN_DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/sherlock.ttl DESTINATION ${PLUGIN_DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/sherlock_ui.ttl DESTINATION ${PLUGIN_DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/omk_logo_256x256.png DESTINATION ${PLUGIN_DEST})
+install(FILES ${PROJECT_SOURCE_DIR}/nuklear/extra_font/Cousine-Regular.ttf DESTINATION ${PLUGIN_DEST})

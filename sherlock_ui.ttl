@@ -28,7 +28,6 @@
 
 # Atom Inspector UI
 sherlock:atom_inspector_1_ui
-	a ui:UI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
@@ -43,7 +42,6 @@ sherlock:atom_inspector_1_ui
   lv2:extensionData ui:idleInterface, ui:showInterface .
 
 sherlock:atom_inspector_2_kx
-	a kx:Widget ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
@@ -57,7 +55,6 @@ sherlock:atom_inspector_2_kx
 	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
 
 sherlock:atom_inspector_3_eo
-	a ui:EoUI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
@@ -71,7 +68,6 @@ sherlock:atom_inspector_3_eo
 	lv2:requiredFeature urid:map, urid:unmap .
 
 sherlock:atom_inspector_4_nk
-	a ui:X11UI ;
 	ui:portNotification [
 		ui:plugin sherlock:atom_inspector ;
 		lv2:symbol "notify" ;
@@ -86,7 +82,6 @@ sherlock:atom_inspector_4_nk
 
 # MIDI Inspector UI
 sherlock:midi_inspector_1_ui
-	a ui:UI ;
 	ui:portNotification [
 		ui:plugin sherlock:midi_inspector ;
 		lv2:symbol "notify" ;
@@ -97,7 +92,6 @@ sherlock:midi_inspector_1_ui
   lv2:extensionData ui:idleInterface, ui:showInterface .
 
 sherlock:midi_inspector_2_kx
-	a kx:Widget ;
 	ui:portNotification [
 		ui:plugin sherlock:midi_inspector ;
 		lv2:symbol "notify" ;
@@ -107,7 +101,6 @@ sherlock:midi_inspector_2_kx
 	lv2:requiredFeature kx:Host, urid:map .
 
 sherlock:midi_inspector_3_eo
-	a ui:EoUI ;
 	ui:portNotification [
 		ui:plugin sherlock:midi_inspector ;
 		lv2:symbol "notify" ;
@@ -117,7 +110,6 @@ sherlock:midi_inspector_3_eo
 	lv2:requiredFeature urid:map .
 
 sherlock:midi_inspector_4_nk
-	a ui:X11UI ;
 	ui:portNotification [
 		ui:plugin sherlock:midi_inspector ;
 		lv2:symbol "notify" ;
@@ -129,7 +121,6 @@ sherlock:midi_inspector_4_nk
 
 # OSC Inspector UI
 sherlock:osc_inspector_1_ui
-	a ui:UI ;
 	ui:portNotification [
 		ui:plugin sherlock:osc_inspector ;
 		lv2:symbol "notify" ;
@@ -140,7 +131,6 @@ sherlock:osc_inspector_1_ui
   lv2:extensionData ui:idleInterface, ui:showInterface .
 
 sherlock:osc_inspector_2_kx
-	a kx:Widget ;
 	ui:portNotification [
 		ui:plugin sherlock:osc_inspector ;
 		lv2:symbol "notify" ;
@@ -150,7 +140,6 @@ sherlock:osc_inspector_2_kx
 	lv2:requiredFeature kx:Host, urid:map, urid:unmap .
 
 sherlock:osc_inspector_3_eo
-	a ui:EoUI ;
 	ui:portNotification [
 		ui:plugin sherlock:osc_inspector ;
 		lv2:symbol "notify" ;
@@ -160,7 +149,6 @@ sherlock:osc_inspector_3_eo
 	lv2:requiredFeature urid:map, urid:unmap .
 
 sherlock:osc_inspector_4_nk
-	a ui:X11UI ;
 	ui:portNotification [
 		ui:plugin sherlock:osc_inspector ;
 		lv2:symbol "notify" ;
