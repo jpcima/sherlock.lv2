@@ -18,7 +18,7 @@
 #ifndef _SHERLOCK_NK_H
 #define _SHERLOCK_NK_H
 
-#include "nk_pugl.h"
+#include "nk_pugl/nk_pugl.h"
 
 #include <osc.lv2/osc.h>
 #include <sratom/sratom.h>
