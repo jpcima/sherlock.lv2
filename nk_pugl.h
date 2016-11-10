@@ -477,6 +477,9 @@ _nk_pugl_other_key(struct nk_context *ctx, const PuglEventKey *ev, int down)
 				nk_input_key(ctx, NK_KEY_TEXT_LINE_END, down);
 			}	break;
 		}
+
+		if(down)
+			nk_input_char(ctx, ev->character + 96);
 	}
 	else // !control
 	{
