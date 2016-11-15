@@ -304,6 +304,9 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	*(intptr_t *)widget = nk_pugl_init(&handle->win);
 	nk_pugl_show(&handle->win);
 
+	if(path)
+		free(path);
+
 	if(host_resize)
 		host_resize->ui_resize(host_resize->handle, cfg->width, cfg->height);
 
