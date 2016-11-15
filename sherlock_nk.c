@@ -187,7 +187,7 @@ void
 _clear(plughandle_t *handle)
 {
 	atom_ser_t *ser = &handle->ser;
-	struct nk_str *str = &handle->edit.string;
+	struct nk_str *str = &handle->str;
 
 	if(_ser_realloc(ser, 1024))
 	{
@@ -313,7 +313,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	_clear(handle);
 	_discover(handle);
 
-	nk_textedit_init_default(&handle->edit);
+	nk_str_init_default(&handle->str);
 
 	handle->sratom = sratom_new(handle->map);
 	sratom_set_pretty_numbers(handle->sratom, false);
@@ -329,7 +329,7 @@ cleanup(LV2UI_Handle instance)
 
 	sratom_free(handle->sratom);
 
-	nk_textedit_free(&handle->edit);
+	nk_str_free(&handle->str);
 
 	atom_ser_t *ser = &handle->ser;
 	_ser_free(ser);

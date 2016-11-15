@@ -63,7 +63,7 @@ struct _plughandle_t {
 
 	atom_ser_t ser;
 	const LV2_Atom *selected;
-	struct nk_text_edit edit;
+	struct nk_str str;
 
 	Sratom *sratom;
 	const char *base_uri;

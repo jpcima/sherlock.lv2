@@ -94,13 +94,18 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 	plughandle_t *handle = data;
 
 	const float widget_h = handle->dy;
+	struct nk_style *style = &ctx->style;
+  const struct nk_vec2 window_padding = style->window.padding;
+  const struct nk_vec2 group_padding = style->window.group_padding;
 	bool ttl_dirty = false;
 
 	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
 		nk_window_set_bounds(ctx, wbounds);
+		struct nk_panel *panel= nk_window_get_panel(ctx);
 
-		nk_layout_row_dynamic(ctx, wbounds.h, 2);
+		const float body_h = panel->bounds.h - 2*window_padding.y;
+		nk_layout_row_dynamic(ctx, body_h, 2);
 		if(nk_group_begin(ctx, "Left", NK_WINDOW_NO_SCROLLBAR))
 		{
 			nk_layout_row_dynamic(ctx, widget_h, 3);
@@ -137,8 +142,9 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				}
 			}
 
-			nk_layout_row_dynamic(ctx, wbounds.h - 2*widget_h, 1);
-			if(nk_group_begin(ctx, "Events", 0))
+			const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 4*group_padding.y - 2*widget_h;
+			nk_layout_row_dynamic(ctx, content_h, 1);
+			if(nk_group_begin(ctx, "Events", NK_WINDOW_BORDER))
 			{
 				uint32_t counter = 0;
 				const LV2_Atom *selected = NULL;
@@ -198,9 +204,9 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 
 				handle->count = counter;
 
-				const struct nk_panel *panel = nk_window_get_panel(ctx);
 				if(handle->bottom)
 				{
+					panel= nk_window_get_panel(ctx);
 					panel->offset->y = panel->at_y;
 					handle->bottom = false;
 
@@ -216,7 +222,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 		if(nk_group_begin(ctx, "Right", NK_WINDOW_NO_SCROLLBAR))
 		{
 			const LV2_Atom *atom = handle->selected;
-
 			if(ttl_dirty && atom)
 			{
 				char *ttl = _sratom_to_turtle(handle->sratom, handle->unmap,
@@ -224,7 +229,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 					atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
 				if(ttl)
 				{
-					struct nk_str *str = &handle->edit.string;
+					struct nk_str *str = &handle->str;
 					const size_t len = strlen(ttl);
 
 					nk_str_clear(str);
@@ -243,9 +248,14 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				}
 			}
 
-			nk_layout_row_dynamic(ctx, wbounds.h, 1);
 			const nk_flags flags = NK_EDIT_EDITOR;
-			const nk_flags mode = nk_edit_buffer(ctx, flags, &handle->edit, nk_filter_default);
+			char *str = nk_str_get(&handle->str);
+			int len = nk_str_len(&handle->str);
+
+			const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 2*group_padding.y;
+			nk_layout_row_dynamic(ctx, content_h, 1);
+			nk_edit_focus(ctx, flags);
+			const nk_flags mode = nk_edit_string(ctx, flags, str, &len, len, nk_filter_default);
 			(void)mode;
 
 			nk_group_end(ctx);

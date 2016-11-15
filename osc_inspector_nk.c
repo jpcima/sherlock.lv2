@@ -282,10 +282,13 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 	plughandle_t *handle = data;
 
 	const float widget_h = handle->dy;
+	struct nk_style *style = &ctx->style;
+  const struct nk_vec2 window_padding = style->window.padding;
 
 	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
 		nk_window_set_bounds(ctx, wbounds);
+		struct nk_panel *panel= nk_window_get_panel(ctx);
 
 		nk_layout_row_dynamic(ctx, widget_h, 3);
 		{
@@ -321,8 +324,9 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 			}
 		}
 
-		nk_layout_row_dynamic(ctx, wbounds.h - 2*widget_h, 1);
-		if(nk_group_begin(ctx, "Events", 0))
+		const float body_h = panel->bounds.h - 4*window_padding.y - 2*widget_h;
+		nk_layout_row_dynamic(ctx, body_h, 1);
+		if(nk_group_begin(ctx, "Events", NK_WINDOW_BORDER))
 		{
 			uint32_t counter = 0;
 
@@ -363,9 +367,9 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 
 			handle->count = counter;
 
-			const struct nk_panel *panel = nk_window_get_panel(ctx);
 			if(handle->bottom)
 			{
+				panel= nk_window_get_panel(ctx);
 				panel->offset->y = panel->at_y;
 				handle->bottom = false;
 
