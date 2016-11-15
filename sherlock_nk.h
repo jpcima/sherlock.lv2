@@ -67,6 +67,8 @@ struct _plughandle_t {
 
 	Sratom *sratom;
 	const char *base_uri;
+
+	float dy;
 };
 
 extern const char *max_items [5];

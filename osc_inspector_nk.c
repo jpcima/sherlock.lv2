@@ -218,7 +218,7 @@ _osc_packet(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object 
 static void
 _osc_bundle(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object *obj, float offset)
 {
-	const float widget_h = 20; //FIXME
+	const float widget_h = handle->dy;
 
 	const LV2_Atom_Object *timetag = NULL;
 	const LV2_Atom_Tuple *items = NULL;
@@ -281,7 +281,7 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 {
 	plughandle_t *handle = data;
 
-	const float widget_h = 20;
+	const float widget_h = handle->dy;
 
 	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{

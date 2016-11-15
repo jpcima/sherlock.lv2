@@ -266,8 +266,12 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		return NULL;
 	}
 
+	const char *NK_SCALE = getenv("NK_SCALE");
+	const float scale = NK_SCALE ? atof(NK_SCALE) : 1.f;
+	handle->dy = 20.f * scale;
+
 	nk_pugl_config_t *cfg = &handle->win.cfg;
-	cfg->height = 700;
+	cfg->height = 700 * scale;
 	cfg->resizable = true;
 	cfg->ignore = false;
 	cfg->class = "sherlock_inspector";
@@ -276,17 +280,17 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	cfg->data = handle;
 	if(!strcmp(plugin_uri, SHERLOCK_MIDI_INSPECTOR_URI))
 	{
-		cfg->width = 600;
+		cfg->width = 600 * scale;
 		cfg->expose = _midi_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_ATOM_INSPECTOR_URI))
 	{
-		cfg->width = 1200;
+		cfg->width = 1200 * scale;
 		cfg->expose = _atom_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_OSC_INSPECTOR_URI))
 	{
-		cfg->width = 600;
+		cfg->width = 600 * scale;
 		cfg->expose = _osc_inspector_expose;
 	}
 
@@ -295,7 +299,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		path = NULL;
 
 	cfg->font.face = path;
-	cfg->font.size = 13;
+	cfg->font.size = 13 * scale;
 
 	*(intptr_t *)widget = nk_pugl_init(&handle->win);
 	nk_pugl_show(&handle->win);

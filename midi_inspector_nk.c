@@ -201,7 +201,7 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 {
 	plughandle_t *handle = data;
 
-	const float widget_h = 20;
+	const float widget_h = handle->dy;
 
 	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
