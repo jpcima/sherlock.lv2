@@ -55,19 +55,6 @@ proj:sherlock
 	doap:maintainer omk:me ;
 	doap:name "Sherlock Bundle" .
 
-sherlock:count
-	a lv2:Parameter ;
-	rdfs:label "Max. events" ;
-	rdfs:comment "Maximum number of events shown" ;
-	rdfs:range atom:Int ;
-	lv2:minimum 1024 ;
-	lv2:maximum 16384 ;
-	lv2:scalePoint [ rdfs:label "1k" ; rdf:value 1024 ] ;
-	lv2:scalePoint [ rdfs:label "2k" ; rdf:value 2048 ] ;
-	lv2:scalePoint [ rdfs:label "4k" ; rdf:value 4096 ] ;
-	lv2:scalePoint [ rdfs:label "8k" ; rdf:value 8192 ] ;
-	lv2:scalePoint [ rdfs:label "16k" ; rdf:value 16384 ] .
-
 sherlock:overwrite
 	a lv2:Parameter ;
 	rdfs:label "Overwrite" ;
@@ -137,16 +124,14 @@ sherlock:atom_inspector
 	] ;
 
 	patch:writable
-		sherlock:count ,
 		sherlock:overwrite,
 		sherlock:block ,
 		sherlock:follow ;
 
 	state:state [
-		sherlock:count 2048 ;
 		sherlock:overwrite false ;
 		sherlock:block false ;
-		sherlock:follow true ;
+		sherlock:follow false ;
 	] .
 
 # MIDI Inspector Plugin
@@ -195,16 +180,14 @@ sherlock:midi_inspector
 	] ;
 
 	patch:writable
-		sherlock:count ,
 		sherlock:overwrite ,
 		sherlock:block ,
 		sherlock:follow ;
 
 	state:state [
-		sherlock:count 2048 ;
 		sherlock:overwrite false ;
 		sherlock:block false ;
-		sherlock:follow true ;
+		sherlock:follow false ;
 	] .
 
 # OSC Inspector Plugin
@@ -253,14 +236,12 @@ sherlock:osc_inspector
 	] ;
 
 	patch:writable
-		sherlock:count ,
 		sherlock:overwrite ,
 		sherlock:block ,
 		sherlock:follow ;
 
 	state:state [
-		sherlock:count 2048 ;
 		sherlock:overwrite false ;
 		sherlock:block false ;
-		sherlock:follow true ;
+		sherlock:follow false ;
 	] .

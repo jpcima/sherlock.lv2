@@ -76,8 +76,7 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 	}
 
-	if(  !props_register(&handle->props, &stat_count, &handle->state.count, &handle->stash.count)
-		|| !props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite)
+	if(  !props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite)
 		|| !props_register(&handle->props, &stat_block, &handle->state.block, &handle->stash.block)
 		|| !props_register(&handle->props, &stat_follow, &handle->state.follow, &handle->stash.follow) )
 	{

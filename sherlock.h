@@ -58,20 +58,12 @@ struct _position_t {
 };
 
 struct _state_t {
-	int32_t count;
 	int32_t overwrite;
 	int32_t block;
 	int32_t follow;
 };
 
 #define MAX_NPROPS 4
-
-static const props_def_t stat_count = {
-	.property = SHERLOCK_URI"#count",
-	.access = LV2_PATCH__writable,
-	.type = LV2_ATOM__Int,
-	.mode = PROP_MODE_STATIC
-};
 
 static const props_def_t stat_overwrite = {
 	.property = SHERLOCK_URI"#overwrite",

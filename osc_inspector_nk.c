@@ -32,6 +32,25 @@ struct _mem_t {
 };
 
 static inline void
+_shadow(struct nk_context *ctx, bool *shadow)
+{
+	if(*shadow)
+	{
+		struct nk_style *style = &ctx->style;
+		const struct nk_vec2 group_padding = style->window.group_padding;
+		struct nk_command_buffer *canvas = nk_window_get_canvas(ctx);
+
+		struct nk_rect b = nk_widget_bounds(ctx);
+		b.x -= group_padding.x;
+		b.w *= 10;
+		b.w += 5*group_padding.x;
+		nk_fill_rect(canvas, b, 0.f, nk_rgb(0x28, 0x28, 0x28));
+	}
+
+	*shadow = !*shadow;
+}
+
+static inline void
 _mem_printf(mem_t *mem, const char *fmt, ...)
 {
   va_list args;
@@ -257,6 +276,7 @@ _osc_bundle(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object 
 		nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 4);
 
 		nk_layout_row_push(ctx, offset);
+		_shadow(ctx, &handle->shadow);
 		_empty(ctx);
 
 		_osc_packet(handle, ctx, (const LV2_Atom_Object *)item, offset);
@@ -284,11 +304,74 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 	const float widget_h = handle->dy;
 	struct nk_style *style = &ctx->style;
   const struct nk_vec2 window_padding = style->window.padding;
+  const struct nk_vec2 group_padding = style->window.group_padding;
 
 	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
 		nk_window_set_bounds(ctx, wbounds);
 		struct nk_panel *panel= nk_window_get_panel(ctx);
+		struct nk_command_buffer *canvas = nk_window_get_canvas(ctx);
+
+		const float body_h = panel->bounds.h - 4*window_padding.y - 2*widget_h;
+		nk_layout_row_dynamic(ctx, body_h, 1);
+		nk_flags flags = NK_WINDOW_BORDER;
+		if(handle->state.follow)
+			flags |= NK_WINDOW_NO_SCROLLBAR;
+		struct nk_list_view lview;
+		if(nk_list_view_begin(ctx, &lview, "Events", flags, widget_h, NK_MIN(handle->n_item, MAX_LINES)))
+		{
+			if(handle->state.follow)
+			{
+				lview.end = NK_MAX(handle->n_item, 0);
+				lview.begin = NK_MAX(lview.end - lview.count, 0);
+			}
+			handle->shadow = lview.begin % 2 == 0;
+			for(int l = lview.begin; (l < lview.end) && (l < handle->n_item); l++)
+			{
+				item_t *itm = handle->items[l];
+
+				switch(itm->type)
+				{
+					case ITEM_TYPE_NONE:
+					{
+						// skip, was bundle payload
+					} break;
+					case ITEM_TYPE_FRAME:
+					{
+						nk_layout_row_dynamic(ctx, widget_h, 3);
+						{
+							struct nk_rect b = nk_widget_bounds(ctx);
+							b.x -= group_padding.x;
+							b.w *= 3;
+							b.w += 4*group_padding.x;
+							nk_fill_rect(canvas, b, 0.f, nk_rgb(0x18, 0x18, 0x18));
+						}
+
+						nk_labelf_colored(ctx, NK_TEXT_LEFT, orange, "@%"PRIi64, itm->frame.offset);
+						nk_labelf_colored(ctx, NK_TEXT_CENTERED, green, "-%"PRIu32"-", itm->frame.counter);
+						nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%"PRIi32, itm->frame.nsamples);
+					} break;
+
+					case ITEM_TYPE_EVENT:
+					{
+						LV2_Atom_Event *ev = &itm->event.ev;
+						const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+						const int64_t frames = ev->time.frames;
+						const float off = 0.1;
+
+						nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 4);
+
+						nk_layout_row_push(ctx, off);
+						_shadow(ctx, &handle->shadow);
+						nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
+
+						_osc_packet(handle, ctx, obj, off);
+					} break;
+				}
+			}
+
+			nk_list_view_end(&lview);
+		}
 
 		nk_layout_row_dynamic(ctx, widget_h, 3);
 		{
@@ -300,84 +383,15 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 				_toggle(handle, handle->urid.follow, handle->state.follow, true);
 		}
 
+		const bool max_reached = handle->n_item >= MAX_LINES;
 		nk_layout_row_dynamic(ctx, widget_h, 2);
+		if(nk_button_symbol_label(ctx,
+			max_reached ? NK_SYMBOL_TRIANGLE_RIGHT: NK_SYMBOL_NONE,
+			"clear", NK_TEXT_LEFT))
 		{
-			if(nk_button_label(ctx, "clear"))
-				_clear(handle);
-
-			int selected = 0;
-			for(int i = 0; i < 5; i++)
-			{
-				if(handle->state.count == max_values[i])
-				{
-					selected = i;
-					break;
-				}
-			}
-
-			selected = nk_combo(ctx, max_items, 5, selected, widget_h,
-				nk_vec2(wbounds.w/3, widget_h*5));
-			if(handle->state.count != max_values[selected])
-			{
-				handle->state.count = max_values[selected];
-				_toggle(handle, handle->urid.count, handle->state.count, false);
-			}
+			_clear(handle);
 		}
-
-		const float body_h = panel->bounds.h - 4*window_padding.y - 2*widget_h;
-		nk_layout_row_dynamic(ctx, body_h, 1);
-		if(nk_group_begin(ctx, "Events", NK_WINDOW_BORDER))
-		{
-			uint32_t counter = 0;
-
-			LV2_ATOM_TUPLE_FOREACH((const LV2_Atom_Tuple *)handle->ser.atom, atom)
-			{
-				const LV2_Atom_Tuple *tup = (const LV2_Atom_Tuple *)atom;
-				const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
-				const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
-				const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
-
-				nk_layout_row_dynamic(ctx, 2.f, 1);
-				_ruler(ctx, 2.f, gray);
-
-				nk_layout_row_dynamic(ctx, widget_h, 3);
-				nk_labelf_colored(ctx, NK_TEXT_LEFT, orange, "@%"PRIi64, offset->body);
-				nk_labelf_colored(ctx, NK_TEXT_CENTERED, green, "-%"PRIu32"-", counter);
-				nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%"PRIi32, nsamples->body);
-
-				nk_layout_row_dynamic(ctx, 2.f, 1);
-				_ruler(ctx, 1.f, gray);
-
-				LV2_ATOM_SEQUENCE_FOREACH(seq, ev)
-				{
-					const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
-					const int64_t frames = ev->time.frames;
-					const float off = 0.1;
-
-					nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 4);
-
-					nk_layout_row_push(ctx, off);
-					nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
-
-					_osc_packet(handle, ctx, obj, off);
-
-					counter += 1;
-				}
-			}
-
-			handle->count = counter;
-
-			if(handle->bottom)
-			{
-				panel= nk_window_get_panel(ctx);
-				panel->offset->y = panel->at_y;
-				handle->bottom = false;
-
-				_post_redisplay(handle);
-			}
-
-			nk_group_end(ctx);
-		}
+		nk_label(ctx, "Sherlock.lv2: "SHERLOCK_VERSION, NK_TEXT_RIGHT);
 	}
 	nk_end(ctx);
 }

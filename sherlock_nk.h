@@ -23,8 +23,36 @@
 #include <osc.lv2/osc.h>
 #include <sratom/sratom.h>
 
+#define MAX_LINES 2048
+
+typedef enum _plugin_type_t plugin_type_t;
+typedef enum _item_type_t item_type_t;
+typedef struct _item_t item_t;
 typedef struct _plughandle_t plughandle_t;
 typedef struct _atom_ser_t atom_ser_t;
+
+enum _item_type_t {
+	ITEM_TYPE_NONE,
+	ITEM_TYPE_FRAME,
+	ITEM_TYPE_EVENT
+};
+
+struct _item_t {
+	item_type_t type;
+
+	union {
+		struct {
+			int64_t offset;
+			uint32_t counter;
+			int32_t nsamples;
+		} frame;
+
+		struct {
+			LV2_Atom_Event ev;
+			uint8_t body [0];
+		} event;
+	};
+};
 
 struct _atom_ser_t {
 	uint32_t size;
@@ -35,6 +63,12 @@ struct _atom_ser_t {
 	};
 };
 
+enum _plugin_type_t {
+	SHERLOCK_ATOM_INSPECTOR,
+	SHERLOCK_MIDI_INSPECTOR,
+	SHERLOCK_OSC_INSPECTOR
+};
+
 struct _plughandle_t {
 	LV2UI_Write_Function write_function;
 	LV2UI_Controller controller;
@@ -42,16 +76,12 @@ struct _plughandle_t {
 	LV2_URID_Map *map;
 	LV2_URID_Unmap *unmap;
 	LV2_Atom_Forge forge;
-	LV2_Atom_Forge mem;
-	int32_t count;
-	bool bottom;
 	LV2_Atom_Forge_Frame frame;
 	LV2_URID event_transfer;
 	LV2_OSC_URID osc_urid;
 
 	PROPS_T(props, MAX_NPROPS);
 	struct {
-		LV2_URID count;
 		LV2_URID overwrite;
 		LV2_URID block;
 		LV2_URID follow;
@@ -61,7 +91,7 @@ struct _plughandle_t {
 
 	nk_pugl_window_t win;
 
-	atom_ser_t ser;
+	bool ttl_dirty;
 	const LV2_Atom *selected;
 	struct nk_str str;
 
@@ -69,6 +99,13 @@ struct _plughandle_t {
 	const char *base_uri;
 
 	float dy;
+
+	uint32_t counter;
+	int n_item;
+	item_t **items;
+
+	bool shadow;
+	plugin_type_t type;
 };
 
 extern const char *max_items [5];

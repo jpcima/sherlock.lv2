@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include <sherlock.h>
+#include <osc.lv2/util.h>
 
 #define NK_PUGL_IMPLEMENTATION
 #include <sherlock_nk.h>
@@ -183,21 +184,47 @@ _empty(struct nk_context *ctx)
 	nk_text(ctx, NULL, 0, NK_TEXT_RIGHT);
 }
 
+static void
+_clear_items(plughandle_t *handle)
+{
+	if(handle->items)
+	{
+		for(int i = 0; i < handle->n_item; i++)
+		{
+			item_t *itm = handle->items[i];
+
+			if(itm)
+				free(itm);
+		}
+
+		free(handle->items);
+		handle->items = NULL;
+	}
+
+	handle->n_item = 0;
+}
+
+static item_t *
+_append_item(plughandle_t *handle, item_type_t type, size_t sz)
+{
+	handle->items = realloc(handle->items, (handle->n_item + 1)*sizeof(item_t *));
+	handle->items[handle->n_item] = malloc(sizeof(item_t) + sz);
+
+	item_t *itm = handle->items[handle->n_item];
+	itm->type = type;
+
+	handle->n_item += 1;
+
+	return itm;
+}
+
 void
 _clear(plughandle_t *handle)
 {
-	atom_ser_t *ser = &handle->ser;
-	struct nk_str *str = &handle->str;
-
-	if(_ser_realloc(ser, 1024))
-	{
-		lv2_atom_forge_set_sink(&handle->mem, _sink, _deref, ser);
-		lv2_atom_forge_tuple(&handle->mem, &handle->frame);
-	}
-
-	handle->count = 0;
+	_clear_items(handle);
+	nk_str_clear(&handle->str);
 	handle->selected = NULL;
-	nk_str_clear(str);
+	handle->counter = 0;
 }
 
 void
@@ -244,7 +271,6 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 
 	handle->event_transfer = handle->map->map(handle->map->handle, LV2_ATOM__eventTransfer);
 	lv2_atom_forge_init(&handle->forge, handle->map);
-	lv2_atom_forge_init(&handle->mem, handle->map);
 	lv2_osc_urid_init(&handle->osc_urid, handle->map);
 
 	handle->write_function = write_function;
@@ -257,8 +283,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		return NULL;
 	}
 
-	if(  !(handle->urid.count = props_register(&handle->props, &stat_count, &handle->state.count, &handle->stash.count))
-		|| !(handle->urid.overwrite = props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite))
+	if(  !(handle->urid.overwrite = props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite))
 		|| !(handle->urid.block = props_register(&handle->props, &stat_block, &handle->state.block, &handle->stash.block))
 		|| !(handle->urid.follow = props_register(&handle->props, &stat_follow, &handle->state.follow, &handle->stash.follow)) )
 	{
@@ -280,16 +305,19 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	cfg->data = handle;
 	if(!strcmp(plugin_uri, SHERLOCK_MIDI_INSPECTOR_URI))
 	{
+		handle->type = SHERLOCK_MIDI_INSPECTOR,
 		cfg->width = 600 * scale;
 		cfg->expose = _midi_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_ATOM_INSPECTOR_URI))
 	{
+		handle->type = SHERLOCK_ATOM_INSPECTOR,
 		cfg->width = 1200 * scale;
 		cfg->expose = _atom_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_OSC_INSPECTOR_URI))
 	{
+		handle->type = SHERLOCK_OSC_INSPECTOR,
 		cfg->width = 600 * scale;
 		cfg->expose = _osc_inspector_expose;
 	}
@@ -329,15 +357,43 @@ cleanup(LV2UI_Handle instance)
 
 	sratom_free(handle->sratom);
 
+	_clear_items(handle);
 	nk_str_free(&handle->str);
-
-	atom_ser_t *ser = &handle->ser;
-	_ser_free(ser);
 
 	nk_pugl_hide(&handle->win);
 	nk_pugl_shutdown(&handle->win);
 
 	free(handle);
+}
+
+static void
+_osc_bundle(plughandle_t *handle, const LV2_Atom_Object *obj);
+
+static void
+_osc_packet(plughandle_t *handle, const LV2_Atom_Object *obj)
+{
+	if(lv2_osc_is_message_type(&handle->osc_urid, obj->body.otype))
+	{
+		_append_item(handle, ITEM_TYPE_NONE, 0);
+	}
+	else if(lv2_osc_is_bundle_type(&handle->osc_urid, obj->body.otype))
+	{
+		_append_item(handle, ITEM_TYPE_NONE, 0);
+		_osc_bundle(handle, obj);
+	}
+}
+
+static void
+_osc_bundle(plughandle_t *handle, const LV2_Atom_Object *obj)
+{
+	const LV2_Atom_Object *timetag = NULL;
+	const LV2_Atom_Tuple *items = NULL;
+	lv2_osc_bundle_get(&handle->osc_urid, obj, &timetag, &items);
+
+	LV2_ATOM_TUPLE_FOREACH(items, item)
+	{
+		_osc_packet(handle, (const LV2_Atom_Object *)item);
+	}
 }
 
 static void
@@ -374,31 +430,69 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 		}
 		case 2:
 		{
-			bool append = true;
-
 			if(handle->state.block)
-				append = false;
-
-			if(handle->count > handle->state.count)
 			{
-				if(handle->state.overwrite)
-					_clear(handle);
-				else
-					append = false;
+				break;
 			}
 
-			if(append)
+			if( (handle->n_item > MAX_LINES) && handle->state.overwrite)
 			{
-				const LV2_Atom *atom = buf;
-				const uint32_t sz = lv2_atom_total_size(atom);
-
-				lv2_atom_forge_write(&handle->mem, atom, sz);
-
-				if(handle->state.follow)
-					handle->bottom = true; // signal scrolling to bottom
-
-				nk_pugl_post_redisplay(&handle->win);
+				_clear(handle);
 			}
+
+			const LV2_Atom *atom = buf;
+			const LV2_Atom_Tuple *tup = (const LV2_Atom_Tuple *)atom;
+			const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
+			const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
+			const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
+
+			// append frame
+			{
+				item_t *itm = _append_item(handle, ITEM_TYPE_FRAME, 0);
+				itm->frame.offset = offset->body;
+				itm->frame.counter = handle->counter++;
+				itm->frame.nsamples = nsamples->body;
+			}
+
+			LV2_ATOM_SEQUENCE_FOREACH(seq, ev)
+			{
+				const size_t ev_sz = sizeof(LV2_Atom_Event) + ev->body.size;
+				item_t *itm = _append_item(handle, ITEM_TYPE_EVENT, ev_sz);
+				memcpy(&itm->event.ev, ev, ev_sz);
+
+				switch(handle->type)
+				{
+					case SHERLOCK_ATOM_INSPECTOR:
+					{
+						if(handle->state.follow)
+						{
+							handle->selected = &itm->event.ev.body;
+							handle->ttl_dirty = true;
+						}
+					} break;
+					case SHERLOCK_OSC_INSPECTOR:
+					{
+						// bundles may span over multiple lines
+						const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+						if(lv2_osc_is_bundle_type(&handle->osc_urid, obj->body.otype))
+						{
+							_osc_bundle(handle, obj);
+						}
+					} break;
+					case SHERLOCK_MIDI_INSPECTOR:
+					{
+						// sysex messages may span over multiple lines
+						const uint8_t *msg = LV2_ATOM_BODY_CONST(&ev->body);
+						if( (msg[0] == 0xf0) && (ev->body.size > 4) )
+						{
+							for(uint32_t j = 4; j < ev->body.size; j += 4)
+								_append_item(handle, ITEM_TYPE_NONE, 0); // place holder
+						}
+					} break;
+				}
+			}
+
+			nk_pugl_post_redisplay(&handle->win);
 
 			break;
 		}
