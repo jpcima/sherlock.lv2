@@ -224,7 +224,7 @@ _clear(plughandle_t *handle)
 	_clear_items(handle);
 	nk_str_clear(&handle->str);
 	handle->selected = NULL;
-	handle->counter = 0;
+	handle->counter = 1;
 }
 
 void
@@ -430,14 +430,16 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 		}
 		case 2:
 		{
-			if(handle->state.block)
-			{
-				break;
-			}
+			const bool overflow = handle->n_item > MAX_LINES;
 
-			if( (handle->n_item > MAX_LINES) && handle->state.overwrite)
+			if(overflow && handle->state.overwrite)
 			{
 				_clear(handle);
+			}
+
+			if(overflow || handle->state.block)
+			{
+				break;
 			}
 
 			const LV2_Atom *atom = buf;
