@@ -155,7 +155,22 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 							LV2_Atom_Event *ev = &itm->event.ev;
 							const LV2_Atom *body = &ev->body;
 							const int64_t frames = ev->time.frames;
-							const char *uri = handle->unmap->unmap(handle->unmap->handle, body->type);
+							const char *uri = NULL;
+							if(lv2_atom_forge_is_object_type(&handle->forge, body->type))
+							{
+								const LV2_Atom_Object *obj = (const LV2_Atom_Object *)body;
+
+								if(obj->body.otype)
+									uri = handle->unmap->unmap(handle->unmap->handle, obj->body.otype);
+								else if(obj->body.id)
+									uri = handle->unmap->unmap(handle->unmap->handle, obj->body.id);
+								else
+									uri = "Unknown";
+							}
+							else // not an object
+							{
+								uri = handle->unmap->unmap(handle->unmap->handle, body->type);
+							}
 
 							nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 3);
 							{
