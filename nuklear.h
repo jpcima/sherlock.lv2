@@ -1663,6 +1663,18 @@ enum nk_text_edit_mode {
     NK_TEXT_EDIT_MODE_REPLACE
 };
 
+struct nk_token {
+	struct nk_color color;
+	int offset;
+};
+
+struct nk_lexer {
+	struct nk_token *tokens;
+	struct nk_token *(*lex)(void *data, const char *buf, int size);
+	void *data;
+	int needs_refresh;
+};
+
 struct nk_text_edit {
     struct nk_clipboard clip;
     struct nk_str string;
@@ -1681,6 +1693,7 @@ struct nk_text_edit {
     unsigned char padding1;
     float preferred_x;
     struct nk_text_undo_state undo;
+		struct nk_lexer lexer;
 };
 
 /* filter function */
@@ -11929,6 +11942,8 @@ nk_textedit_text(struct nk_text_edit *state, const char *text, int total_len)
         glyph_len = nk_utf_decode(text + text_len, &unicode, total_len-text_len);
         text_len += glyph_len;
     }
+
+		state->lexer.needs_refresh = 1;
 }
 
 NK_INTERN void
@@ -12235,6 +12250,8 @@ retry:
                 --state->cursor;
         }} break;
     }
+
+		state->lexer.needs_refresh = 1;
 }
 
 NK_INTERN void
@@ -12624,6 +12641,73 @@ nk_widget_text(struct nk_command_buffer *o, struct nk_rect b,
     }
     nk_draw_text(o, label, (const char*)string,
         len, f, t->background, t->text);
+}
+
+NK_INTERN void
+nk_widget_text_lexed(struct nk_command_buffer *o, struct nk_rect b,
+    const char *string, int len, const struct nk_text *t,
+    nk_flags a, const struct nk_user_font *f, struct nk_token *tokens, int offset)
+{
+    struct nk_rect label;
+    float text_width;
+		struct nk_token *token = tokens;
+
+    NK_ASSERT(o);
+    NK_ASSERT(t);
+    if (!o || !t) return;
+
+    b.h = NK_MAX(b.h, 2 * t->padding.y);
+    label.x = 0; label.w = 0;
+    label.y = b.y + t->padding.y;
+    label.h = NK_MIN(f->height, b.h - 2 * t->padding.y);
+
+    text_width = f->width(f->userdata, f->height, (const char*)string, len);
+    text_width += (2.0f * t->padding.x);
+
+    /* align in x-axis */
+    if (a & NK_TEXT_ALIGN_LEFT) {
+        label.x = b.x + t->padding.x;
+        label.w = NK_MAX(0, b.w - 2 * t->padding.x);
+    } else if (a & NK_TEXT_ALIGN_CENTERED) {
+        label.w = NK_MAX(1, 2 * t->padding.x + (float)text_width);
+        label.x = (b.x + t->padding.x + ((b.w - 2 * t->padding.x) - label.w) / 2);
+        label.x = NK_MAX(b.x + t->padding.x, label.x);
+        label.w = NK_MIN(b.x + b.w, label.x + label.w);
+        if (label.w >= label.x) label.w -= label.x;
+    } else if (a & NK_TEXT_ALIGN_RIGHT) {
+        label.x = NK_MAX(b.x + t->padding.x, (b.x + b.w) - (2 * t->padding.x + (float)text_width));
+        label.w = (float)text_width + 2 * t->padding.x;
+    } else return;
+
+    /* align in y-axis */
+    if (a & NK_TEXT_ALIGN_MIDDLE) {
+        label.y = b.y + b.h/2.0f - (float)f->height/2.0f;
+        label.h = NK_MAX(b.h/2.0f, b.h - (b.h/2.0f + f->height/2.0f));
+    } else if (a & NK_TEXT_ALIGN_BOTTOM) {
+        label.y = b.y + b.h - f->height;
+        label.h = f->height;
+    }
+
+		//FIXME do this chunk-wise instead of character-wise
+		for(int i = 0; i < len; i++)
+		{
+			const struct nk_rect dst = {
+				.x = label.x + i*text_width/len,
+				.y = label.y,
+				.w = text_width,
+				.h = label.h
+			};
+
+			struct nk_color bg = t->background;
+			struct nk_color fg = t->text;
+
+			while(offset + i >= token->offset)
+				token++;
+
+			fg = token->color;
+
+			nk_draw_text(o, dst, string + i, 1, f, bg, fg);
+		}
 }
 
 NK_INTERN void
@@ -14043,7 +14127,7 @@ nk_edit_draw_text(struct nk_command_buffer *out,
     const struct nk_style_edit *style, float pos_x, float pos_y,
     float x_offset, const char *text, int byte_len, float row_height,
     const struct nk_user_font *font, struct nk_color background,
-    struct nk_color foreground, int is_selected)
+    struct nk_color foreground, int is_selected, struct nk_lexer *lexer, int offset)
 {
     NK_ASSERT(out);
     NK_ASSERT(font);
@@ -14080,8 +14164,16 @@ nk_edit_draw_text(struct nk_command_buffer *out,
 
             if (is_selected) /* selection needs to draw different background color */
                 nk_fill_rect(out, label, 0, background);
-            nk_widget_text(out, label, line, (int)((text + text_len) - line),
-                &txt, NK_TEXT_CENTERED, font);
+						if(lexer->tokens && !is_selected)
+						{
+							nk_widget_text_lexed(out, label, line, (int)((text + text_len) - line),
+									&txt, NK_TEXT_CENTERED, font, lexer->tokens, line - text + offset);
+						}
+						else
+						{
+							nk_widget_text(out, label, line, (int)((text + text_len) - line),
+									&txt, NK_TEXT_CENTERED, font);
+						}
 
             text_len++;
             line_count++;
@@ -14114,9 +14206,32 @@ nk_edit_draw_text(struct nk_command_buffer *out,
 
         if (is_selected)
             nk_fill_rect(out, label, 0, background);
-        nk_widget_text(out, label, line, (int)((text + text_len) - line),
-            &txt, NK_TEXT_LEFT, font);
+				if(lexer->tokens && !is_selected)
+				{
+					nk_widget_text_lexed(out, label, line, (int)((text + text_len) - line),
+							&txt, NK_TEXT_LEFT, font, lexer->tokens, line - text + offset);
+				}
+				else
+				{
+					nk_widget_text(out, label, line, (int)((text + text_len) - line),
+							&txt, NK_TEXT_LEFT, font);
+				}
     }}
+}
+
+NK_INTERN void
+nk_edit_refresh_lex(struct nk_text_edit *edit)
+{
+	if(edit->lexer.needs_refresh || !edit->lexer.tokens)
+	{
+		if(edit->lexer.tokens)
+			free(edit->lexer.tokens);
+
+		edit->lexer.tokens = edit->lexer.lex(edit->lexer.data,
+			nk_str_get_const(&edit->string), nk_str_len_char(&edit->string));
+
+		edit->lexer.needs_refresh = 0;
+	}
 }
 
 NK_INTERN nk_flags
@@ -14134,6 +14249,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
     char cursor_follow = 0;
     struct nk_rect old_clip;
     struct nk_rect clip;
+		int has_changes = 0;
 
     NK_ASSERT(state);
     NK_ASSERT(out);
@@ -14271,7 +14387,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
         /* tab handler */
         {int tab = nk_input_is_key_pressed(in, NK_KEY_TAB);
         if (tab && (flags & NK_EDIT_ALLOW_TAB)) {
-            nk_textedit_text(edit, "    ", 4);
+            nk_textedit_text(edit, "  ", 2);
             cursor_follow = nk_true;
         }}
     }
@@ -14462,7 +14578,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
                 scroll_step = scroll.h * 0.10f;
                 scroll_inc = scroll.h * 0.01f;
                 scroll_target = text_size.y;
-                edit->scrollbar.y = nk_do_scrollbarv(&ws, out, scroll, 0,
+                edit->scrollbar.y = nk_do_scrollbarv(&ws, out, scroll, nk_true,
                         scroll_offset, scroll_target, scroll_step, scroll_inc,
                         &style->scrollbar, in, font);
             }
@@ -14505,6 +14621,13 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
             background_color = nk_rgba(0,0,0,0);
         else background_color = background->data.color;
 
+				if(edit->lexer.lex)
+				{
+					if(has_changes)
+						edit->lexer.needs_refresh = 1;
+
+					nk_edit_refresh_lex(edit);
+				}
 
         if (edit->select_start == edit->select_end) {
             /* no selection so just draw the complete text */
@@ -14512,7 +14635,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
             int l = nk_str_len_char(&edit->string);
             nk_edit_draw_text(out, style, area.x - edit->scrollbar.x,
                 area.y - edit->scrollbar.y, 0, begin, l, row_height, font, 
-                background_color, text_color, nk_false);
+                background_color, text_color, nk_false, &edit->lexer, 0);
         } else {
             /* edit has selection so draw 1-3 text chunks */
             if (edit->select_start != edit->select_end && selection_begin > 0){
@@ -14521,7 +14644,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
                 NK_ASSERT(select_begin_ptr);
                 nk_edit_draw_text(out, style, area.x - edit->scrollbar.x,
                     area.y - edit->scrollbar.y, 0, begin, (int)(select_begin_ptr - begin),
-                    row_height, font, background_color, text_color, nk_false);
+                    row_height, font, background_color, text_color, nk_false, &edit->lexer, 0);
             }
             if (edit->select_start != edit->select_end) {
                 /* draw selected text */
@@ -14535,7 +14658,8 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
                     area.y + selection_offset_start.y - edit->scrollbar.y,
                     selection_offset_start.x,
                     select_begin_ptr, (int)(select_end_ptr - select_begin_ptr),
-                    row_height, font, sel_background_color, sel_text_color, nk_true);
+                    row_height, font, sel_background_color, sel_text_color, nk_true,
+										&edit->lexer, edit->select_start < edit->select_end ? edit->select_start : edit->select_end);
             }
             if ((edit->select_start != edit->select_end &&
                 selection_end < edit->string.len))
@@ -14550,7 +14674,8 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
                     area.y + selection_offset_end.y - edit->scrollbar.y,
                     selection_offset_end.x,
                     begin, (int)(end - begin), row_height, font,
-                    background_color, text_color, nk_true);
+                    background_color, text_color, nk_false,
+										&edit->lexer, edit->select_start < edit->select_end ? edit->select_end : edit->select_start);
             }
         }
 
@@ -14594,6 +14719,9 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
         int l = nk_str_len_char(&edit->string);
         const char *begin = nk_str_get_const(&edit->string);
 
+				if(edit->lexer.lex)
+					nk_edit_refresh_lex(edit);
+
         const struct nk_style_item *background;
         struct nk_color background_color;
         struct nk_color text_color;
@@ -14613,7 +14741,7 @@ nk_do_edit(nk_flags *state, struct nk_command_buffer *out,
         else background_color = background->data.color;
         nk_edit_draw_text(out, style, area.x - edit->scrollbar.x,
             area.y - edit->scrollbar.y, 0, begin, l, row_height, font,
-            background_color, text_color, nk_false);
+            background_color, text_color, nk_false, &edit->lexer, 0);
     }
     nk_push_scissor(out, old_clip);}
     return ret;
