@@ -130,7 +130,8 @@ _intercept_stat1(void *data, LV2_Atom_Forge *forge, int64_t frames,
 	{
 		handle->state.val2 = handle->state.val1 * 2;
 
-		props_set(&handle->props, forge, frames, handle->urid.val2, &handle->ref);
+		if(forge)
+			props_set(&handle->props, forge, frames, handle->urid.val2, &handle->ref);
 	}
 }
 
@@ -146,7 +147,8 @@ _intercept_stat3(void *data, LV2_Atom_Forge *forge, int64_t frames,
 	{
 		handle->state.val4 = handle->state.val3 * 2;
 
-		props_set(&handle->props, forge, frames, handle->urid.val4, &handle->ref);
+		if(forge)
+			props_set(&handle->props, forge, frames, handle->urid.val4, &handle->ref);
 	}
 }
 
@@ -355,11 +357,36 @@ LV2_State_Interface state_iface = {
 	.restore = _state_restore
 };
 
+static inline LV2_Worker_Status
+_work(LV2_Handle instance, LV2_Worker_Respond_Function respond,
+LV2_Worker_Respond_Handle worker, uint32_t size, const void *body)
+{
+	plughandle_t *handle = instance;
+
+	return props_work(&handle->props, respond, worker, size, body);
+}
+
+static inline LV2_Worker_Status
+_work_response(LV2_Handle instance, uint32_t size, const void *body)
+{
+	plughandle_t *handle = instance;
+
+	return props_work_response(&handle->props, size, body);
+}
+
+LV2_Worker_Interface work_iface = {
+	.work = _work,
+	.work_response = _work_response,
+	.end_run = NULL
+};
+
 static const void *
 extension_data(const char *uri)
 {
 	if(!strcmp(uri, LV2_STATE__interface))
 		return &state_iface;
+	else if(!strcmp(uri, LV2_WORKER__interface))
+		return &work_iface;
 	return NULL;
 }
 

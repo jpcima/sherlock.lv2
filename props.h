@@ -32,6 +32,7 @@ extern "C" {
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 #include <lv2/lv2plug.in/ns/ext/patch/patch.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
+#include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 
 /*****************************************************************************
  * API START
@@ -43,6 +44,7 @@ typedef enum _props_event_t props_event_t;
 // structures
 typedef struct _props_def_t props_def_t;
 typedef struct _props_impl_t props_impl_t;
+typedef struct _props_work_t props_work_t;
 typedef struct _props_t props_t;
 
 // function callbacks
@@ -80,16 +82,15 @@ struct _props_def_t {
 
 struct _props_impl_t {
 	LV2_URID property;
+	LV2_URID type;
 	LV2_URID access;
 
 	struct {
 		uint32_t size;
-		LV2_URID type;
 		void *body;
 	} value;
 	struct {
 		uint32_t size;
-		LV2_URID type;
 		void *body;
 	} stash;
 
@@ -98,6 +99,13 @@ struct _props_impl_t {
 
 	atomic_flag lock;
 	bool stashing;
+};
+
+struct _props_work_t {
+	LV2_URID property;
+	LV2_URID size;
+	LV2_URID type;
+	uint8_t body [];
 };
 
 struct _props_t {
@@ -190,6 +198,15 @@ props_save(props_t *props, LV2_State_Store_Function store,
 static inline LV2_State_Status
 props_restore(props_t *props, LV2_State_Retrieve_Function retrieve,
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features);
+
+// non-rt
+static inline LV2_Worker_Status
+props_work(props_t *props, LV2_Worker_Respond_Function respond,
+LV2_Worker_Respond_Handle handle, uint32_t size, const void *data);
+
+// rt-safe
+static inline LV2_Worker_Status
+props_work_response(props_t *props, uint32_t size, const void *body);
 
 /*****************************************************************************
  * API END
@@ -301,7 +318,7 @@ _props_get(props_t *props, LV2_Atom_Forge *forge, uint32_t frames,
 		if(ref)
 			lv2_atom_forge_key(forge, props->urid.patch_value);
 		if(ref)
-			ref = lv2_atom_forge_atom(forge, impl->value.size, impl->value.type);
+			ref = lv2_atom_forge_atom(forge, impl->value.size, impl->type);
 		if(ref)
 			ref = lv2_atom_forge_write(forge, impl->value.body, impl->value.size);
 	}
@@ -359,7 +376,6 @@ _props_stash(props_t *props, props_impl_t *impl)
 	if(_impl_try_lock(impl))
 	{
 		impl->stash.size = impl->value.size;
-		impl->stash.type = impl->value.type;
 		memcpy(impl->stash.body, impl->value.body, impl->value.size);
 
 		_impl_unlock(impl);
@@ -374,11 +390,10 @@ _props_stash(props_t *props, props_impl_t *impl)
 static inline void
 _props_set(props_t *props, props_impl_t *impl, LV2_URID type, uint32_t size, const void *body)
 {
-	if(  (impl->value.type == type)
+	if(  (impl->type == type)
 		&& ( (impl->def->max_size == 0) || (size <= impl->def->max_size)) )
 	{
 		impl->value.size = size;
-		impl->value.type = type;
 		memcpy(impl->value.body, body, size);
 
 		_props_stash(props, impl);
@@ -447,7 +462,7 @@ _props_register_single(props_t *props, const props_def_t *def,
 		size = 0; // assume everything else as having size 0
 	}
 
-	impl->value.type = impl->stash.type = type;
+	impl->type = type;
 	impl->value.size = impl->stash.size = size;
 
 	atomic_flag_clear_explicit(&impl->lock, memory_order_relaxed);
@@ -786,7 +801,6 @@ props_map(props_t *props, const char *property)
 	return 0;
 }
 
-// rt-safe
 static inline const char *
 props_unmap(props_t *props, LV2_URID property)
 {
@@ -830,7 +844,7 @@ props_save(props_t *props, LV2_State_Store_Function store,
 			_impl_spin_lock(impl);
 
 			const uint32_t size = impl->stash.size;
-			const LV2_URID type = impl->stash.type;
+			const LV2_URID type = impl->type;
 			memcpy(body, impl->stash.body, impl->stash.size);
 
 			_impl_unlock(impl);
@@ -863,16 +877,38 @@ props_save(props_t *props, LV2_State_Store_Function store,
 	return LV2_STATE_SUCCESS;
 }
 
+static inline void
+_props_schedule(const LV2_Worker_Schedule *work_sched, LV2_URID property,
+	LV2_URID type, uint32_t size, const void *body)
+{
+	const uint32_t sz = sizeof(props_work_t) + size;
+	props_work_t *job = malloc(sz);
+	if(job)
+	{
+		job->property = property;
+		job->type = type;
+		job->size = size;
+		memcpy(job->body, body, size);
+
+		work_sched->schedule_work(work_sched->handle, sz, job);
+
+		free(job);
+	}
+}
+
 static inline LV2_State_Status
 props_restore(props_t *props, LV2_State_Retrieve_Function retrieve,
 	LV2_State_Handle state, uint32_t flags, const LV2_Feature *const *features)
 {
 	const LV2_State_Map_Path *map_path = NULL;
+	const LV2_Worker_Schedule *work_sched = NULL;
 
 	for(unsigned i = 0; features[i]; i++)
 	{
 		if(!strcmp(features[i]->URI, LV2_STATE__mapPath))
 			map_path = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_WORKER__schedule))
+			work_sched = features[i]->data;
 	}
 
 	for(unsigned i = 0; i < props->nimpls; i++)
@@ -894,18 +930,38 @@ props_restore(props_t *props, LV2_State_Retrieve_Function retrieve,
 				char *absolute = map_path->absolute_path(map_path->handle, body);
 				if(absolute)
 				{
-					_props_set(props, impl, _type, strlen(absolute) + 1, absolute);
+					const uint32_t sz = strlen(absolute) + 1;
+					if(work_sched) // host supports state:threadSafeRestore
+					{
+						_props_schedule(work_sched, impl->property, _type, sz, absolute);
+					}
+					else
+					{
+						_props_set(props, impl, _type, sz, absolute);
+
+						const props_def_t *def = impl->def;
+						if(def->event_cb && (def->event_mask & PROP_EVENT_RESTORE) )
+							def->event_cb(props->data, NULL, 0, PROP_EVENT_RESTORE, impl);
+					}
+
 					free(absolute);
 				}
 			}
 			else // !Path
 			{
-				_props_set(props, impl, _type, _size, body);
-			}
+				if(work_sched) // host supports state:threadSafeRestore
+				{
+					_props_schedule(work_sched, impl->property, _type, _size, body);
+				}
+				else
+				{
+					_props_set(props, impl, _type, _size, body);
 
-			const props_def_t *def = impl->def;
-			if(def->event_cb && (def->event_mask & PROP_EVENT_RESTORE) )
-				def->event_cb(props->data, NULL, 0, PROP_EVENT_RESTORE, impl);
+					const props_def_t *def = impl->def;
+					if(def->event_cb && (def->event_mask & PROP_EVENT_RESTORE) )
+						def->event_cb(props->data, NULL, 0, PROP_EVENT_RESTORE, impl);
+				}
+			}
 		}
 		else
 		{
@@ -914,6 +970,33 @@ props_restore(props_t *props, LV2_State_Retrieve_Function retrieve,
 	}
 
 	return LV2_STATE_SUCCESS;
+}
+
+static inline LV2_Worker_Status
+props_work(props_t *props, LV2_Worker_Respond_Function respond,
+LV2_Worker_Respond_Handle worker, uint32_t size, const void *body)
+{
+	return respond(worker, size, body);
+}
+
+static inline LV2_Worker_Status
+props_work_response(props_t *props, uint32_t size, const void *body)
+{
+	const props_work_t *job = body;
+	if(job)
+	{
+		props_impl_t *impl = _props_impl_search(props, job->property);
+		if(impl)
+		{
+			_props_set(props, impl, job->type, job->size, job->body);
+
+			const props_def_t *def = impl->def;
+			if(def->event_cb && (def->event_mask & PROP_EVENT_RESTORE) )
+				def->event_cb(props->data, NULL, 0, PROP_EVENT_RESTORE, impl);
+		}
+	}
+
+	return LV2_WORKER_SUCCESS;
 }
 
 #ifdef __cplusplus
