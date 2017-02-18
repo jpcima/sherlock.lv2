@@ -93,7 +93,7 @@ struct _plughandle_t {
 
 	bool ttl_dirty;
 	const LV2_Atom *selected;
-	struct nk_str str;
+	struct nk_text_edit editor;
 
 	Sratom *sratom;
 	const char *base_uri;

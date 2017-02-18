@@ -127,15 +127,16 @@ if(NOT WIN32)
 endif()
 install(TARGETS sherlock DESTINATION ${PLUGIN_DEST})
 
-#find_package(FLEX)
-#flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
-#	COMPILE_FLAGS	"--header-file=${PROJECT_BINARY_DIR}/encoder.h --prefix=enc")
+find_package(FLEX)
+flex_target(encoder encoder.l ${PROJECT_BINARY_DIR}/encoder.c
+	COMPILE_FLAGS	"--prefix=enc")
 
 add_library(sherlock_nk MODULE
 	sherlock_nk.c
 	midi_inspector_nk.c
 	atom_inspector_nk.c
 	osc_inspector_nk.c
+	encoder
 	${TAR_UI})
 target_link_libraries(sherlock_nk
 	${LIBS_UI})

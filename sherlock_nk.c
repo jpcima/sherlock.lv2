@@ -24,6 +24,8 @@
 #include <sherlock.h>
 #include <osc.lv2/util.h>
 
+#include <encoder.h>
+
 #define NK_PUGL_IMPLEMENTATION
 #include <sherlock_nk.h>
 
@@ -222,7 +224,8 @@ void
 _clear(plughandle_t *handle)
 {
 	_clear_items(handle);
-	nk_str_clear(&handle->str);
+	struct nk_str *str = &handle->editor.string;
+	nk_str_clear(str);
 	handle->selected = NULL;
 	handle->counter = 1;
 }
@@ -341,7 +344,9 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	_clear(handle);
 	_discover(handle);
 
-	nk_str_init_default(&handle->str);
+	nk_textedit_init_default(&handle->editor);
+	handle->editor.lexer.lex = ttl_lex;
+	handle->editor.lexer.data = NULL;
 
 	handle->sratom = sratom_new(handle->map);
 	sratom_set_pretty_numbers(handle->sratom, false);
@@ -358,7 +363,10 @@ cleanup(LV2UI_Handle instance)
 	sratom_free(handle->sratom);
 
 	_clear_items(handle);
-	nk_str_free(&handle->str);
+	nk_textedit_free(&handle->editor);
+
+	if(handle->editor.lexer.tokens)
+		free(handle->editor.lexer.tokens);
 
 	nk_pugl_hide(&handle->win);
 	nk_pugl_shutdown(&handle->win);

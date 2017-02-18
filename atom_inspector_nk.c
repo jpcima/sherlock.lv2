@@ -21,6 +21,8 @@
 #include <sherlock.h>
 #include <sherlock_nk.h>
 
+#include <encoder.h>
+
 #define NS_RDF (const uint8_t*)"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_RDFS (const uint8_t*)"http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
@@ -86,6 +88,24 @@ _sratom_to_turtle(Sratom*         sratom,
 	serd_env_free(env);
 	serd_node_free(&base);
 	return (char*)serd_chunk_sink_finish(&str);
+}
+
+static void
+_set_string(struct nk_str *str, uint32_t size, const char *body)
+{
+	nk_str_clear(str);
+
+	// replace tab with 2 spaces
+	const char *end = body + size - 1;
+	const char *from = body;
+	for(const char *to = strchr(from, '\t');
+		to && (to < end);
+		from = to + 1, to = strchr(from, '\t'))
+	{
+		nk_str_append_text_utf8(str, from, to-from);
+		nk_str_append_text_utf8(str, "  ", 2);
+	}
+	nk_str_append_text_utf8(str, from, end-from);
 }
 
 void
@@ -237,20 +257,12 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 					atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
 				if(ttl)
 				{
-					struct nk_str *str = &handle->str;
+					struct nk_str *str = &handle->editor.string;
 					const size_t len = strlen(ttl);
 
-					nk_str_clear(str);
+					_set_string(str, len, ttl);
 
-					char *from, *to;
-					for(from=ttl, to=strchr(from, '\t');
-						to;
-						from=to+1, to=strchr(from, '\t'))
-					{
-						nk_str_append_text_utf8(str, from, to-from);
-						nk_str_append_text_utf8(str, "  ", 2);
-					}
-					nk_str_append_text_utf8(str, from, strlen(from));
+					handle->editor.lexer.needs_refresh = 1;
 
 					free(ttl);
 				}
@@ -259,15 +271,15 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			}
 
 			const nk_flags flags = NK_EDIT_EDITOR;
-			char *str = nk_str_get(&handle->str);
-			int len = nk_str_len(&handle->str);
+			char *str = nk_str_get(&handle->editor.string);
+			int len = nk_str_len(&handle->editor.string);
 
 			if(len > 0) //FIXME
 			{
 				const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 2*group_padding.y;
 				nk_layout_row_dynamic(ctx, content_h, 1);
 				nk_edit_focus(ctx, flags);
-				const nk_flags mode = nk_edit_string(ctx, flags, str, &len, len, nk_filter_default);
+				const nk_flags mode = nk_edit_buffer(ctx, flags, &handle->editor, nk_filter_default);
 				(void)mode;
 			}
 

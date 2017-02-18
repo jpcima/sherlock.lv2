@@ -19,76 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <common.h>
-
-typedef enum _markup_type_t markup_type_t;
-typedef struct _markup_item_t markup_item_t;
-
-enum _markup_type_t {
-	MARKUP_CODE,
-	MARKUP_PREFIX,
-	MARKUP_SUBJECT,
-	MARKUP_PREDICATE,
-	MARKUP_NUMBER,
-	MARKUP_STRING,
-	MARKUP_URI
-};
-
-struct _markup_item_t {
-	const char *begin;
-	const char *end;
-};
-
-static const markup_item_t markup_items [] = {
-	[MARKUP_CODE] =				{"font=Mono style=Plain color=#ffffff", "font"},
-	[MARKUP_PREFIX] =			{"color=#cc00cc", "color"},
-	[MARKUP_SUBJECT] =		{"color=#00cccc", "color"},
-	[MARKUP_PREDICATE] =	{"color=#00cc00", "color"},
-	[MARKUP_NUMBER] =			{"color=#0000cc", "color"},
-	[MARKUP_STRING] =			{"color=#cc0000", "color"},
-	[MARKUP_URI] =				{"color=#cccc00", "color"}
-};
-
-static void
-_add_plain(const char *content)
-{
-	encoder->append(content, encoder->data);
-}
-
-static void 
-_add_singleton(const char *key)
-{
-	char buf [64];
-	sprintf(buf, "<%s/>", key);
-	encoder->append(buf, encoder->data);
-}
-
-static void 
-_add_markup_begin(markup_type_t type)
-{
-	char buf [64];
-	sprintf(buf, "<%s>", markup_items[type].begin);
-	encoder->append(buf, encoder->data);
-}
-
-static void 
-_add_markup_end(markup_type_t type)
-{
-	char buf [64];
-	sprintf(buf, "</%s>", markup_items[type].end);
-	encoder->append(buf, encoder->data);
-}
-
-static void 
-_add_markup(markup_type_t type, const char *content)
-{
-	char buf [64];
-	sprintf(buf, "<%s>", markup_items[type].begin);
-	encoder->append(buf, encoder->data);
-	encoder->append(content, encoder->data);
-	sprintf(buf, "</%s>", markup_items[type].end);
-	encoder->append(buf, encoder->data);
-}
+#include <encoder.h>
 
 enum {
 	TK_NONE,
@@ -105,14 +36,7 @@ enum {
 	TK_LONG_STRING_IN,
 	TK_LONG_STRING_OUT,
 	TK_WHITESPACE,
-	TK_RAW,
-	TK_TAB,
-	TK_NEWLINE,
-	TK_LT,
-	TK_GT,
-	TK_AMP,
-	TK_NAME,
-	TK_BADCHAR
+	TK_RAW
 };
 
 %}
@@ -133,8 +57,7 @@ eol            [\n\r]
 %%
 
 {w}            return TK_WHITESPACE;
-"\t"           return TK_TAB;
-{eol}          return TK_NEWLINE;
+"\t"           return TK_WHITESPACE;
 "<"            BEGIN(XURI); return TK_URI_IN;
 \"\"\"         BEGIN(XLONG_STRING); return TK_LONG_STRING_IN;
 \"             BEGIN(XSTRING); return TK_STRING_IN;
@@ -157,11 +80,6 @@ eol            [\n\r]
    \\\"	       return TK_RAW;
    \"\"\"      BEGIN(0); return TK_LONG_STRING_OUT;
    {w}         return TK_WHITESPACE;
-   "\t"        return TK_TAB;
-   {eol}       return TK_NEWLINE;
-   "<"         return TK_LT;
-   ">"         return TK_GT;
-   "&"         return TK_AMP;
    .           return TK_RAW;
 }
 
@@ -171,18 +89,13 @@ eol            [\n\r]
    \"          BEGIN(0); return TK_STRING_OUT;
    {eol}	     BEGIN(0); return TK_STRING_ERR;
    {w}         return TK_WHITESPACE;
-   "\t"        return TK_TAB;
-   {eol}       return TK_NEWLINE;
-   "<"         return TK_LT;
-   ">"         return TK_GT;
-   "&"         return TK_AMP;
    .           return TK_RAW;
 }
 
 %%
 
-void
-ttl_to_markup(const char *utf8, FILE *f)
+struct nk_token *
+ttl_lex(void *data, const char *utf8, int len)
 {
 	yyscan_t scanner;
 	YY_BUFFER_STATE buf;
@@ -190,109 +103,83 @@ ttl_to_markup(const char *utf8, FILE *f)
 	enclex_init(&scanner);
 	if(utf8)
 	{
-		buf = enc_scan_string(utf8, scanner);
-	}
-	else if(f)
-	{
-		encset_in(f, scanner);
-		buf = enc_create_buffer(NULL, YY_BUF_SIZE, scanner);
+		buf = enc_scan_bytes(utf8, len, scanner);
 	}
 	else
 	{
 		enclex_destroy(scanner);
-		return;
+		return NULL;
 	}
+
+	struct nk_token *tokens = NULL;
+	int n_tokens = 0;
 				
-	encoder->begin(encoder->data);
-	_add_markup_begin(MARKUP_CODE);
+	const char *base = encget_text(scanner);
+	int offset0  = 0;
+	struct nk_color col0 = {0xff, 0xff, 0xff, 0xff};
 
 	for(int tok=enclex(scanner); tok; tok=enclex(scanner))
 	{
 		const char *txt = encget_text(scanner);
+		const int offset1 = txt - base;
+		struct nk_color col1 = col0;
+
 		switch(tok)
 		{
 			case TK_PREFIX:
-				_add_markup(MARKUP_PREFIX, txt);
+				col1 = (struct nk_color){0xff, 0x00, 0x00, 0xff};
 				break;
-
+			case TK_SUBJECT:
+				col1 = (struct nk_color){0x00, 0xff, 0x00, 0xff};
+				break;
+			case TK_PREDICATE:
+				col1 = (struct nk_color){0x00, 0x00, 0xff, 0xff};
+				break;
 			case TK_NUMBER:
-				_add_markup(MARKUP_NUMBER, txt);
+				col1 = (struct nk_color){0xff, 0xff, 0x00, 0xff};
 				break;
-
 			case TK_URI_IN:
-				_add_markup_begin(MARKUP_URI);
-				_add_plain("&lt;");
-				break;
 			case TK_URI_OUT:
-				_add_plain("&gt;");
-				_add_markup_end(MARKUP_URI);
-				break;
 			case TK_URI_ERR:
-				_add_markup_end(MARKUP_URI);
-				_add_singleton("br");
+				col1 = (struct nk_color){0xff, 0x00, 0xff, 0xff};
 				break;
 
 			case TK_STRING_IN:
-				_add_markup_begin(MARKUP_STRING);
-				_add_plain("\"");
-				break;
 			case TK_STRING_OUT:
-				_add_plain("\"");
-				_add_markup_end(MARKUP_STRING);
-				break;
 			case TK_STRING_ERR:
-				_add_markup_end(MARKUP_STRING);
-				_add_singleton("br");
-				break;
-
 			case TK_LONG_STRING_IN:
-				_add_markup_begin(MARKUP_STRING);
-				_add_plain("\"\"\"");
-				break;
 			case TK_LONG_STRING_OUT:
-				_add_plain("\"\"\"");
-				_add_markup_end(MARKUP_STRING);
+				col1 = (struct nk_color){0x00, 0xff, 0xff, 0xff};
 				break;
 
-			case TK_NEWLINE:
-				_add_singleton("br");
-				break;
-			case TK_LT:
-				_add_plain("&lt;");
-				break;
-			case TK_GT:
-				_add_plain("&gt;");
-				break;
-			case TK_AMP:
-				_add_plain("&amp;");
-				break;
-			
-			case TK_BADCHAR:
-				break;
-			
-			case TK_TAB:
-				_add_plain("  ");
-				break;
-
-			case TK_SUBJECT:
-			  _add_markup(MARKUP_SUBJECT, txt);
-				break;
-			case TK_PREDICATE:
-			  _add_markup(MARKUP_PREDICATE, txt);
-				break;
-
-			case TK_NAME:
+			case TK_NONE:
 			case TK_WHITESPACE:
+				col1 = (struct nk_color){0xff, 0xff, 0xff, 0xff};
+				break;
+
 			case TK_RAW:
 			default:
-				_add_plain(txt);
+				// skip over
 				break;
 		}
+
+		if(offset1)
+		{
+			tokens = realloc(tokens, (n_tokens + 1) * sizeof(struct nk_token));
+			tokens[n_tokens].offset = offset1;
+			tokens[n_tokens++].color = col0;
+		}
+
+		offset0 = offset1;
+		col0 = col1;
 	}
-				
-	_add_markup_end(MARKUP_CODE);
-	encoder->end(encoder->data);
+
+	tokens = realloc(tokens, (n_tokens + 1) * sizeof(struct nk_token));
+	tokens[n_tokens].offset = len;
+	tokens[n_tokens++].color = (struct nk_color){0xff, 0xff, 0xff, 0xff};
 
 	enc_delete_buffer(buf, scanner);
 	enclex_destroy(scanner);
+
+	return tokens;
 }
