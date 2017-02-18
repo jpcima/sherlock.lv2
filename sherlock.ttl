@@ -95,8 +95,8 @@ sherlock:atom_inspector
 			osc:Event ,
 		 	xpress:Message	;
 		lv2:index 0 ;
-		lv2:symbol "control_in" ;
-		lv2:name "Control In" ;
+		lv2:symbol "control" ;
+		lv2:name "Control" ;
 		lv2:designation lv2:control ;
 	] , [
 		# output event port
@@ -109,18 +109,19 @@ sherlock:atom_inspector
 			osc:Event ,
 			xpress:Message ;
 		lv2:index 1 ;
-		lv2:symbol "control_out" ;
-		lv2:name "Control Out" ;
-		lv2:designation lv2:control ;
+		lv2:symbol "through" ;
+		lv2:name "Through" ;
 	] , [
 		# output notify port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports atom:Sequence ;
+		atom:supports atom:Sequence ,
+			patch:Message ;
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+		lv2:designation lv2:control ;
 	] ;
 
 	patch:writable
@@ -151,32 +152,32 @@ sherlock:midi_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports midi:MidiEvent ,
-			patch:Message ,
-			time:Position ;
+			time:Position ,
+			patch:Message ;
 		lv2:index 0 ;
-		lv2:symbol "control_in" ;
-		lv2:name "Control In" ;
+		lv2:symbol "control" ;
+		lv2:name "Control" ;
 		lv2:designation lv2:control ;
 	] , [
 		# output event port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports midi:MidiEvent ,
-			patch:Message ;
+		atom:supports midi:MidiEvent ;
 		lv2:index 1 ;
-		lv2:symbol "control_out" ;
-		lv2:name "Control Out" ;
-		lv2:designation lv2:control ;
+		lv2:symbol "through" ;
+		lv2:name "Through" ;
 	] , [
 		# output notify port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports atom:Sequence ;
+		atom:supports atom:Sequence ,
+	 		patch:Message	;
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+		lv2:designation lv2:control ;
 	] ;
 
 	patch:writable
@@ -207,32 +208,32 @@ sherlock:osc_inspector
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports osc:Event ,
-			patch:Message ,
-			time:Position ;
+			time:Position ,
+			patch:Message ;
 		lv2:index 0 ;
-		lv2:symbol "control_in" ;
-		lv2:name "Control In" ;
+		lv2:symbol "control" ;
+		lv2:name "Control" ;
 		lv2:designation lv2:control ;
 	] , [
 		# output event port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports osc:Event ,
-			patch:Message ;
+		atom:supports osc:Event ;
 		lv2:index 1 ;
-		lv2:symbol "control_out" ;
-		lv2:name "Control Out" ;
-		lv2:designation lv2:control ;
+		lv2:symbol "through" ;
+		lv2:name "Through" ;
 	] , [
 		# output notify port
 	  a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports atom:Sequence ;
+		atom:supports atom:Sequence ,
+			patch:Message ;
 		lv2:index 2 ;
 		lv2:symbol "notify" ;
 		lv2:name "Notify" ;
+		lv2:designation lv2:control ;
 	] ;
 
 	patch:writable
