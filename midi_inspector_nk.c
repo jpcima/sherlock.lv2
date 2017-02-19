@@ -19,6 +19,7 @@
 
 #include <sherlock.h>
 #include <sherlock_nk.h>
+#include <encoder.h>
 
 typedef struct _midi_msg_t midi_msg_t;
 

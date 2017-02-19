@@ -21,6 +21,7 @@
 
 #include <sherlock.h>
 #include <sherlock_nk.h>
+#include <encoder.h>
 
 #include <osc.lv2/util.h>
 

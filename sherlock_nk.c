@@ -29,20 +29,6 @@
 #define NK_PUGL_IMPLEMENTATION
 #include <sherlock_nk.h>
 
-#define ful 0xff
-#define one 0xbb
-#define two 0x66
-#define non 0x0
-const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
-const struct nk_color gray		= {.r = two, .g = two, .b = two, .a = ful};
-const struct nk_color yellow	= {.r = one, .g = one, .b = non, .a = ful};
-const struct nk_color magenta	= {.r = one, .g = two, .b = one, .a = ful};
-const struct nk_color green		= {.r = non, .g = one, .b = non, .a = ful};
-const struct nk_color blue		= {.r = non, .g = one, .b = one, .a = ful};
-const struct nk_color orange	= {.r = one, .g = two, .b = non, .a = ful};
-const struct nk_color violet	= {.r = two, .g = two, .b = one, .a = ful};
-const struct nk_color red			= {.r = one, .g = non, .b = non, .a = ful};
-
 const char *max_items [5] = {
 	"1k", "2k", "4k", "8k", "16k"
 };
@@ -349,7 +335,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->editor.lexer.data = NULL;
 
 	handle->sratom = sratom_new(handle->map);
-	sratom_set_pretty_numbers(handle->sratom, false);
+	sratom_set_pretty_numbers(handle->sratom, handle->pretty_numbers);
 	handle->base_uri = "file:///tmp/base";
 
 	return handle;

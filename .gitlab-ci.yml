@@ -18,6 +18,9 @@ stages:
 
 .build_template: &build_definition
   <<: *common_definition
+  before_script:
+    - apt-get update
+    - apt-get install -y -q flex
   script:
     - mkdir build
     - pushd build

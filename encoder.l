@@ -21,11 +21,26 @@
 
 #include <encoder.h>
 
+#define ful 0xff
+#define one 0xbb
+#define two 0x66
+#define non 0x0
+const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
+const struct nk_color gray		= {.r = two, .g = two, .b = two, .a = ful};
+const struct nk_color yellow	= {.r = one, .g = one, .b = non, .a = ful};
+const struct nk_color magenta	= {.r = one, .g = two, .b = one, .a = ful};
+const struct nk_color green		= {.r = non, .g = one, .b = non, .a = ful};
+const struct nk_color blue		= {.r = non, .g = one, .b = one, .a = ful};
+const struct nk_color orange	= {.r = one, .g = two, .b = non, .a = ful};
+const struct nk_color violet	= {.r = two, .g = two, .b = one, .a = ful};
+const struct nk_color red			= {.r = one, .g = non, .b = non, .a = ful};
+
 enum {
 	TK_NONE,
 	TK_PREFIX,
 	TK_SUBJECT,
 	TK_PREDICATE,
+	TK_BOOL,
 	TK_NUMBER,
 	TK_URI_IN,
 	TK_URI_OUT,
@@ -64,6 +79,8 @@ eol            [\n\r]
 {name}:        return TK_SUBJECT;
 "@prefix"      return TK_PREFIX;
 "a"            return TK_PREFIX;
+true           return TK_BOOL;
+false          return TK_BOOL;
 {name}         return TK_PREDICATE;
 {number}       return TK_NUMBER;
 .              return TK_RAW;
@@ -127,21 +144,24 @@ ttl_lex(void *data, const char *utf8, int len)
 		switch(tok)
 		{
 			case TK_PREFIX:
-				col1 = (struct nk_color){0xff, 0x00, 0x00, 0xff};
+				col1 = blue;
 				break;
 			case TK_SUBJECT:
-				col1 = (struct nk_color){0x00, 0xff, 0x00, 0xff};
+				col1 = magenta;
 				break;
 			case TK_PREDICATE:
-				col1 = (struct nk_color){0x00, 0x00, 0xff, 0xff};
+				col1 = orange;
+				break;
+			case TK_BOOL:
+				col1 = violet;
 				break;
 			case TK_NUMBER:
-				col1 = (struct nk_color){0xff, 0xff, 0x00, 0xff};
+				col1 = green;
 				break;
 			case TK_URI_IN:
 			case TK_URI_OUT:
 			case TK_URI_ERR:
-				col1 = (struct nk_color){0xff, 0x00, 0xff, 0xff};
+				col1 = yellow;
 				break;
 
 			case TK_STRING_IN:
@@ -149,12 +169,12 @@ ttl_lex(void *data, const char *utf8, int len)
 			case TK_STRING_ERR:
 			case TK_LONG_STRING_IN:
 			case TK_LONG_STRING_OUT:
-				col1 = (struct nk_color){0x00, 0xff, 0xff, 0xff};
+				col1 = red;
 				break;
 
 			case TK_NONE:
 			case TK_WHITESPACE:
-				col1 = (struct nk_color){0xff, 0xff, 0xff, 0xff};
+				col1 = white;
 				break;
 
 			case TK_RAW:

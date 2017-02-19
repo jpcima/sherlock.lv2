@@ -97,6 +97,7 @@ struct _plughandle_t {
 
 	Sratom *sratom;
 	const char *base_uri;
+	int pretty_numbers;
 
 	float dy;
 
@@ -110,16 +111,6 @@ struct _plughandle_t {
 
 extern const char *max_items [5];
 extern const int32_t max_values [5];
-
-extern const struct nk_color white;
-extern const struct nk_color gray;
-extern const struct nk_color yellow;
-extern const struct nk_color magenta;
-extern const struct nk_color green;
-extern const struct nk_color blue;
-extern const struct nk_color orange;
-extern const struct nk_color violet;
-extern const struct nk_color red;
 
 void
 _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data);

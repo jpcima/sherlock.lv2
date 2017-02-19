@@ -20,6 +20,16 @@
 
 #include "nk_pugl/nk_pugl.h"
 
+extern const struct nk_color white;
+extern const struct nk_color gray;
+extern const struct nk_color yellow;
+extern const struct nk_color magenta;
+extern const struct nk_color green;
+extern const struct nk_color blue;
+extern const struct nk_color orange;
+extern const struct nk_color violet;
+extern const struct nk_color red;
+
 struct nk_token *
 ttl_lex(void *data, const char *utf8, int len);
 

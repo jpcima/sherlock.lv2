@@ -20,7 +20,6 @@
 
 #include <sherlock.h>
 #include <sherlock_nk.h>
-
 #include <encoder.h>
 
 #define NS_RDF (const uint8_t*)"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -224,7 +223,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				nk_list_view_end(&lview);
 			}
 
-			nk_layout_row_dynamic(ctx, widget_h, 3);
+			nk_layout_row_dynamic(ctx, widget_h, 4);
 			{
 				if(nk_checkbox_label(ctx, "overwrite", &handle->state.overwrite))
 					_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
@@ -232,6 +231,11 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 					_toggle(handle, handle->urid.block, handle->state.block, true);
 				if(nk_checkbox_label(ctx, "follow", &handle->state.follow))
 					_toggle(handle, handle->urid.follow, handle->state.follow, true);
+				if(nk_checkbox_label(ctx, "pretty", &handle->pretty_numbers))
+				{
+					handle->ttl_dirty = true;
+					sratom_set_pretty_numbers(handle->sratom, handle->pretty_numbers);
+				}
 			}
 
 			const bool max_reached = handle->n_item >= MAX_LINES;
