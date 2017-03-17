@@ -234,40 +234,44 @@ _impl_unlock(props_impl_t *impl)
 }
 
 static inline void
-_impl_qsort(props_impl_t *a, unsigned n)
+_impl_qsort(props_impl_t *A, int n)
 {
 	if(n < 2)
 		return;
 
-	const props_impl_t *p = &a[n/2];
+	const props_impl_t *p = A;
 
-	unsigned i, j;
-	for(i=0, j=n-1; ; i++, j--)
+	int i = -1;
+	int j = n;
+
+	while(true)
 	{
-		while(a[i].property < p->property)
-			i++;
+		do {
+			i += 1;
+		} while(A[i].property < p->property);
 
-		while(p->property < a[j].property)
-			j--;
+		do {
+			j -= 1;
+		} while(A[j].property > p->property);
 
 		if(i >= j)
 			break;
 
-		const props_impl_t t = a[i];
-		a[i] = a[j];
-		a[j] = t;
+		const props_impl_t tmp = A[i];
+		A[i] = A[j];
+		A[j] = tmp;
 	}
 
-	_impl_qsort(a, i);
-	_impl_qsort(&a[i], n - i);
+	_impl_qsort(A, j + 1);
+	_impl_qsort(A + j + 1, n - j - 1);
 }
 
 static inline props_impl_t *
-_impl_bsearch(LV2_URID p, props_impl_t *a, unsigned n)
+_impl_bsearch(LV2_URID p, props_impl_t *a, int n)
 {
 	props_impl_t *base = a;
 
-	for(unsigned N = n, half; N > 1; N -= half)
+	for(int N = n, half; N > 1; N -= half)
 	{
 		half = N/2;
 		props_impl_t *dst = &base[half];
