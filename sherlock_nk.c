@@ -272,13 +272,15 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		return NULL;
 	}
 
-	if(  !(handle->urid.overwrite = props_register(&handle->props, &stat_overwrite, &handle->state.overwrite, &handle->stash.overwrite))
-		|| !(handle->urid.block = props_register(&handle->props, &stat_block, &handle->state.block, &handle->stash.block))
-		|| !(handle->urid.follow = props_register(&handle->props, &stat_follow, &handle->state.follow, &handle->stash.follow)) )
+	if(!props_register(&handle->props, defs, MAX_NPROPS, &handle->state, &handle->stash))
 	{
 		free(handle);
 		return NULL;
 	}
+
+	handle->urid.overwrite = props_map(&handle->props, defs[0].property);;
+	handle->urid.block = props_map(&handle->props, defs[1].property);;
+	handle->urid.follow = props_map(&handle->props, defs[2].property);;
 
 	const char *NK_SCALE = getenv("NK_SCALE");
 	const float scale = NK_SCALE ? atof(NK_SCALE) : 1.f;

@@ -63,29 +63,25 @@ struct _state_t {
 	int32_t follow;
 };
 
-#define MAX_NPROPS 4
+#define MAX_NPROPS 3
 
-static const props_def_t stat_overwrite = {
-	.property = SHERLOCK_URI"#overwrite",
-	.access = LV2_PATCH__writable,
-	.type = LV2_ATOM__Bool,
-	.mode = PROP_MODE_STATIC
+static const props_def_t defs [MAX_NPROPS] = {
+	{
+		.property = SHERLOCK_URI"#overwrite",
+		.offset = offsetof(state_t, overwrite),
+		.type = LV2_ATOM__Bool,
+	},
+	{
+		.property = SHERLOCK_URI"#block",
+		.offset = offsetof(state_t, block),
+		.type = LV2_ATOM__Bool,
+	},
+	{
+		.property = SHERLOCK_URI"#follow",
+		.offset = offsetof(state_t, follow),
+		.type = LV2_ATOM__Bool,
+	}
 };
-
-static const props_def_t stat_block = {
-	.property = SHERLOCK_URI"#block",
-	.access = LV2_PATCH__writable,
-	.type = LV2_ATOM__Bool,
-	.mode = PROP_MODE_STATIC
-};
-
-static const props_def_t stat_follow = {
-	.property = SHERLOCK_URI"#follow",
-	.access = LV2_PATCH__writable,
-	.type = LV2_ATOM__Bool,
-	.mode = PROP_MODE_STATIC
-};
-
 // there is a bug in LV2 <= 0.10
 #if defined(LV2_ATOM_TUPLE_FOREACH)
 #	undef LV2_ATOM_TUPLE_FOREACH
