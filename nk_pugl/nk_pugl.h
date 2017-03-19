@@ -54,6 +54,10 @@ extern C {
 #include "nuklear/nuklear.h"
 #include "nuklear/example/stb_image.h"
 
+#ifndef NK_PUGL_API
+#	define NK_PUGL_API static
+#endif
+
 typedef struct _nk_pugl_config_t nk_pugl_config_t;
 typedef struct _nk_pugl_window_t nk_pugl_window_t;
 typedef void (*nkglGenerateMipmap)(GLenum target);
@@ -113,41 +117,47 @@ struct _nk_pugl_window_t {
 #endif
 };
 
-static inline intptr_t
+NK_PUGL_API intptr_t
 nk_pugl_init(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_show(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_hide(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_shutdown(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_wait_for_event(nk_pugl_window_t *win);
 
-static inline int
+NK_PUGL_API int
 nk_pugl_process_events(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_post_redisplay(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_async_redisplay(nk_pugl_window_t *win);
 
-static inline void
+NK_PUGL_API void
 nk_pugl_quit(nk_pugl_window_t *win);
 
-static struct nk_image
+NK_PUGL_API struct nk_image
 nk_pugl_icon_load(nk_pugl_window_t *win, const char *filename);
 
-static void
+NK_PUGL_API void
 nk_pugl_icon_unload(nk_pugl_window_t *win, struct nk_image img);
 
-static bool
+NK_PUGL_API bool
 nk_pugl_is_shortcut_pressed(struct nk_input *in, char letter, bool clear);
+
+NK_PUGL_API void
+nk_pugl_copy_to_clipboard(nk_pugl_window_t *win, const char *selection, size_t len);
+
+NK_PUGL_API const char *
+nk_pugl_paste_from_clipboard(nk_pugl_window_t *win, size_t *len);
 
 #ifdef __cplusplus
 }
@@ -566,7 +576,12 @@ static bool
 _nk_pugl_other_key_down(nk_pugl_window_t *win, const PuglEventKey *ev)
 {
 	struct nk_context *ctx = &win->ctx;
-	const bool control = ev->state & PUGL_MOD_CTRL;
+#if defined(__APPLE__)
+	const bool modifier = ev->state & PUGL_MOD_SUPER;
+#else
+	const bool modifier = ev->state & PUGL_MOD_CTRL;
+#endif
+	const bool shift = ev->state & PUGL_MOD_SHIFT;
 
 	// automatically enter insert mode upon non-special key press
 	_nk_pugl_key_press(ctx, NK_KEY_TEXT_INSERT_MODE);
@@ -605,7 +620,7 @@ _nk_pugl_other_key_down(nk_pugl_window_t *win, const PuglEventKey *ev)
 
 		default:
 		{
-			if(control)
+			if(modifier)
 			{
 				// unescape ASCII control chars + Control
 				const uint32_t character = ev->character | 0x60;
@@ -626,11 +641,10 @@ _nk_pugl_other_key_down(nk_pugl_window_t *win, const PuglEventKey *ev)
 					}	break;
 					case 'z':
 					{
-						_nk_pugl_key_press(ctx, NK_KEY_TEXT_UNDO);
-					}	break;
-					case 'r':
-					{
-						_nk_pugl_key_press(ctx, NK_KEY_TEXT_REDO);
+						if(shift)
+							_nk_pugl_key_press(ctx, NK_KEY_TEXT_REDO);
+						else
+							_nk_pugl_key_press(ctx, NK_KEY_TEXT_UNDO);
 					}	break;
 
 					default:
@@ -860,7 +874,7 @@ _nk_pugl_event_func(PuglView *view, const PuglEvent *e)
 	}
 }
 
-static inline intptr_t
+NK_PUGL_API intptr_t
 nk_pugl_init(nk_pugl_window_t *win)
 {
 	nk_pugl_config_t *cfg = &win->cfg;
@@ -941,7 +955,7 @@ nk_pugl_init(nk_pugl_window_t *win)
 	return win->widget;
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_show(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -950,7 +964,7 @@ nk_pugl_show(nk_pugl_window_t *win)
 	puglShowWindow(win->view);
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_hide(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -959,7 +973,7 @@ nk_pugl_hide(nk_pugl_window_t *win)
 	puglHideWindow(win->view);
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_shutdown(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -994,7 +1008,7 @@ nk_pugl_shutdown(nk_pugl_window_t *win)
 #endif
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_wait_for_event(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -1003,7 +1017,7 @@ nk_pugl_wait_for_event(nk_pugl_window_t *win)
 	puglWaitForEvent(win->view);
 }
 
-static inline int
+NK_PUGL_API int
 nk_pugl_process_events(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -1017,7 +1031,7 @@ nk_pugl_process_events(nk_pugl_window_t *win)
 	return win->quit;
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_post_redisplay(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -1026,7 +1040,7 @@ nk_pugl_post_redisplay(nk_pugl_window_t *win)
 	puglPostRedisplay(win->view);
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_async_redisplay(nk_pugl_window_t *win)
 {
 	if(!win->view)
@@ -1064,13 +1078,13 @@ nk_pugl_async_redisplay(nk_pugl_window_t *win)
 #endif
 }
 
-static inline void
+NK_PUGL_API void
 nk_pugl_quit(nk_pugl_window_t *win)
 {
 	win->quit = 1;
 }
 
-static struct nk_image
+NK_PUGL_API struct nk_image
 nk_pugl_icon_load(nk_pugl_window_t *win, const char *filename)
 {
 	GLuint tex = 0;
@@ -1104,7 +1118,7 @@ nk_pugl_icon_load(nk_pugl_window_t *win, const char *filename)
 	return nk_image_id(tex);
 }
 
-static void
+NK_PUGL_API void
 nk_pugl_icon_unload(nk_pugl_window_t *win, struct nk_image img)
 {
 	if(!win->view)
@@ -1120,7 +1134,7 @@ nk_pugl_icon_unload(nk_pugl_window_t *win, struct nk_image img)
 	}
 }
 
-static bool
+NK_PUGL_API bool
 nk_pugl_is_shortcut_pressed(struct nk_input *in, char letter, bool clear)
 {
 	const bool control = nk_input_is_key_down(in, NK_KEY_CTRL);
@@ -1140,6 +1154,18 @@ nk_pugl_is_shortcut_pressed(struct nk_input *in, char letter, bool clear)
 	}
 
 	return false;
+}
+
+NK_PUGL_API void
+nk_pugl_copy_to_clipboard(nk_pugl_window_t *win, const char *selection, size_t len)
+{
+	puglCopyToClipboard(win->view, selection, len);
+}
+
+NK_PUGL_API const char *
+nk_pugl_paste_from_clipboard(nk_pugl_window_t *win, size_t *len)
+{
+	return puglPasteFromClipboard(win->view, len);
 }
 
 #ifdef __cplusplus
