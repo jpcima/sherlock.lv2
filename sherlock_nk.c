@@ -426,7 +426,47 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 		}
 		case 2:
 		{
+			const LV2_Atom_Tuple *tup = buf;
+			if(tup->atom.type != handle->forge.Tuple)
+			{
+				break;
+			}
+
+			const LV2_Atom_Long *offset = NULL;
+			const LV2_Atom_Int *nsamples = NULL;
+			const LV2_Atom_Sequence *seq = NULL;
+
+			unsigned k = 0;
+			LV2_ATOM_TUPLE_FOREACH(tup, item)
+			{
+				switch(k)
+				{
+					case 0:
+					{
+						if(item->type == handle->forge.Long)
+							offset = (const LV2_Atom_Long *)item;
+					} break;
+					case 1:
+					{
+						if(item->type == handle->forge.Int)
+							nsamples = (const LV2_Atom_Int *)item;
+					} break;
+					case 2:
+					{
+						if(item->type == handle->forge.Sequence)
+							seq = (const LV2_Atom_Sequence *)item;
+					} break;
+				}
+
+				k++;
+			}
+
 			const bool overflow = handle->n_item > MAX_LINES;
+
+			if(!offset || !nsamples || !seq)
+			{
+				break;
+			}
 
 			if(overflow && handle->state.overwrite)
 			{
@@ -437,12 +477,6 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 			{
 				break;
 			}
-
-			const LV2_Atom *atom = buf;
-			const LV2_Atom_Tuple *tup = (const LV2_Atom_Tuple *)atom;
-			const LV2_Atom_Long *offset = (const LV2_Atom_Long *)lv2_atom_tuple_begin(tup);
-			const LV2_Atom_Int *nsamples = (const LV2_Atom_Int *)lv2_atom_tuple_next(&offset->atom);
-			const LV2_Atom_Sequence *seq = (const LV2_Atom_Sequence *)lv2_atom_tuple_next(&nsamples->atom);
 
 			// append frame
 			{
