@@ -374,7 +374,7 @@ _work_response(LV2_Handle instance, uint32_t size, const void *body)
 	return props_work_response(&handle->props, size, body);
 }
 
-LV2_Worker_Interface work_iface = {
+static const LV2_Worker_Interface work_iface = {
 	.work = _work,
 	.work_response = _work_response,
 	.end_run = NULL
