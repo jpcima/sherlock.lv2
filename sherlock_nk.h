@@ -136,4 +136,7 @@ _ruler(struct nk_context *ctx, float line_thickness, struct nk_color color);
 void
 _post_redisplay(plughandle_t *handle);
 
+float
+_get_scale(plughandle_t *handle);
+
 #endif // _SHERLOCK_NK_H

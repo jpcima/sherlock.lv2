@@ -112,6 +112,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 {
 	plughandle_t *handle = data;
 
+	handle->dy = 20.f * _get_scale(handle);
 	const float widget_h = handle->dy;
 	struct nk_style *style = &ctx->style;
   const struct nk_vec2 window_padding = style->window.padding;

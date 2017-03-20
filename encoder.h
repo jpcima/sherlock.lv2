@@ -18,6 +18,7 @@
 #ifndef ENCODER_H
 #define ENCODER_H
 
+#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "nk_pugl/nk_pugl.h"
 
 extern const struct nk_color white;

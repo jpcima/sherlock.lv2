@@ -222,6 +222,12 @@ _post_redisplay(plughandle_t *handle)
 	nk_pugl_post_redisplay(&handle->win);
 }
 
+float
+_get_scale (plughandle_t *handle)
+{
+	return nk_pugl_get_scale(&handle->win);
+}
+
 static LV2UI_Handle
 instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	const char *bundle_path, LV2UI_Write_Function write_function,
@@ -282,52 +288,40 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->urid.block = props_map(&handle->props, defs[1].property);;
 	handle->urid.follow = props_map(&handle->props, defs[2].property);;
 
-	const char *NK_SCALE = getenv("NK_SCALE");
-	const float scale = NK_SCALE ? atof(NK_SCALE) : 1.f;
-	handle->dy = 20.f * scale;
-
 	nk_pugl_config_t *cfg = &handle->win.cfg;
-	cfg->height = 700 * scale;
+	cfg->height = 700;
 	cfg->resizable = true;
 	cfg->ignore = false;
 	cfg->class = "sherlock_inspector";
 	cfg->title = "Sherlock Inspector";
 	cfg->parent = (intptr_t)parent;
+	cfg->host_resize = host_resize;
 	cfg->data = handle;
 	if(!strcmp(plugin_uri, SHERLOCK_MIDI_INSPECTOR_URI))
 	{
 		handle->type = SHERLOCK_MIDI_INSPECTOR,
-		cfg->width = 600 * scale;
+		cfg->width = 600;
 		cfg->expose = _midi_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_ATOM_INSPECTOR_URI))
 	{
 		handle->type = SHERLOCK_ATOM_INSPECTOR,
-		cfg->width = 1200 * scale;
+		cfg->width = 1200;
 		cfg->expose = _atom_inspector_expose;
 	}
 	else if(!strcmp(plugin_uri, SHERLOCK_OSC_INSPECTOR_URI))
 	{
 		handle->type = SHERLOCK_OSC_INSPECTOR,
-		cfg->width = 600 * scale;
+		cfg->width = 600;
 		cfg->expose = _osc_inspector_expose;
 	}
 
-	char *path;
-	if(asprintf(&path, "%sCousine-Regular.ttf", bundle_path) == -1)
-		path = NULL;
-
-	cfg->font.face = path;
-	cfg->font.size = 13 * scale;
+	if(asprintf(&cfg->font.face, "%sCousine-Regular.ttf", bundle_path) == -1)
+		cfg->font.face= NULL;
+	cfg->font.size = 13;
 
 	*(intptr_t *)widget = nk_pugl_init(&handle->win);
 	nk_pugl_show(&handle->win);
-
-	if(path)
-		free(path);
-
-	if(host_resize)
-		host_resize->ui_resize(host_resize->handle, cfg->width, cfg->height);
 
 	_clear(handle);
 	_discover(handle);
@@ -356,6 +350,8 @@ cleanup(LV2UI_Handle instance)
 	if(handle->editor.lexer.tokens)
 		free(handle->editor.lexer.tokens);
 
+	if(handle->win.cfg.font.face)
+		free(handle->win.cfg.font.face);
 	nk_pugl_hide(&handle->win);
 	nk_pugl_shutdown(&handle->win);
 
