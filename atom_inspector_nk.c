@@ -22,6 +22,10 @@
 #include <sherlock_nk.h>
 #include <encoder.h>
 
+#ifdef Bool // hack for xlib
+#	undef Bool
+#endif
+
 #define NS_RDF (const uint8_t*)"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 #define NS_RDFS (const uint8_t*)"http://www.w3.org/2000/01/rdf-schema#"
 #define NS_XSD (const uint8_t*)"http://www.w3.org/2001/XMLSchema#"
@@ -192,7 +196,18 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 								uri = handle->unmap->unmap(handle->unmap->handle, body->type);
 							}
 
-							nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 3);
+							const bool is_primitive = (body->type == handle->forge.Bool)
+								|| (body->type == handle->forge.Int)
+								|| (body->type == handle->forge.Long)
+								|| (body->type == handle->forge.Float)
+								|| (body->type == handle->forge.Double)
+								|| (body->type == handle->forge.String)
+								|| (body->type == handle->forge.URI)
+								|| (body->type == handle->forge.URID)
+								|| (body->type == handle->forge.Path)
+								|| (body->type == handle->forge.Literal);
+
+							nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 3 + is_primitive);
 							{
 								nk_layout_row_push(ctx, 0.1);
 								if(l % 2 == 0)
@@ -205,12 +220,65 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 								}
 								nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
 
-								nk_layout_row_push(ctx, 0.8);
+								nk_layout_row_push(ctx, is_primitive ? 0.6 : 0.8);
 								if(nk_select_label(ctx, uri, NK_TEXT_LEFT, handle->selected == body))
 								{
 									handle->ttl_dirty = handle->ttl_dirty
 										|| (handle->selected != body); // has selection actually changed?
 									handle->selected = body;
+								}
+
+								if(is_primitive)
+								{
+									const struct nk_color col = nk_rgb(0xff, 0xff, 0xff);
+
+									nk_layout_row_push(ctx, 0.2);
+									if(body->type == handle->forge.Bool)
+									{
+										const LV2_Atom_Bool *ref = (const LV2_Atom_Bool *)body;
+										nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%s", ref->body ? "true" : "false");
+									}
+									else if(body->type == handle->forge.Int)
+									{
+										const LV2_Atom_Int *ref = (const LV2_Atom_Int *)body;
+										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi32, ref->body);
+									}
+									else if(body->type == handle->forge.Long)
+									{
+										const LV2_Atom_Long *ref = (const LV2_Atom_Long *)body;
+										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi64, ref->body);
+									}
+									else if(body->type == handle->forge.Float)
+									{
+										const LV2_Atom_Float *ref = (const LV2_Atom_Float *)body;
+										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%f", ref->body);
+									}
+									else if(body->type == handle->forge.Double)
+									{
+										const LV2_Atom_Double *ref = (const LV2_Atom_Double *)body;
+										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%lf", ref->body);
+									}
+									else if(body->type == handle->forge.String)
+									{
+										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
+									}
+									else if(body->type == handle->forge.URI)
+									{
+										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, yellow);
+									}
+									else if(body->type == handle->forge.URID)
+									{
+										const char *_uri = "urn"; //FIXME
+										nk_label_colored(ctx, _uri, NK_TEXT_RIGHT, yellow);
+									}
+									else if(body->type == handle->forge.Path)
+									{
+										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
+									}
+									else if(body->type == handle->forge.Literal)
+									{
+										nk_label_colored(ctx, LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, body), NK_TEXT_RIGHT, red);
+									}
 								}
 
 								nk_layout_row_push(ctx, 0.1);
