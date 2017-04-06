@@ -271,15 +271,11 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->write_function = write_function;
 	handle->controller = controller;
 
-	if(!props_init(&handle->props, MAX_NPROPS, plugin_uri, handle->map, handle))
+	if(!props_init(&handle->props, descriptor->URI,
+		defs, MAX_NPROPS, &handle->state, &handle->stash,			
+		handle->map, handle))
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
-		free(handle);
-		return NULL;
-	}
-
-	if(!props_register(&handle->props, defs, MAX_NPROPS, &handle->state, &handle->stash))
-	{
 		free(handle);
 		return NULL;
 	}

@@ -69,15 +69,11 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	lv2_osc_urid_init(&handle->osc_urid, handle->map);
 	lv2_atom_forge_init(&handle->forge, handle->map);
 
-	if(!props_init(&handle->props, MAX_NPROPS, descriptor->URI, handle->map, handle))
+	if(!props_init(&handle->props, descriptor->URI,
+		defs, MAX_NPROPS, &handle->state, &handle->stash,			
+		handle->map, handle))
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
-		free(handle);
-		return NULL;
-	}
-
-	if(!props_register(&handle->props, defs, MAX_NPROPS, &handle->state, &handle->stash))
-	{
 		free(handle);
 		return NULL;
 	}
@@ -122,6 +118,8 @@ run(LV2_Handle instance, uint32_t nsamples)
 	capacity = handle->control_out->atom.size;
 	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
 	ref = lv2_atom_forge_sequence_head(forge, frame, 0);
+
+	props_idle(&handle->props, forge, 0, &ref);
 
 	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
 	{
@@ -233,36 +231,11 @@ static const LV2_State_Interface state_iface = {
 	.restore = _state_restore
 };
 
-static inline LV2_Worker_Status
-_work(LV2_Handle instance, LV2_Worker_Respond_Function respond,
-LV2_Worker_Respond_Handle worker, uint32_t size, const void *body)
-{
-	handle_t *handle = instance;
-
-	return props_work(&handle->props, respond, worker, size, body);
-}
-
-static inline LV2_Worker_Status
-_work_response(LV2_Handle instance, uint32_t size, const void *body)
-{
-	handle_t *handle = instance;
-
-	return props_work_response(&handle->props, size, body);
-}
-
-static const LV2_Worker_Interface work_iface = {
-	.work = _work,
-	.work_response = _work_response,
-	.end_run = NULL
-};
-
 static const void*
 extension_data(const char* uri)
 {
 	if(!strcmp(uri, LV2_STATE__interface))
 		return &state_iface;
-	else if(!strcmp(uri, LV2_WORKER__interface))
-		return &work_iface;
 
 	return NULL;
 }
