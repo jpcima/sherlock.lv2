@@ -317,7 +317,7 @@ _nk_pugl_render_gl2(nk_pugl_window_t *win)
 {
 	nk_pugl_config_t *cfg = &win->cfg;
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(NK_PUGL_ALWAYS_RENDER)
 	// compare current command buffer with last one to defer any changes
 	bool has_changes = false;
 	const size_t size = win->ctx.memory.allocated;
