@@ -96,7 +96,6 @@ false          return TK_BOOL;
 {
    \\\"	       return TK_RAW;
    \"\"\"      BEGIN(0); return TK_LONG_STRING_OUT;
-   {w}         return TK_WHITESPACE;
    .           return TK_RAW;
 }
 
@@ -105,7 +104,6 @@ false          return TK_BOOL;
    \\\"	       return TK_RAW;
    \"          BEGIN(0); return TK_STRING_OUT;
    {eol}	     BEGIN(0); return TK_STRING_ERR;
-   {w}         return TK_WHITESPACE;
    .           return TK_RAW;
 }
 
