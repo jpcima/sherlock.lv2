@@ -182,9 +182,9 @@ _osc_message(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object
 
 			case LV2_OSC_SYMBOL:
 			{
-				const char *S;
+				LV2_URID S;
 				lv2_osc_symbol_get(&handle->osc_urid, arg, &S);
-				_mem_printf(&mem, "S:%s", S);
+				_mem_printf(&mem, "S:%s", handle->unmap->unmap(handle->unmap->handle, S));
 			} break;
 			case LV2_OSC_CHAR:
 			{
