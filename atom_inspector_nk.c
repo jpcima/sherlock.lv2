@@ -200,12 +200,14 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 								|| (body->type == handle->forge.Int)
 								|| (body->type == handle->forge.Long)
 								|| (body->type == handle->forge.Float)
-								|| (body->type == handle->forge.Double)
+								|| (body->type == handle->forge.Double);
+								/*
 								|| (body->type == handle->forge.String)
 								|| (body->type == handle->forge.URI)
 								|| (body->type == handle->forge.URID)
 								|| (body->type == handle->forge.Path)
 								|| (body->type == handle->forge.Literal);
+								*/
 
 							nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 3 + is_primitive);
 							{
@@ -258,6 +260,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 										const LV2_Atom_Double *ref = (const LV2_Atom_Double *)body;
 										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%lf", ref->body);
 									}
+									/*
 									else if(body->type == handle->forge.String)
 									{
 										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
@@ -268,7 +271,8 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 									}
 									else if(body->type == handle->forge.URID)
 									{
-										const char *_uri = "urn"; //FIXME
+										const LV2_Atom_URID *urid = (const LV2_Atom_URID *)body;
+										const char *_uri = handle->unmap->unmap(handle->unmap->handle, urid->body);
 										nk_label_colored(ctx, _uri, NK_TEXT_RIGHT, yellow);
 									}
 									else if(body->type == handle->forge.Path)
@@ -279,6 +283,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 									{
 										nk_label_colored(ctx, LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, body), NK_TEXT_RIGHT, red);
 									}
+									*/
 								}
 
 								nk_layout_row_push(ctx, 0.1);
