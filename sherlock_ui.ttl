@@ -33,7 +33,7 @@ sherlock:atom_inspector_4_nk
 	] ;
 	lv2:extensionData ui:idleInterface ;
 	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map, urid:unmap .
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap .
 
 # MIDI Inspector UI
 sherlock:midi_inspector_4_nk
@@ -46,7 +46,7 @@ sherlock:midi_inspector_4_nk
 	] ;
 	lv2:extensionData ui:idleInterface ;
 	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map, urid:unmap .
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap .
 
 # OSC Inspector UI
 sherlock:osc_inspector_4_nk
@@ -59,4 +59,4 @@ sherlock:osc_inspector_4_nk
 	] ;
 	lv2:extensionData ui:idleInterface ;
 	lv2:optionalFeature ui:resize ;
-	lv2:requiredFeature urid:map, urid:unmap .
+	lv2:requiredFeature ui:idleInterface, urid:map, urid:unmap .
