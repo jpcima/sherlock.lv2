@@ -106,9 +106,9 @@ props:test
 	doap:name "Props Test" ;
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:props ;
-	lv2:extensionData	state:interface ;
 	lv2:requiredFeature urid:map, log:log, state:loadDefaultState ;
-	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore ;
+	lv2:extensionData	state:interface ;
 
 	lv2:port [
 		# sink event port
@@ -147,6 +147,6 @@ props:test
 		props:statInt 4 ;
 		props:statFloat "0.4"^^xsd:float ;
 		props:statString "Hello world" ;
-		props:statPath <manifest.ttl> ;
-		props:statChunk "Q"^^xsd:base64Binary ;
+		props:statPath <props.ttl> ;
+		props:statChunk "AQIDBAUGBw=="^^xsd:base64Binary ;
 	] .
