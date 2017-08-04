@@ -299,16 +299,35 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 
 			nk_layout_row_dynamic(ctx, widget_h, 4);
 			{
-				if(nk_checkbox_label(ctx, "overwrite", &handle->state.overwrite))
-					_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
-				if(nk_checkbox_label(ctx, "block", &handle->state.block))
-					_toggle(handle, handle->urid.block, handle->state.block, true);
-				if(nk_checkbox_label(ctx, "follow", &handle->state.follow))
-					_toggle(handle, handle->urid.follow, handle->state.follow, true);
-				if(nk_checkbox_label(ctx, "pretty", &handle->pretty_numbers))
+				const int32_t state_overwrite = nk_check_label(ctx, "overwrite", handle->state.overwrite);
+				if(state_overwrite != handle->state.overwrite)
 				{
+					handle->state.overwrite = state_overwrite;
+					_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
+				}
+
+				const int32_t state_block = nk_check_label(ctx, "block", handle->state.block);
+				if(state_block != handle->state.block)
+				{
+					handle->state.block = state_block;
+					_toggle(handle, handle->urid.block, handle->state.block, true);
+				}
+
+				const int32_t state_follow = nk_check_label(ctx, "follow", handle->state.follow);
+				if(state_follow != handle->state.follow)
+				{
+					handle->state.follow = state_follow;
+					_toggle(handle, handle->urid.follow, handle->state.follow, true);
+				}
+
+				const int32_t state_pretty = nk_check_label(ctx, "pretty", handle->state.pretty);
+				if(state_pretty != handle->state.pretty)
+				{
+					handle->state.pretty = state_pretty;
+					_toggle(handle, handle->urid.pretty, handle->state.pretty, true);
+
 					handle->ttl_dirty = true;
-					sratom_set_pretty_numbers(handle->sratom, handle->pretty_numbers);
+					sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
 				}
 			}
 

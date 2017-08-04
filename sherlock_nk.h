@@ -85,6 +85,7 @@ struct _plughandle_t {
 		LV2_URID overwrite;
 		LV2_URID block;
 		LV2_URID follow;
+		LV2_URID pretty;
 	} urid;
 	state_t state;
 	state_t stash;
@@ -97,7 +98,6 @@ struct _plughandle_t {
 
 	Sratom *sratom;
 	const char *base_uri;
-	int pretty_numbers;
 
 	float dy;
 

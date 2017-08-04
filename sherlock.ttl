@@ -73,6 +73,12 @@ sherlock:follow
 	rdfs:comment "Automatically scroll to and show last added event" ;
 	rdfs:range atom:Bool .
 
+sherlock:pretty
+	a lv2:Parameter ;
+	rdfs:label "Pretty" ;
+	rdfs:comment "Enable pretty printing" ;
+	rdfs:range atom:Bool .
+
 # Atom Inspector Plugin
 sherlock:atom_inspector
 	a lv2:Plugin,
@@ -127,12 +133,14 @@ sherlock:atom_inspector
 	patch:writable
 		sherlock:overwrite,
 		sherlock:block ,
-		sherlock:follow ;
+		sherlock:follow ,
+		sherlock:pretty ;
 
 	state:state [
 		sherlock:overwrite false ;
 		sherlock:block false ;
 		sherlock:follow false ;
+		sherlock:pretty false ;
 	] .
 
 # MIDI Inspector Plugin
@@ -183,12 +191,14 @@ sherlock:midi_inspector
 	patch:writable
 		sherlock:overwrite ,
 		sherlock:block ,
-		sherlock:follow ;
+		sherlock:follow ,
+		sherlock:pretty ;
 
 	state:state [
 		sherlock:overwrite false ;
 		sherlock:block false ;
 		sherlock:follow false ;
+		sherlock:pretty false ;
 	] .
 
 # OSC Inspector Plugin
@@ -239,10 +249,12 @@ sherlock:osc_inspector
 	patch:writable
 		sherlock:overwrite ,
 		sherlock:block ,
-		sherlock:follow ;
+		sherlock:follow ,
+		sherlock:pretty ;
 
 	state:state [
 		sherlock:overwrite false ;
 		sherlock:block false ;
 		sherlock:follow false ;
+		sherlock:pretty false ;
 	] .

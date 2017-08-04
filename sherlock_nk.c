@@ -29,13 +29,6 @@
 #define NK_PUGL_IMPLEMENTATION
 #include <sherlock_nk.h>
 
-const char *max_items [5] = {
-	"1k", "2k", "4k", "8k", "16k"
-};
-const int32_t max_values [5] = {
-	0x400, 0x800, 0x1000, 0x2000, 0x4000
-};
-
 static LV2_Atom_Forge_Ref
 _sink(LV2_Atom_Forge_Sink_Handle handle, const void *buf, uint32_t size)
 {
@@ -169,7 +162,7 @@ _ruler(struct nk_context *ctx, float line_thickness, struct nk_color color)
 void
 _empty(struct nk_context *ctx)
 {
-	nk_text(ctx, NULL, 0, NK_TEXT_RIGHT);
+	nk_spacing(ctx, 1);
 }
 
 static void
@@ -271,8 +264,8 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->write_function = write_function;
 	handle->controller = controller;
 
-	if(!props_init(&handle->props, descriptor->URI,
-		defs, MAX_NPROPS, &handle->state, &handle->stash,			
+	if(!props_init(&handle->props, plugin_uri,
+		defs, MAX_NPROPS, &handle->state, &handle->stash,
 		handle->map, handle))
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
@@ -283,6 +276,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->urid.overwrite = props_map(&handle->props, defs[0].property);;
 	handle->urid.block = props_map(&handle->props, defs[1].property);;
 	handle->urid.follow = props_map(&handle->props, defs[2].property);;
+	handle->urid.pretty = props_map(&handle->props, defs[3].property);;
 
 	nk_pugl_config_t *cfg = &handle->win.cfg;
 	cfg->height = 700;
@@ -327,7 +321,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->editor.lexer.data = NULL;
 
 	handle->sratom = sratom_new(handle->map);
-	sratom_set_pretty_numbers(handle->sratom, handle->pretty_numbers);
+	sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
 	handle->base_uri = "file:///tmp/base";
 
 	return handle;
@@ -396,31 +390,28 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 	switch(i)
 	{
 		case 0:
-		case 1:
-		{
-			atom_ser_t ser;
-
-			if(_ser_malloc(&ser, 512))
-			{
-				LV2_Atom_Forge_Frame frame;
-				lv2_atom_forge_set_sink(&handle->forge, _sink, _deref, &ser);
-				LV2_Atom_Forge_Ref ref = lv2_atom_forge_sequence_head(&handle->forge, &frame, 0);
-
-				if(props_advance(&handle->props, &handle->forge, 0, buf, &ref))
-					nk_pugl_post_redisplay(&handle->win);
-
-				lv2_atom_forge_pop(&handle->forge, &frame);
-
-				_ser_free(&ser);
-			}
-
-			break;
-		}
 		case 2:
 		{
 			const LV2_Atom_Tuple *tup = buf;
+
 			if(tup->atom.type != handle->forge.Tuple)
 			{
+				atom_ser_t ser;
+
+				if(_ser_malloc(&ser, 512))
+				{
+					LV2_Atom_Forge_Frame frame;
+					lv2_atom_forge_set_sink(&handle->forge, _sink, _deref, &ser);
+					LV2_Atom_Forge_Ref ref = lv2_atom_forge_sequence_head(&handle->forge, &frame, 0);
+
+					if(props_advance(&handle->props, &handle->forge, 0, buf, &ref))
+						nk_pugl_post_redisplay(&handle->win);
+
+					lv2_atom_forge_pop(&handle->forge, &frame);
+
+					_ser_free(&ser);
+				}
+
 				break;
 			}
 
@@ -455,7 +446,7 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 
 			const bool overflow = handle->n_item > MAX_LINES;
 
-			if(!offset || !nsamples || !seq)
+			if(!offset || !nsamples || !seq || (seq->atom.size <= sizeof(LV2_Atom_Sequence_Body)) )
 			{
 				break;
 			}

@@ -24,10 +24,9 @@ typedef struct _handle_t handle_t;
 
 struct _handle_t {
 	LV2_URID_Map *map;
-	const LV2_Atom_Sequence *control_in;
-	LV2_Atom_Sequence *control_out;
-	LV2_Atom_Sequence *notify;
-	LV2_Atom_Forge forge;
+	const LV2_Atom_Sequence *control;
+	craft_t through;
+	craft_t notify;
 
 	LV2_URID time_position;
 	LV2_URID time_frame;
@@ -62,10 +61,11 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 	handle->time_position = handle->map->map(handle->map->handle, LV2_TIME__Position);
 	handle->time_frame = handle->map->map(handle->map->handle, LV2_TIME__frame);
 
-	lv2_atom_forge_init(&handle->forge, handle->map);
+	lv2_atom_forge_init(&handle->through.forge, handle->map);
+	lv2_atom_forge_init(&handle->notify.forge, handle->map);
 
 	if(!props_init(&handle->props, descriptor->URI,
-		defs, MAX_NPROPS, &handle->state, &handle->stash,			
+		defs, MAX_NPROPS, &handle->state, &handle->stash,
 		handle->map, handle))
 	{
 		fprintf(stderr, "failed to allocate property structure\n");
@@ -84,13 +84,13 @@ connect_port(LV2_Handle instance, uint32_t port, void *data)
 	switch(port)
 	{
 		case 0:
-			handle->control_in = (const LV2_Atom_Sequence *)data;
+			handle->control = (const LV2_Atom_Sequence *)data;
 			break;
 		case 1:
-			handle->control_out = (LV2_Atom_Sequence *)data;
+			handle->through.seq = (LV2_Atom_Sequence *)data;
 			break;
 		case 2:
-			handle->notify = (LV2_Atom_Sequence *)data;
+			handle->notify.seq = (LV2_Atom_Sequence *)data;
 			break;
 		default:
 			break;
@@ -101,35 +101,34 @@ static void
 run(LV2_Handle instance, uint32_t nsamples)
 {
 	handle_t *handle = (handle_t *)instance;
-	uint32_t capacity;
-	LV2_Atom_Forge *forge = &handle->forge;
-	LV2_Atom_Forge_Frame frame;
-	LV2_Atom_Forge_Ref ref;
+	craft_t *through = &handle->through;
+	craft_t *notify = &handle->notify;
 
-	// size of input sequence
-	const size_t size = lv2_atom_total_size(&handle->control_in->atom);
-	
-	capacity = handle->control_out->atom.size;
-	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->control_out, capacity);
-	ref = lv2_atom_forge_sequence_head(forge, &frame, 0);
+	uint32_t capacity = through->seq->atom.size;
+	lv2_atom_forge_set_buffer(&through->forge, through->buf, capacity);
+	through->ref = lv2_atom_forge_sequence_head(&through->forge, &through->frame[0], 0);
 
-	props_idle(&handle->props, forge, 0, &ref);
+	capacity = notify->seq->atom.size;
+	lv2_atom_forge_set_buffer(&notify->forge, notify->buf, capacity);
+	notify->ref = lv2_atom_forge_sequence_head(&notify->forge, &notify->frame[0], 0);
 
-	LV2_ATOM_SEQUENCE_FOREACH(handle->control_in, ev)
+	props_idle(&handle->props, &notify->forge, 0, &notify->ref);
+
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control, ev)
 	{
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 		const int64_t frames = ev->time.frames;
 
 		// copy all events to through port
-		if(ref)
-			ref = lv2_atom_forge_frame_time(forge, frames);
-		if(ref)
-			ref = lv2_atom_forge_raw(forge, &obj->atom, lv2_atom_total_size(&obj->atom));
-		if(ref)
-			lv2_atom_forge_pad(forge, obj->atom.size);
+		if(through->ref)
+			through->ref = lv2_atom_forge_frame_time(&through->forge, frames);
+		if(through->ref)
+			through->ref = lv2_atom_forge_raw(&through->forge, &obj->atom, lv2_atom_total_size(&obj->atom));
+		if(through->ref)
+			lv2_atom_forge_pad(&through->forge, obj->atom.size);
 
-		if(  !props_advance(&handle->props, forge, frames, obj, &ref)
-			&& lv2_atom_forge_is_object_type(forge, obj->atom.type)
+		if(  !props_advance(&handle->props, &notify->forge, frames, obj, &notify->ref)
+			&& lv2_atom_forge_is_object_type(&notify->forge, obj->atom.type)
 			&& (obj->body.otype == handle->time_position) )
 		{
 			const LV2_Atom_Long *time_frame = NULL;
@@ -139,40 +138,48 @@ run(LV2_Handle instance, uint32_t nsamples)
 		}
 	}
 
-	if(ref)
-		lv2_atom_forge_pop(forge, &frame);
+	if(through->ref)
+		lv2_atom_forge_pop(&through->forge, &through->frame[0]);
 	else
-		lv2_atom_sequence_clear(handle->control_out);
+		lv2_atom_sequence_clear(through->seq);
 
-	// forge whole sequence as single event
-	capacity = handle->notify->atom.size;
-	lv2_atom_forge_set_buffer(forge, (uint8_t *)handle->notify, capacity);
-	ref = lv2_atom_forge_sequence_head(forge, &frame, 0);
+	bool has_event = notify->seq->atom.size > sizeof(LV2_Atom_Sequence_Body);
 
-	// only serialize sequence to UI if there were actually any events
-	if(handle->control_in->atom.size > sizeof(LV2_Atom_Sequence_Body))
+	if(notify->ref)
+		notify->ref = lv2_atom_forge_frame_time(&notify->forge, nsamples-1);
+	if(notify->ref)
+		notify->ref = lv2_atom_forge_tuple(&notify->forge, &notify->frame[1]);
+	if(notify->ref)
+		notify->ref = lv2_atom_forge_long(&notify->forge, handle->frame);
+	if(notify->ref)
+		notify->ref = lv2_atom_forge_int(&notify->forge, nsamples);
+	if(notify->ref)
+		notify->ref = lv2_atom_forge_sequence_head(&notify->forge, &notify->frame[2], 0);
+
+	// only serialize filtered events to UI
+	LV2_ATOM_SEQUENCE_FOREACH(handle->control, ev)
 	{
-		LV2_Atom_Forge_Frame tup_frame;
-
-		if(ref)
-			ref = lv2_atom_forge_frame_time(forge, 0);
-		if(ref)
-			ref = lv2_atom_forge_tuple(forge, &tup_frame);
-		if(ref)
-			ref = lv2_atom_forge_long(forge, handle->frame);
-		if(ref)
-			ref = lv2_atom_forge_int(forge, nsamples);
-		if(ref)
-			ref = lv2_atom_forge_write(forge, handle->control_in, size);
-		if(ref)
-			lv2_atom_forge_pop(forge, &tup_frame);
-
+		if(true) //FIXME do filtering here
+		{
+			has_event = true;
+			if(notify->ref)
+				notify->ref = lv2_atom_forge_frame_time(&notify->forge, ev->time.frames);
+			if(notify->ref)
+				notify->ref = lv2_atom_forge_write(&notify->forge, &ev->body, sizeof(LV2_Atom) + ev->body.size);
+		}
 	}
 
-	if(ref)
-		lv2_atom_forge_pop(forge, &frame);
+	if(notify->ref)
+		lv2_atom_forge_pop(&notify->forge, &notify->frame[2]);
+	if(notify->ref)
+		lv2_atom_forge_pop(&notify->forge, &notify->frame[1]);
+	if(notify->ref)
+		lv2_atom_forge_pop(&notify->forge, &notify->frame[0]);
 	else
-		lv2_atom_sequence_clear(handle->notify);
+		lv2_atom_sequence_clear(notify->seq);
+
+	if(!has_event) // don't send anything
+		lv2_atom_sequence_clear(notify->seq);
 
 	handle->frame += nsamples;
 }

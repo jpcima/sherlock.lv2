@@ -51,6 +51,7 @@ extern const LV2_Descriptor osc_inspector;
 
 typedef struct _position_t position_t;
 typedef struct _state_t state_t;
+typedef struct _craft_t craft_t;
 
 struct _position_t {
 	uint64_t offset;
@@ -61,9 +62,20 @@ struct _state_t {
 	int32_t overwrite;
 	int32_t block;
 	int32_t follow;
+	int32_t pretty;
 };
 
-#define MAX_NPROPS 3
+struct _craft_t {
+	LV2_Atom_Forge forge;
+	LV2_Atom_Forge_Frame frame [3];
+	LV2_Atom_Forge_Ref ref;
+	union {
+		LV2_Atom_Sequence *seq;
+		uint8_t *buf;
+	};
+};
+
+#define MAX_NPROPS 4
 
 static const props_def_t defs [MAX_NPROPS] = {
 	{
@@ -80,8 +92,14 @@ static const props_def_t defs [MAX_NPROPS] = {
 		.property = SHERLOCK_URI"#follow",
 		.offset = offsetof(state_t, follow),
 		.type = LV2_ATOM__Bool,
+	},
+	{
+		.property = SHERLOCK_URI"#pretty",
+		.offset = offsetof(state_t, pretty),
+		.type = LV2_ATOM__Bool,
 	}
 };
+
 // there is a bug in LV2 <= 0.10
 #if defined(LV2_ATOM_TUPLE_FOREACH)
 #	undef LV2_ATOM_TUPLE_FOREACH
