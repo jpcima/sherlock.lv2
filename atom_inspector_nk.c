@@ -297,7 +297,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				nk_list_view_end(&lview);
 			}
 
-			nk_layout_row_dynamic(ctx, widget_h, 4);
+			nk_layout_row_dynamic(ctx, widget_h, 5);
 			{
 				const int32_t state_overwrite = nk_check_label(ctx, "overwrite", handle->state.overwrite);
 				if(state_overwrite != handle->state.overwrite)
@@ -328,6 +328,13 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 
 					handle->ttl_dirty = true;
 					sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
+				}
+
+				const int32_t state_time = nk_check_label(ctx, "time", handle->state.time);
+				if(state_time != handle->state.time)
+				{
+					handle->state.time = state_time;
+					_toggle(handle, handle->urid.time, handle->state.time, true);
 				}
 			}
 

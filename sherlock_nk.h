@@ -86,6 +86,7 @@ struct _plughandle_t {
 		LV2_URID block;
 		LV2_URID follow;
 		LV2_URID pretty;
+		LV2_URID time;
 	} urid;
 	state_t state;
 	state_t stash;

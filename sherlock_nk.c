@@ -277,6 +277,7 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	handle->urid.block = props_map(&handle->props, defs[1].property);;
 	handle->urid.follow = props_map(&handle->props, defs[2].property);;
 	handle->urid.pretty = props_map(&handle->props, defs[3].property);;
+	handle->urid.time = props_map(&handle->props, defs[4].property);;
 
 	nk_pugl_config_t *cfg = &handle->win.cfg;
 	cfg->height = 700;

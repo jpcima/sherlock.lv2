@@ -159,7 +159,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	// only serialize filtered events to UI
 	LV2_ATOM_SEQUENCE_FOREACH(handle->control, ev)
 	{
-		if(true) //FIXME do filtering here
+		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+
+		const bool is_time = lv2_atom_forge_is_object_type(&notify->forge, obj->atom.type)
+			&& (obj->body.otype == handle->time_position);
+
+		if(!(!handle->state.time && is_time))
 		{
 			has_event = true;
 			if(notify->ref)

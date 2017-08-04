@@ -76,7 +76,13 @@ sherlock:follow
 sherlock:pretty
 	a lv2:Parameter ;
 	rdfs:label "Pretty" ;
-	rdfs:comment "Enable pretty printing" ;
+	rdfs:comment "Toggle whether to pretty print or not" ;
+	rdfs:range atom:Bool .
+
+sherlock:time
+	a lv2:Parameter ;
+	rdfs:label "Time" ;
+	rdfs:comment "Toggle whether to show time events or not" ;
 	rdfs:range atom:Bool .
 
 # Atom Inspector Plugin
@@ -131,16 +137,18 @@ sherlock:atom_inspector
 	] ;
 
 	patch:writable
-		sherlock:overwrite,
+		sherlock:overwrite ,
 		sherlock:block ,
 		sherlock:follow ,
-		sherlock:pretty ;
+		sherlock:pretty ,
+		sherlock:time ;
 
 	state:state [
-		sherlock:overwrite false ;
+		sherlock:overwrite true ;
 		sherlock:block false ;
-		sherlock:follow false ;
-		sherlock:pretty false ;
+		sherlock:follow true ;
+		sherlock:pretty true ;
+		sherlock:time false ;
 	] .
 
 # MIDI Inspector Plugin
@@ -191,14 +199,12 @@ sherlock:midi_inspector
 	patch:writable
 		sherlock:overwrite ,
 		sherlock:block ,
-		sherlock:follow ,
-		sherlock:pretty ;
+		sherlock:follow ;
 
 	state:state [
-		sherlock:overwrite false ;
+		sherlock:overwrite true ;
 		sherlock:block false ;
-		sherlock:follow false ;
-		sherlock:pretty false ;
+		sherlock:follow true ;
 	] .
 
 # OSC Inspector Plugin
@@ -249,12 +255,10 @@ sherlock:osc_inspector
 	patch:writable
 		sherlock:overwrite ,
 		sherlock:block ,
-		sherlock:follow ,
-		sherlock:pretty ;
+		sherlock:follow ;
 
 	state:state [
-		sherlock:overwrite false ;
+		sherlock:overwrite true ;
 		sherlock:block false ;
-		sherlock:follow false ;
-		sherlock:pretty false ;
+		sherlock:follow true ;
 	] .
