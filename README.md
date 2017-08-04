@@ -18,10 +18,11 @@ Get more information at: [http://open-music-kontrollers.ch/lv2/sherlock](http://
 
 ### Build / install
 
-	git clone https://github.com/OpenMusicKontrollers/sherlock.lv2.git
+	git clone https://gitlab.com/OpenMusicKontrollers/sherlock.lv2.git
 	cd sherlock.lv2
 	mkdir build
 	cd build
+	cmake -DCMAKE_BUILD_TYPE=Release ..
 	make
 	sudo make install
 
