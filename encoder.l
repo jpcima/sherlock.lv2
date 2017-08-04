@@ -84,6 +84,7 @@ false          return TK_BOOL;
 {name}         return TK_PREDICATE;
 {number}       return TK_NUMBER;
 .              return TK_RAW;
+{eol}          return TK_RAW;
 
 <XURI>
 {
