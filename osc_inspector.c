@@ -26,6 +26,10 @@ typedef struct _handle_t handle_t;
 
 struct _handle_t {
 	LV2_URID_Map *map;
+	LV2_URID_Unmap *unmap;
+	LV2_Log_Log *log;
+	LV2_Log_Logger logger;
+
 	const LV2_Atom_Sequence *control;
 	craft_t through;
 	craft_t notify;
@@ -52,15 +56,24 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 
 	for(i=0; features[i]; i++)
-		if(!strcmp(features[i]->URI, LV2_URID__map))
-			handle->map = (LV2_URID_Map *)features[i]->data;
-
-	if(!handle->map)
 	{
-		fprintf(stderr, "%s: Host does not support urid:map\n", descriptor->URI);
+		if(!strcmp(features[i]->URI, LV2_URID__map))
+			handle->map = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_URID__unmap))
+			handle->unmap = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_LOG__log))
+			handle->log = features[i]->data;
+	}
+
+	if(!handle->map || !handle->unmap)
+	{
+		fprintf(stderr, "%s: Host does not support urid:(un)map\n", descriptor->URI);
 		free(handle);
 		return NULL;
 	}
+
+	if(handle->log)
+		lv2_log_logger_init(&handle->logger, handle->map, handle->log);
 
 	handle->time_position = handle->map->map(handle->map->handle, LV2_TIME__Position);
 	handle->time_frame = handle->map->map(handle->map->handle, LV2_TIME__frame);
@@ -146,7 +159,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(through->ref)
 		lv2_atom_forge_pop(&through->forge, &through->frame[0]);
 	else
+	{
 		lv2_atom_sequence_clear(through->seq);
+
+		if(handle->log)
+			lv2_log_trace(&handle->logger, "through buffer overflow\n");
+	}
 
 	bool has_event = notify->seq->atom.size > sizeof(LV2_Atom_Sequence_Body);
 
@@ -183,7 +201,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(notify->ref)
 		lv2_atom_forge_pop(&notify->forge, &notify->frame[0]);
 	else
+	{
 		lv2_atom_sequence_clear(notify->seq);
+
+		if(handle->log)
+			lv2_log_trace(&handle->logger, "notify buffer overflow\n");
+	}
 
 	if(!has_event) // don't send anything
 		lv2_atom_sequence_clear(notify->seq);

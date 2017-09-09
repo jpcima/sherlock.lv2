@@ -24,6 +24,7 @@
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix log: <http://lv2plug.in/ns/ext/log#> .
 
 @prefix xpress: <http://open-music-kontrollers.ch/lv2/xpress#> .
 @prefix osc: <http://open-music-kontrollers.ch/lv2/osc#> .
@@ -85,6 +86,12 @@ sherlock:time
 	rdfs:comment "Toggle whether to show time events or not" ;
 	rdfs:range atom:Bool .
 
+sherlock:trace
+	a lv2:Parameter ;
+	rdfs:label "Trace" ;
+	rdfs:comment "Toggle whether to show trace output on console" ;
+	rdfs:range atom:Bool .
+
 # Atom Inspector Plugin
 sherlock:atom_inspector
 	a lv2:Plugin,
@@ -92,8 +99,8 @@ sherlock:atom_inspector
 	doap:name "Sherlock Atom Inspector" ;
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
-	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore ;
-	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore, log:log ;
+	lv2:requiredFeature urid:map, urid:unmap, state:loadDefaultState ;
 	lv2:extensionData state:interface ;
 
 	lv2:port [
@@ -141,7 +148,8 @@ sherlock:atom_inspector
 		sherlock:block ,
 		sherlock:follow ,
 		sherlock:pretty ,
-		sherlock:time ;
+		sherlock:time ,
+		sherlock:trace ;
 
 	state:state [
 		sherlock:overwrite true ;
@@ -149,6 +157,7 @@ sherlock:atom_inspector
 		sherlock:follow true ;
 		sherlock:pretty true ;
 		sherlock:time false ;
+		sherlock:trace false ;
 	] .
 
 # MIDI Inspector Plugin
@@ -158,8 +167,8 @@ sherlock:midi_inspector
 	doap:name "Sherlock MIDI Inspector" ;
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
-	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore ;
-	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore, log:log ;
+	lv2:requiredFeature urid:map, urid:unmap, state:loadDefaultState ;
 	lv2:extensionData state:interface ;
 
 	lv2:port [
@@ -214,8 +223,8 @@ sherlock:osc_inspector
 	doap:name "Sherlock OSC Inspector" ;
 	doap:license lic:Artistic-2.0 ;
 	lv2:project proj:sherlock ;
-	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore ;
-	lv2:requiredFeature urid:map, state:loadDefaultState ;
+	lv2:optionalFeature lv2:isLive, lv2:hardRTCapable, state:threadSafeRestore, log:log ;
+	lv2:requiredFeature urid:map, urid:unmap, state:loadDefaultState ;
 	lv2:extensionData state:interface ;
 
 	lv2:port [

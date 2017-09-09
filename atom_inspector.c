@@ -24,6 +24,10 @@ typedef struct _handle_t handle_t;
 
 struct _handle_t {
 	LV2_URID_Map *map;
+	LV2_URID_Unmap *unmap;
+	LV2_Log_Log *log;
+	LV2_Log_Logger logger;
+
 	const LV2_Atom_Sequence *control;
 	craft_t through;
 	craft_t notify;
@@ -48,15 +52,24 @@ instantiate(const LV2_Descriptor* descriptor, double rate,
 		return NULL;
 
 	for(i=0; features[i]; i++)
-		if(!strcmp(features[i]->URI, LV2_URID__map))
-			handle->map = (LV2_URID_Map *)features[i]->data;
-
-	if(!handle->map)
 	{
-		fprintf(stderr, "%s: Host does not support urid:map\n", descriptor->URI);
+		if(!strcmp(features[i]->URI, LV2_URID__map))
+			handle->map = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_URID__unmap))
+			handle->unmap = features[i]->data;
+		else if(!strcmp(features[i]->URI, LV2_LOG__log))
+			handle->log = features[i]->data;
+	}
+
+	if(!handle->map || !handle->unmap)
+	{
+		fprintf(stderr, "%s: Host does not support urid:(un)map\n", descriptor->URI);
 		free(handle);
 		return NULL;
 	}
+
+	if(handle->log)
+		lv2_log_logger_init(&handle->logger, handle->map, handle->log);
 
 	handle->time_position = handle->map->map(handle->map->handle, LV2_TIME__Position);
 	handle->time_frame = handle->map->map(handle->map->handle, LV2_TIME__frame);
@@ -116,8 +129,70 @@ run(LV2_Handle instance, uint32_t nsamples)
 
 	LV2_ATOM_SEQUENCE_FOREACH(handle->control, ev)
 	{
+		const LV2_Atom *atom = &ev->body;
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 		const int64_t frames = ev->time.frames;
+
+		if(handle->state.trace && handle->log)
+		{
+			if(lv2_atom_forge_is_object_type(&through->forge, atom->type))
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", object, %s\n", ev->time.frames,
+					handle->unmap->unmap(handle->unmap->handle, obj->body.otype));
+				//FIXME introspect object?
+			}
+			else if(atom->type == through->forge.Bool)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", bool  , %s\n", ev->time.frames,
+					((const LV2_Atom_Bool *)atom)->body ? "true" : "false");
+			}
+			else if(atom->type == through->forge.Int)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", int32 , %"PRIi32"\n", ev->time.frames,
+					((const LV2_Atom_Int *)atom)->body);
+			}
+			else if(atom->type == through->forge.Long)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", int64 , %"PRIi64"\n", ev->time.frames,
+					((const LV2_Atom_Long *)atom)->body);
+			}
+			else if(atom->type == through->forge.Float)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", flt32 , %f\n", ev->time.frames,
+					((const LV2_Atom_Float *)atom)->body);
+			}
+			else if(atom->type == through->forge.Double)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", flt64 , %lf\n", ev->time.frames,
+					((const LV2_Atom_Double *)atom)->body);
+			}
+			else if(atom->type == through->forge.String)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", urid  , %s\n", ev->time.frames,
+					handle->unmap->unmap(handle->unmap->handle, ((const LV2_Atom_URID *)atom)->body));
+			}
+			else if(atom->type == through->forge.String)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", string, %s\n", ev->time.frames,
+					LV2_ATOM_BODY_CONST(atom));
+			}
+			else if(atom->type == through->forge.URI)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", uri   , %s\n", ev->time.frames,
+					LV2_ATOM_BODY_CONST(atom));
+			}
+			else if(atom->type == through->forge.Path)
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", path  , %s\n", ev->time.frames,
+					LV2_ATOM_BODY_CONST(atom));
+			}
+			//FIXME more types
+			else
+			{
+				lv2_log_trace(&handle->logger, "%4"PRIi64", %s\n", ev->time.frames,
+					handle->unmap->unmap(handle->unmap->handle, atom->type));
+			}
+		}
 
 		// copy all events to through port
 		if(through->ref)
@@ -141,7 +216,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(through->ref)
 		lv2_atom_forge_pop(&through->forge, &through->frame[0]);
 	else
+	{
 		lv2_atom_sequence_clear(through->seq);
+
+		if(handle->log)
+			lv2_log_trace(&handle->logger, "through buffer overflow\n");
+	}
 
 	bool has_event = notify->seq->atom.size > sizeof(LV2_Atom_Sequence_Body);
 
@@ -181,7 +261,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	if(notify->ref)
 		lv2_atom_forge_pop(&notify->forge, &notify->frame[0]);
 	else
+	{
 		lv2_atom_sequence_clear(notify->seq);
+
+		if(handle->log)
+			lv2_log_trace(&handle->logger, "notify buffer overflow\n");
+	}
 
 	if(!has_event) // don't send anything
 		lv2_atom_sequence_clear(notify->seq);

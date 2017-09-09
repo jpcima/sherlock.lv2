@@ -19,6 +19,7 @@
 #define _SHERLOCK_LV2_H
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
@@ -27,6 +28,8 @@
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
+#include "lv2/lv2plug.in/ns/ext/log/log.h"
+#include "lv2/lv2plug.in/ns/ext/log/logger.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
@@ -64,6 +67,7 @@ struct _state_t {
 	int32_t follow;
 	int32_t pretty;
 	int32_t time;
+	int32_t trace;
 };
 
 struct _craft_t {
@@ -76,7 +80,7 @@ struct _craft_t {
 	};
 };
 
-#define MAX_NPROPS 5
+#define MAX_NPROPS 6
 
 static const props_def_t defs [MAX_NPROPS] = {
 	{
@@ -102,6 +106,11 @@ static const props_def_t defs [MAX_NPROPS] = {
 	{
 		.property = SHERLOCK_URI"#time",
 		.offset = offsetof(state_t, time),
+		.type = LV2_ATOM__Bool,
+	},
+	{
+		.property = SHERLOCK_URI"#trace",
+		.offset = offsetof(state_t, trace),
 		.type = LV2_ATOM__Bool,
 	}
 };
