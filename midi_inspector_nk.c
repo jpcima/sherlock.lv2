@@ -227,9 +227,10 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
   const struct nk_vec2 window_padding = style->window.padding;
   const struct nk_vec2 group_padding = style->window.group_padding;
 
-	if(nk_begin(ctx, "Window", wbounds, NK_WINDOW_NO_SCROLLBAR))
+	const char *window_name = "Sherlock";
+	if(nk_begin(ctx, window_name, wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
-		nk_window_set_bounds(ctx, wbounds);
+		nk_window_set_bounds(ctx, window_name, wbounds);
 		struct nk_panel *panel = nk_window_get_panel(ctx);
 		struct nk_command_buffer *canvas = nk_window_get_canvas(ctx);
 
