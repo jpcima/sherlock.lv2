@@ -311,7 +311,6 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 	const char *window_name = "Sherlock";
 	if(nk_begin(ctx, window_name, wbounds, NK_WINDOW_NO_SCROLLBAR))
 	{
-		nk_window_set_bounds(ctx, window_name, wbounds);
 		struct nk_panel *panel= nk_window_get_panel(ctx);
 		struct nk_command_buffer *canvas = nk_window_get_canvas(ctx);
 
