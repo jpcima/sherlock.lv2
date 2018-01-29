@@ -29,7 +29,6 @@ typedef enum _plugin_type_t plugin_type_t;
 typedef enum _item_type_t item_type_t;
 typedef struct _item_t item_t;
 typedef struct _plughandle_t plughandle_t;
-typedef struct _atom_ser_t atom_ser_t;
 
 enum _item_type_t {
 	ITEM_TYPE_NONE,
@@ -51,15 +50,6 @@ struct _item_t {
 			LV2_Atom_Event ev;
 			uint8_t body [0];
 		} event;
-	};
-};
-
-struct _atom_ser_t {
-	uint32_t size;
-	uint32_t offset;
-	union {
-		uint8_t *buf;
-		LV2_Atom *atom;
 	};
 };
 

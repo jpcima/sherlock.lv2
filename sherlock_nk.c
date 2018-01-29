@@ -24,104 +24,44 @@
 #include <sherlock.h>
 #include <osc.lv2/util.h>
 
+#define SER_ATOM_IMPLEMENTATION
+#include <ser_atom.lv2/ser_atom.h>
+
 #include <encoder.h>
 
 #define NK_PUGL_IMPLEMENTATION
 #include <sherlock_nk.h>
 
-static LV2_Atom_Forge_Ref
-_sink(LV2_Atom_Forge_Sink_Handle handle, const void *buf, uint32_t size)
-{
-	atom_ser_t *ser = handle;
-
-	const LV2_Atom_Forge_Ref ref = ser->offset + 1;
-
-	const uint32_t new_offset = ser->offset + size;
-	if(new_offset > ser->size)
-	{
-		uint32_t new_size = ser->size << 1;
-		while(new_offset > new_size)
-			new_size <<= 1;
-
-		if(!(ser->buf = realloc(ser->buf, new_size)))
-			return 0; // realloc failed
-
-		ser->size = new_size;
-	}
-
-	memcpy(ser->buf + ser->offset, buf, size);
-	ser->offset = new_offset;
-
-	return ref;
-}
-
-static LV2_Atom *
-_deref(LV2_Atom_Forge_Sink_Handle handle, LV2_Atom_Forge_Ref ref)
-{
-	atom_ser_t *ser = handle;
-
-	const uint32_t offset = ref - 1;
-
-	return (LV2_Atom *)(ser->buf + offset);
-}
-
-static bool
-_ser_malloc(atom_ser_t *ser, size_t size)
-{
-	ser->size = size;
-	ser->offset = 0;
-	ser->buf = malloc(ser->size);
-
-	return ser->buf != NULL;
-}
-
-static bool
-_ser_realloc(atom_ser_t *ser, size_t size)
-{
-	ser->size = size;
-	ser->offset = 0;
-	ser->buf = realloc(ser->buf, ser->size);
-
-	return ser->buf != NULL;
-}
-
-static void
-_ser_free(atom_ser_t *ser)
-{
-	if(ser->buf)
-		free(ser->buf);
-}
-
 static inline void
 _discover(plughandle_t *handle)
 {
-	atom_ser_t ser;
+	ser_atom_t ser;
 
-	if(_ser_malloc(&ser, 512))
+	if(ser_atom_init(&ser) == 0)
 	{
-		lv2_atom_forge_set_sink(&handle->forge, _sink, _deref, &ser);
 		LV2_Atom_Forge_Frame frame;
 
+		ser_atom_reset(&ser, &handle->forge);
 		lv2_atom_forge_object(&handle->forge, &frame, 0, handle->props.urid.patch_get);
 		lv2_atom_forge_pop(&handle->forge, &frame);
 
-		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.atom),
-			handle->event_transfer, ser.atom);
+		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.buf),
+			handle->event_transfer, ser.buf);
 
-		_ser_free(&ser);
+		ser_atom_deinit(&ser);
 	}
 }
 
 void
 _toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool)
 {
-	atom_ser_t ser;
+	ser_atom_t ser;
 
-	if(_ser_malloc(&ser, 512))
+	if(ser_atom_init(&ser) == 0)
 	{
-		lv2_atom_forge_set_sink(&handle->forge, _sink, _deref, &ser);
 		LV2_Atom_Forge_Frame frame;
 
+		ser_atom_reset(&ser, &handle->forge);
 		lv2_atom_forge_object(&handle->forge, &frame, 0, handle->props.urid.patch_set);
 		lv2_atom_forge_key(&handle->forge, handle->props.urid.patch_property);
 		lv2_atom_forge_urid(&handle->forge, property);
@@ -134,10 +74,10 @@ _toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool)
 
 		lv2_atom_forge_pop(&handle->forge, &frame);
 
-		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.atom),
-			handle->event_transfer, ser.atom);
+		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.buf),
+			handle->event_transfer, ser.buf);
 
-		_ser_free(&ser);
+		ser_atom_deinit(&ser);
 	}
 }
 
@@ -397,12 +337,13 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 
 			if(tup->atom.type != handle->forge.Tuple)
 			{
-				atom_ser_t ser;
+				ser_atom_t ser;
 
-				if(_ser_malloc(&ser, 512))
+				if(ser_atom_init(&ser) == 0)
 				{
 					LV2_Atom_Forge_Frame frame;
-					lv2_atom_forge_set_sink(&handle->forge, _sink, _deref, &ser);
+
+					ser_atom_reset(&ser, &handle->forge);
 					LV2_Atom_Forge_Ref ref = lv2_atom_forge_sequence_head(&handle->forge, &frame, 0);
 
 					if(props_advance(&handle->props, &handle->forge, 0, buf, &ref))
@@ -410,7 +351,7 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 
 					lv2_atom_forge_pop(&handle->forge, &frame);
 
-					_ser_free(&ser);
+					ser_atom_deinit(&ser);
 				}
 
 				break;

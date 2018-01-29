@@ -5,6 +5,7 @@ project(sherlock.lv2)
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/osc.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/props.lv2)
+include_directories(${PROJECT_SOURCE_DIR}/ser_atom.lv2)
 include_directories(${PROJECT_SOURCE_DIR}/pugl)
 
 set(CMAKE_FIND_FRAMEWORK FIRST)
