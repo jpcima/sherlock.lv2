@@ -45,8 +45,8 @@ _discover(plughandle_t *handle)
 		lv2_atom_forge_object(&handle->forge, &frame, 0, handle->props.urid.patch_get);
 		lv2_atom_forge_pop(&handle->forge, &frame);
 
-		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.buf),
-			handle->event_transfer, ser.buf);
+		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser_atom_get(&ser)),
+			handle->event_transfer, ser_atom_get(&ser));
 
 		ser_atom_deinit(&ser);
 	}
@@ -74,8 +74,8 @@ _toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool)
 
 		lv2_atom_forge_pop(&handle->forge, &frame);
 
-		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser.buf),
-			handle->event_transfer, ser.buf);
+		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser_atom_get(&ser)),
+			handle->event_transfer, ser_atom_get(&ser));
 
 		ser_atom_deinit(&ser);
 	}

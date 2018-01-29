@@ -21,7 +21,7 @@
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "nk_pugl/nk_pugl.h"
 
-extern const struct nk_color white;
+extern const struct nk_color cwhite;
 extern const struct nk_color gray;
 extern const struct nk_color yellow;
 extern const struct nk_color magenta;

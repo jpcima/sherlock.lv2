@@ -25,7 +25,7 @@
 #define one 0xbb
 #define two 0x66
 #define non 0x0
-const struct nk_color white		= {.r = one, .g = one, .b = one, .a = ful};
+const struct nk_color cwhite	= {.r = one, .g = one, .b = one, .a = ful};
 const struct nk_color gray		= {.r = two, .g = two, .b = two, .a = ful};
 const struct nk_color yellow	= {.r = one, .g = one, .b = non, .a = ful};
 const struct nk_color magenta	= {.r = one, .g = two, .b = one, .a = ful};
@@ -173,7 +173,7 @@ ttl_lex(void *data, const char *utf8, int len)
 
 			case TK_NONE:
 			case TK_WHITESPACE:
-				col1 = white;
+				col1 = cwhite;
 				break;
 
 			case TK_RAW:

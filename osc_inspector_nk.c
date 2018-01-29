@@ -220,7 +220,7 @@ _osc_message(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object
 	nk_layout_row_push(ctx, 0.5);
 	if(mem.buf)
 	{
-		nk_label_colored(ctx, mem.buf, NK_TEXT_LEFT, white);
+		nk_label_colored(ctx, mem.buf, NK_TEXT_LEFT, cwhite);
 		free(mem.buf);
 	}
 	else
@@ -260,7 +260,7 @@ _osc_bundle(plughandle_t *handle, struct nk_context *ctx, const LV2_Atom_Object 
 	_osc_timetag(&mem, &tt);
 	if(mem.buf)
 	{
-		nk_label_colored(ctx, mem.buf, NK_TEXT_LEFT, white);
+		nk_label_colored(ctx, mem.buf, NK_TEXT_LEFT, cwhite);
 		free(mem.buf);
 	}
 	else
