@@ -49,6 +49,9 @@ ser_atom_funcs(ser_atom_t *ser, ser_atom_realloc_t realloc,
 SER_ATOM_API int
 ser_atom_reset(ser_atom_t *ser, LV2_Atom_Forge *forge);
 
+SER_ATOM_API LV2_Atom *
+ser_atom_get(ser_atom_t *ser);
+
 SER_ATOM_API int
 ser_atom_deinit(ser_atom_t *ser);
 
@@ -61,7 +64,10 @@ struct _ser_atom_t {
 
 	size_t size;
 	size_t offset;
-	uint8_t *buf;
+	union {
+		uint8_t *buf;
+		LV2_Atom *atom;
+	};
 };
 
 static LV2_Atom_Forge_Ref
@@ -167,6 +173,17 @@ ser_atom_reset(ser_atom_t *ser, LV2_Atom_Forge *forge)
 	ser->offset = 0;
 
 	return 0;
+}
+
+SER_ATOM_API LV2_Atom *
+ser_atom_get(ser_atom_t *ser)
+{
+	if(!ser)
+	{
+		return NULL;
+	}
+
+	return ser->atom;
 }
 
 SER_ATOM_API int
