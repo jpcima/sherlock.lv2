@@ -122,6 +122,9 @@ main(int argc, char **argv)
 
 	assert(lv2_atom_forge_deref(&forge, 0) == NULL);
 
+	assert(ser_atom_get(NULL) == NULL);
+	assert(ser_atom_get(&ser) == ser.atom);
+
 	assert(ser_atom_deinit(NULL) != 0);
 	assert(ser_atom_deinit(&ser) == 0);
 
