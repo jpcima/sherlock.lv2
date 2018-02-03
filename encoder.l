@@ -51,14 +51,15 @@ enum {
 	TK_LONG_STRING_IN,
 	TK_LONG_STRING_OUT,
 	TK_WHITESPACE,
-	TK_RAW
+	TK_RAW,
+	TK_EOL
 };
 
 %}
 
 %option reentrant noyywrap
 
-w              [ \v\a]+
+w              [ \v\a\t]+
 name           [_a-zA-Z@][_a-zA-Z0-9\.]*
 n              [0-9]+
 exp            [Ee][+-]?{n}
@@ -72,7 +73,6 @@ eol            [\n\r]
 %%
 
 {w}            return TK_WHITESPACE;
-"\t"           return TK_WHITESPACE;
 "<"            BEGIN(XURI); return TK_URI_IN;
 \"\"\"         BEGIN(XLONG_STRING); return TK_LONG_STRING_IN;
 \"             BEGIN(XSTRING); return TK_STRING_IN;
@@ -83,8 +83,8 @@ true           return TK_BOOL;
 false          return TK_BOOL;
 {name}         return TK_PREDICATE;
 {number}       return TK_NUMBER;
-.              return TK_RAW;
 {eol}          return TK_RAW;
+.              return TK_RAW;
 
 <XURI>
 {
@@ -95,8 +95,8 @@ false          return TK_BOOL;
 
 <XLONG_STRING>
 {
-   \\\"	       return TK_RAW;
    \"\"\"      BEGIN(0); return TK_LONG_STRING_OUT;
+   {eol}	     return TK_EOL;
    .           return TK_RAW;
 }
 
@@ -175,6 +175,9 @@ ttl_lex(void *data, const char *utf8, int len)
 			case TK_WHITESPACE:
 				col1 = cwhite;
 				break;
+
+			case TK_EOL:
+				continue;
 
 			case TK_RAW:
 			default:
