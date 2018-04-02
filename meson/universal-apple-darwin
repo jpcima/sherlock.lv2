@@ -1,0 +1,16 @@
+[host_machine]
+system = 'darwin'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[binaries]
+c = '/usr/universal-apple-darwin/bin/x86_64-apple-darwin15-clang'
+ar = '/usr/universal-apple-darwin/bin/x86_64-apple-darwin15-ar'
+strip = '/usr/universal-apple-darwin/bin/x86_64-apple-darwin15-strip'
+pkgconfig = '/usr/bin/pkg-config'
+
+[properties]
+c_args = ['-arch', 'i386', '-arch', 'x86_64']
+c_link_args = ['-arch', 'i386', '-arch', 'x86_64']
+needs_exe_wrapper = true

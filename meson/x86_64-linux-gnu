@@ -1,0 +1,15 @@
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[binaries]
+c = '/usr/bin/x86_64-linux-gnu-gcc'
+cpp = '/usr/bin/x86_64-linux-gnu-cpp'
+ar = '/usr/bin/x86_64-linux-gnu-ar'
+strip = '/usr/bin/x86_64-linux-gnu-strip'
+pkgconfig = '/usr/bin/pkg-config'
+
+[properties]
+needs_exe_wrapper = false

@@ -22,41 +22,41 @@
 # Atom Inspector Plugin
 sherlock:atom_inspector
 	a lv2:Plugin ;
-	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
-	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
-	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	lv2:minorVersion @MINOR_VERSION@ ;
+	lv2:microVersion @MICRO_VERSION@ ;
+	lv2:binary <sherlock@MODULE_SUFFIX@> ;
 	ui:ui sherlock:atom_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:atom_inspector_4_nk
-	a ui:@SHERLOCK_UI_TYPE@ ;
-	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	a ui:@UI_TYPE@ ;
+	ui:binary <sherlock_nk@MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .
 
 # MIDI Inspector Plugin
 sherlock:midi_inspector
 	a lv2:Plugin ;
-	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
-	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
-	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	lv2:minorVersion @MINOR_VERSION@ ;
+	lv2:microVersion @MICRO_VERSION@ ;
+	lv2:binary <sherlock@MODULE_SUFFIX@> ;
 	ui:ui sherlock:midi_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:midi_inspector_4_nk
-	a ui:@SHERLOCK_UI_TYPE@ ;
-	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	a ui:@UI_TYPE@ ;
+	ui:binary <sherlock_nk@MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .
 
 # OSC Inspector Plugin
 sherlock:osc_inspector
 	a lv2:Plugin ;
-	lv2:minorVersion @SHERLOCK_MINOR_VERSION@ ;
-	lv2:microVersion @SHERLOCK_MICRO_VERSION@ ;
-	lv2:binary <sherlock@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	lv2:minorVersion @MINOR_VERSION@ ;
+	lv2:microVersion @MICRO_VERSION@ ;
+	lv2:binary <sherlock@MODULE_SUFFIX@> ;
 	ui:ui sherlock:osc_inspector_4_nk ;
 	rdfs:seeAlso <sherlock.ttl> .
 
 sherlock:osc_inspector_4_nk
-	a ui:@SHERLOCK_UI_TYPE@ ;
-	ui:binary <sherlock_nk@CMAKE_SHARED_MODULE_SUFFIX@> ;
+	a ui:@UI_TYPE@ ;
+	ui:binary <sherlock_nk@MODULE_SUFFIX@> ;
 	rdfs:seeAlso <sherlock_ui.ttl> .
