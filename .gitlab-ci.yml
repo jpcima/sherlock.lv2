@@ -6,7 +6,7 @@ stages:
 .variables_template: &variables_definition
   variables:
     BASE_NAME: "sherlock.lv2"
-    PKG_CONFIG_PATH: "/opt/lv2/lib/pkgconfig:/opt/${CI_BUILD_NAME}/lib/pkgconfig"
+    PKG_CONFIG_PATH: "/opt/lv2/lib/pkgconfig:/opt/${CI_BUILD_NAME}/lib/pkgconfig:/usr/lib/${CI_BUILD_NAME}/pkgconfig"
     TOOLCHAIN_FILE: "${CI_PROJECT_DIR}/meson/${CI_BUILD_NAME}"
 
 .common_template: &common_definition
