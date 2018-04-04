@@ -13,4 +13,6 @@ pkgconfig = '/usr/bin/pkg-config'
 exe_wrapper = '/usr/bin/qemu-arm'
 
 [properties]
+root = '/usr/arm-linux-gnueabihf'
+c_link_args = ['-Wl,-z,defs']
 needs_exe_wrapper = true

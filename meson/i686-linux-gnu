@@ -6,12 +6,12 @@ endian = 'little'
 
 [binaries]
 c = '/usr/bin/x86_64-linux-gnu-gcc'
-cpp = '/usr/bin/x86_64-linux-gnu-cpp'
+cpp = '/usr/bin/x86_64-linux-gnu-g++'
 ar = '/usr/bin/x86_64-linux-gnu-ar'
 strip = '/usr/bin/x86_64-linux-gnu-strip'
 pkgconfig = '/usr/bin/pkg-config'
 
 [properties]
 c_args = ['-m32']
-c_link_args = ['-m32']
+c_link_args = ['-m32', '-Wl,-z,defs']
 needs_exe_wrapper = false

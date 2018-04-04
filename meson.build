@@ -6,14 +6,17 @@ project('sherlock.lv2', 'c', default_options : [
 	'c_std=c11'])
 
 add_project_arguments('-D_GNU_SOURCE', language : 'c')
+add_project_arguments('-DPUGL_HAVE_GL', language : 'c')
 
 conf_data = configuration_data()
 cc = meson.get_compiler('c')
 
 m_dep = cc.find_library('m')
 lv2_dep = dependency('lv2', version : '>=1.14.0')
-gl_dep = dependency('gl')
-sratom_dep = dependency('sratom-0', version : '>=0.6.0')
+sratom_dep = dependency('sratom-0', version : '>=0.6.0', static : true)
+
+dsp_deps = [m_dep, lv2_dep]
+ui_deps = [m_dep, lv2_dep, sratom_dep]
 
 pugl_inc = include_directories('pugl')
 props_inc = include_directories('props.lv2')
@@ -31,6 +34,42 @@ conf_data.set('MICRO_VERSION', version[2])
 
 add_project_arguments('-DSHERLOCK_VERSION="'+rawvers+'"', language : 'c')
 
+flex = find_program('flex')
+
+lgen = generator(flex,
+	output : '@PLAINNAME@.c',
+	arguments : ['--prefix=enc', '-o', '@OUTPUT@', '@INPUT@'])
+
+lfiles = lgen.process('encoder.l')
+
+ui_srcs = ['sherlock_nk.c',
+	'atom_inspector_nk.c',
+	'midi_inspector_nk.c',
+	'osc_inspector_nk.c',
+	lfiles]
+
+if host_machine.system() == 'linux'
+	conf_data.set('UI_TYPE', 'X11UI')
+	ui_deps += dependency('gl')
+	ui_deps += dependency('x11', version : '>=1.6.0')
+	ui_deps += dependency('xext', version : '>=1.3.0')
+	ui_srcs += 'pugl/pugl/pugl_x11.c'
+elif host_machine.system() == 'windows'
+	add_languages('cpp')
+	conf_data.set('UI_TYPE', 'WindowsUI')
+	ui_deps += cc.find_library('opengl32')
+	ui_deps += cc.find_library('gdi32')
+	ui_deps += cc.find_library('user32')
+	ui_srcs += 'pugl/pugl/pugl_win.cpp'
+elif host_machine.system() == 'darwin'
+	#add_languages('objc')
+	conf_data.set('UI_TYPE', 'CocoaUI')
+	ui_deps += cc.find_library('Cocoa')
+	#ui_deps += cc.find_library('gl')
+	#ui_deps += dependency('appleframeworks', modules : 'cocoa')
+	ui_srcs += 'pugl/pugl/pugl_osx.m'
+endif
+
 mod = shared_module('sherlock',
 	'sherlock.c',
 	'atom_inspector.c',
@@ -39,32 +78,20 @@ mod = shared_module('sherlock',
 	c_args : ['-fvisibility=hidden', '-ffast-math'],
 	include_directories : inc_dir,
 	name_prefix : '',
-	dependencies : [m_dep, lv2_dep],
+	dependencies : dsp_deps,
 	install : true,
 	install_dir : inst_dir)
 
-ui = shared_module('sherlock_ui',
-	'sherlock_nk.c',
-	'atom_inspector_nk.c',
-	'midi_inspector_nk.c',
-	'osc_inspector_nk.c',
+ui = shared_module('sherlock_ui', ui_srcs,
 	c_args : ['-fvisibility=hidden', '-ffast-math'],
 	include_directories : inc_dir,
 	name_prefix : '',
-	dependencies : [m_dep, lv2_dep, gl_dep, sratom_dep],
+	dependencies : ui_deps,
 	install : true,
 	install_dir : inst_dir)
 
 suffix = mod.full_path().strip().split('.')[-1]
 conf_data.set('MODULE_SUFFIX', '.' + suffix)
-
-if host_machine.system() == 'linux'
-	conf_data.set('UI_TYPE', 'X11UI')
-elif host_machine.system() == 'windows'
-	conf_data.set('UI_TYPE', 'WindowsUI')
-elif host_machine.system() == 'windows'
-	conf_data.set('UI_TYPE', 'CocoaUI')
-endif
 
 configure_file(input : 'manifest.ttl.in', output : 'manifest.ttl',
 	configuration : conf_data,
