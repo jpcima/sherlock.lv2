@@ -174,17 +174,17 @@ run(LV2_Handle instance, uint32_t nsamples)
 			else if(atom->type == through->forge.String)
 			{
 				lv2_log_trace(&handle->logger, "%4"PRIi64", string, %s\n", ev->time.frames,
-					LV2_ATOM_BODY_CONST(atom));
+					(const char *)LV2_ATOM_BODY_CONST(atom));
 			}
 			else if(atom->type == through->forge.URI)
 			{
 				lv2_log_trace(&handle->logger, "%4"PRIi64", uri   , %s\n", ev->time.frames,
-					LV2_ATOM_BODY_CONST(atom));
+					(const char *)LV2_ATOM_BODY_CONST(atom));
 			}
 			else if(atom->type == through->forge.Path)
 			{
 				lv2_log_trace(&handle->logger, "%4"PRIi64", path  , %s\n", ev->time.frames,
-					LV2_ATOM_BODY_CONST(atom));
+					(const char *)LV2_ATOM_BODY_CONST(atom));
 			}
 			//FIXME more types
 			else

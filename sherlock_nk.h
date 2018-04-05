@@ -18,6 +18,7 @@
 #ifndef _SHERLOCK_NK_H
 #define _SHERLOCK_NK_H
 
+#define NK_PUGL_API
 #include "nk_pugl/nk_pugl.h"
 
 #include <osc.lv2/osc.h>

@@ -131,7 +131,7 @@ ttl_lex(void *data, const char *utf8, int len)
 	int n_tokens = 0;
 				
 	const char *base = encget_text(scanner);
-	int offset0  = 0;
+	int offset0 = 0;
 	struct nk_color col0 = {0xff, 0xff, 0xff, 0xff};
 
 	for(int tok=enclex(scanner); tok; tok=enclex(scanner))
@@ -202,6 +202,11 @@ ttl_lex(void *data, const char *utf8, int len)
 
 	enc_delete_buffer(buf, scanner);
 	enclex_destroy(scanner);
+
+	// to please compiler
+	(void)offset0;
+	(void)input;
+	(void)yyunput;
 
 	return tokens;
 }

@@ -232,8 +232,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 
 								if(is_primitive)
 								{
-									const struct nk_color col = nk_rgb(0xff, 0xff, 0xff);
-
 									nk_layout_row_push(ctx, 0.2);
 									if(body->type == handle->forge.Bool)
 									{
@@ -375,7 +373,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			}
 
 			const nk_flags flags = NK_EDIT_EDITOR;
-			char *str = nk_str_get(&handle->editor.string);
 			int len = nk_str_len(&handle->editor.string);
 
 			if(len > 0) //FIXME

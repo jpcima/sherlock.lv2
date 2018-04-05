@@ -19,6 +19,8 @@
 #define ENCODER_H
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+
+#define NK_PUGL_API
 #include "nk_pugl/nk_pugl.h"
 
 extern const struct nk_color cwhite;
