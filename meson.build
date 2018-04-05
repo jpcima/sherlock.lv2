@@ -82,7 +82,7 @@ mod = shared_module('sherlock',
 	install : true,
 	install_dir : inst_dir)
 
-ui = shared_module('sherlock_ui', ui_srcs,
+ui = shared_module('sherlock_nk', ui_srcs,
 	c_args : ['-fvisibility=hidden', '-ffast-math'],
 	include_directories : inc_dir,
 	name_prefix : '',
