@@ -6,7 +6,7 @@ endian = 'little'
 
 [binaries]
 c = '/usr/bin/arm-linux-gnueabihf-gcc'
-cpp = '/usr/bin/arm-linux-gnueabihf-cpp'
+cpp = '/usr/bin/arm-linux-gnueabihf-g++'
 ar = '/usr/bin/arm-linux-gnueabihf-ar'
 strip = '/usr/bin/arm-linux-gnueabihf-strip'
 pkgconfig = '/usr/bin/pkg-config'

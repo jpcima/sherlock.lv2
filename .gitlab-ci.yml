@@ -7,7 +7,7 @@ stages:
   variables:
     BASE_NAME: "sherlock.lv2"
     PKG_CONFIG_PATH: "/opt/lv2/lib/pkgconfig:/opt/${CI_BUILD_NAME}/lib/pkgconfig:/usr/lib/${CI_BUILD_NAME}/pkgconfig"
-    TOOLCHAIN_FILE: "${CI_PROJECT_DIR}/meson/${CI_BUILD_NAME}"
+    TOOLCHAIN_FILE: "meson/${CI_BUILD_NAME}"
 
 .common_template: &common_definition
   <<: *variables_definition
@@ -20,9 +20,11 @@ stages:
 .build_template: &build_definition
   <<: *common_definition
   script:
-    - meson --prefix="/" --libdir="lib" --cross-file "${TOOLCHAIN_FILE}" build
+    - meson --prefix="/opt/${CI_BUILD_NAME}" --libdir="lib" --cross-file "${TOOLCHAIN_FILE}" build
     - ninja -C build
-    - DESTDIR="${CI_PROJECT_DIR}/${BASE_NAME}-$(cat VERSION)/${CI_BUILD_NAME}" ninja -C build install
+    - ninja -C build install
+    - mkdir -p "${BASE_NAME}-$(cat VERSION)/${CI_BUILD_NAME}/${BASE_NAME}"
+    - cp -r "/opt/${CI_BUILD_NAME}/lib/lv2/${BASE_NAME}/" "${BASE_NAME}-$(cat VERSION)/${CI_BUILD_NAME}/"
 
 .universal_linux_template: &universal_linux_definition
   image: ventosus/universal-linux-gnu
