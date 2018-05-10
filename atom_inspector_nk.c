@@ -317,7 +317,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 					_toggle(handle, handle->urid.pretty, handle->state.pretty, true);
 
 					handle->ttl_dirty = true;
-					sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
 				}
 				nk_label(ctx, "pretty", NK_TEXT_LEFT);
 
@@ -348,6 +347,8 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			const LV2_Atom *atom = handle->selected;
 			if(handle->ttl_dirty && atom)
 			{
+				sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
+
 				char *ttl = _sratom_to_turtle(handle->sratom, handle->unmap,
 					handle->base_uri, NULL, NULL,
 					atom->type, atom->size, LV2_ATOM_BODY_CONST(atom));
