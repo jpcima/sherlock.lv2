@@ -131,4 +131,7 @@ _post_redisplay(plughandle_t *handle);
 float
 _get_scale(plughandle_t *handle);
 
+int32_t
+_check(struct nk_context *ctx, int32_t state);
+
 #endif // _SHERLOCK_NK_H

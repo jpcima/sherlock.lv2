@@ -196,22 +196,9 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 								uri = handle->unmap->unmap(handle->unmap->handle, body->type);
 							}
 
-							const bool is_primitive = (body->type == handle->forge.Bool)
-								|| (body->type == handle->forge.Int)
-								|| (body->type == handle->forge.Long)
-								|| (body->type == handle->forge.Float)
-								|| (body->type == handle->forge.Double);
-								/*
-								|| (body->type == handle->forge.String)
-								|| (body->type == handle->forge.URI)
-								|| (body->type == handle->forge.URID)
-								|| (body->type == handle->forge.Path)
-								|| (body->type == handle->forge.Literal);
-								*/
-
-							nk_layout_row_begin(ctx, NK_DYNAMIC, widget_h, 3 + is_primitive);
+							const float entry [4] = {0.1, 0.65, 0.15, 0.1};
+							nk_layout_row(ctx, NK_DYNAMIC, widget_h, 4, entry);
 							{
-								nk_layout_row_push(ctx, 0.1);
 								if(l % 2 == 0)
 								{
 									struct nk_rect b = nk_widget_bounds(ctx);
@@ -222,7 +209,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 								}
 								nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
 
-								nk_layout_row_push(ctx, is_primitive ? 0.6 : 0.8);
 								if(nk_select_label(ctx, uri, NK_TEXT_LEFT, handle->selected == body))
 								{
 									handle->ttl_dirty = handle->ttl_dirty
@@ -230,64 +216,62 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 									handle->selected = body;
 								}
 
-								if(is_primitive)
+								if(body->type == handle->forge.Bool)
 								{
-									nk_layout_row_push(ctx, 0.2);
-									if(body->type == handle->forge.Bool)
-									{
-										const LV2_Atom_Bool *ref = (const LV2_Atom_Bool *)body;
-										nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%s", ref->body ? "true" : "false");
-									}
-									else if(body->type == handle->forge.Int)
-									{
-										const LV2_Atom_Int *ref = (const LV2_Atom_Int *)body;
-										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi32, ref->body);
-									}
-									else if(body->type == handle->forge.Long)
-									{
-										const LV2_Atom_Long *ref = (const LV2_Atom_Long *)body;
-										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi64, ref->body);
-									}
-									else if(body->type == handle->forge.Float)
-									{
-										const LV2_Atom_Float *ref = (const LV2_Atom_Float *)body;
-										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%f", ref->body);
-									}
-									else if(body->type == handle->forge.Double)
-									{
-										const LV2_Atom_Double *ref = (const LV2_Atom_Double *)body;
-										nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%lf", ref->body);
-									}
-									/*
-									else if(body->type == handle->forge.String)
-									{
-										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
-									}
-									else if(body->type == handle->forge.URI)
-									{
-										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, yellow);
-									}
-									else if(body->type == handle->forge.URID)
-									{
-										const LV2_Atom_URID *urid = (const LV2_Atom_URID *)body;
-										const char *_uri = handle->unmap->unmap(handle->unmap->handle, urid->body);
-										nk_label_colored(ctx, _uri, NK_TEXT_RIGHT, yellow);
-									}
-									else if(body->type == handle->forge.Path)
-									{
-										nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
-									}
-									else if(body->type == handle->forge.Literal)
-									{
-										nk_label_colored(ctx, LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, body), NK_TEXT_RIGHT, red);
-									}
-									*/
+									const LV2_Atom_Bool *ref = (const LV2_Atom_Bool *)body;
+									nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%s", ref->body ? "true" : "false");
+								}
+								else if(body->type == handle->forge.Int)
+								{
+									const LV2_Atom_Int *ref = (const LV2_Atom_Int *)body;
+									nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi32, ref->body);
+								}
+								else if(body->type == handle->forge.Long)
+								{
+									const LV2_Atom_Long *ref = (const LV2_Atom_Long *)body;
+									nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%"PRIi64, ref->body);
+								}
+								else if(body->type == handle->forge.Float)
+								{
+									const LV2_Atom_Float *ref = (const LV2_Atom_Float *)body;
+									nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%f", ref->body);
+								}
+								else if(body->type == handle->forge.Double)
+								{
+									const LV2_Atom_Double *ref = (const LV2_Atom_Double *)body;
+									nk_labelf_colored(ctx, NK_TEXT_RIGHT, green, "%lf", ref->body);
+								}
+								/*
+								else if(body->type == handle->forge.String)
+								{
+									nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
+								}
+								else if(body->type == handle->forge.URI)
+								{
+									nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, yellow);
+								}
+								else if(body->type == handle->forge.URID)
+								{
+									const LV2_Atom_URID *urid = (const LV2_Atom_URID *)body;
+									const char *_uri = handle->unmap->unmap(handle->unmap->handle, urid->body);
+									nk_label_colored(ctx, _uri, NK_TEXT_RIGHT, yellow);
+								}
+								else if(body->type == handle->forge.Path)
+								{
+									nk_label_colored(ctx, LV2_ATOM_BODY_CONST(body), NK_TEXT_RIGHT, red);
+								}
+								else if(body->type == handle->forge.Literal)
+								{
+									nk_label_colored(ctx, LV2_ATOM_CONTENTS_CONST(LV2_Atom_Literal, body), NK_TEXT_RIGHT, red);
+								}
+								*/
+								else
+								{
+									nk_spacing(ctx, 1);
 								}
 
-								nk_layout_row_push(ctx, 0.1);
 								nk_labelf_colored(ctx, NK_TEXT_RIGHT, blue, "%"PRIu32, body->size);
 							}
-							nk_layout_row_end(ctx);
 						} break;
 					}
 				}
@@ -295,30 +279,38 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				nk_list_view_end(&lview);
 			}
 
-			nk_layout_row_dynamic(ctx, widget_h, 5);
+			const float n = 5;
+			const float r0 = 1.f / n;
+			const float r1 = 0.1f / 3;
+			const float r2 = r0 - r1;
+			const float footer [10] = {r1, r2, r1, r2, r1, r2, r1, r2, r1, r2};
+			nk_layout_row(ctx, NK_DYNAMIC, widget_h, 10, footer);
 			{
-				const int32_t state_overwrite = nk_check_label(ctx, "overwrite", handle->state.overwrite);
+				const int32_t state_overwrite = _check(ctx, handle->state.overwrite);
 				if(state_overwrite != handle->state.overwrite)
 				{
 					handle->state.overwrite = state_overwrite;
 					_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
 				}
+				nk_label(ctx, "overwrite", NK_TEXT_LEFT);
 
-				const int32_t state_block = nk_check_label(ctx, "block", handle->state.block);
+				const int32_t state_block = _check(ctx, handle->state.block);
 				if(state_block != handle->state.block)
 				{
 					handle->state.block = state_block;
 					_toggle(handle, handle->urid.block, handle->state.block, true);
 				}
+				nk_label(ctx, "block", NK_TEXT_LEFT);
 
-				const int32_t state_follow = nk_check_label(ctx, "follow", handle->state.follow);
+				const int32_t state_follow = _check(ctx, handle->state.follow);
 				if(state_follow != handle->state.follow)
 				{
 					handle->state.follow = state_follow;
 					_toggle(handle, handle->urid.follow, handle->state.follow, true);
 				}
+				nk_label(ctx, "follow", NK_TEXT_LEFT);
 
-				const int32_t state_pretty = nk_check_label(ctx, "pretty", handle->state.pretty);
+				const int32_t state_pretty = _check(ctx, handle->state.pretty);
 				if(state_pretty != handle->state.pretty)
 				{
 					handle->state.pretty = state_pretty;
@@ -327,13 +319,15 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 					handle->ttl_dirty = true;
 					sratom_set_pretty_numbers(handle->sratom, handle->state.pretty);
 				}
+				nk_label(ctx, "pretty", NK_TEXT_LEFT);
 
-				const int32_t state_time = nk_check_label(ctx, "time", handle->state.time);
+				const int32_t state_time = _check(ctx, handle->state.time);
 				if(state_time != handle->state.time)
 				{
 					handle->state.time = state_time;
 					_toggle(handle, handle->urid.time, handle->state.time, true);
 				}
+				nk_label(ctx, "time", NK_TEXT_LEFT);
 			}
 
 			const bool max_reached = handle->n_item >= MAX_LINES;

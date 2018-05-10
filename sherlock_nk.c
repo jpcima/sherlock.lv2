@@ -161,6 +161,93 @@ _get_scale (plughandle_t *handle)
 	return nk_pugl_get_scale(&handle->win);
 }
 
+static int
+_dial_bool(struct nk_context *ctx, int32_t *val, struct nk_color color, bool editable)
+{
+	const int32_t tmp = *val;
+	struct nk_rect bounds;
+	const bool left_mouse_click_in_cursor = nk_widget_is_mouse_clicked(ctx, NK_BUTTON_LEFT);
+	const enum nk_widget_layout_states layout_states = nk_widget(&bounds, ctx);
+
+	if(layout_states != NK_WIDGET_INVALID)
+	{
+		enum nk_widget_states states = NK_WIDGET_STATE_INACTIVE;
+		struct nk_input *in = (ctx->current->layout->flags & NK_WINDOW_ROM) ? 0 : &ctx->input;
+
+		if(in && editable)
+		{
+			bool mouse_has_scrolled = false;
+
+			if(left_mouse_click_in_cursor)
+			{
+				states = NK_WIDGET_STATE_ACTIVED;
+			}
+			else if(nk_input_is_mouse_hovering_rect(in, bounds))
+			{
+				if(in->mouse.scroll_delta.y != 0.f) // has scrolling
+				{
+					mouse_has_scrolled = true;
+					in->mouse.scroll_delta.y = 0.f;
+				}
+
+				states = NK_WIDGET_STATE_HOVER;
+			}
+
+			if(left_mouse_click_in_cursor || mouse_has_scrolled)
+			{
+				*val = !*val;
+			}
+		}
+
+		const struct nk_style_item *fg = NULL;
+
+		switch(states)
+		{
+			case NK_WIDGET_STATE_HOVER:
+			{
+				fg = &ctx->style.progress.cursor_hover;
+			}	break;
+			case NK_WIDGET_STATE_ACTIVED:
+			{
+				fg = &ctx->style.progress.cursor_active;
+			}	break;
+			default:
+			{
+				fg = &ctx->style.progress.cursor_normal;
+			}	break;
+		}
+
+		struct nk_color fg_color = fg->data.color;
+
+		fg_color.r = (int)fg_color.r * color.r / 0xff;
+		fg_color.g = (int)fg_color.g * color.g / 0xff;
+		fg_color.b = (int)fg_color.b * color.b / 0xff;
+		fg_color.a = (int)fg_color.a * color.a / 0xff;
+
+		struct nk_command_buffer *canv= nk_window_get_canvas(ctx);
+		const float w2 = bounds.w/2;
+		const float h2 = bounds.h/2;
+		const float r1 = NK_MIN(w2, h2);
+		const float r2 = r1 / 2;
+		const float cx = bounds.x + w2;
+		const float cy = bounds.y + h2;
+
+		nk_stroke_arc(canv, cx, cy, r2 - 0, 0.f, 2*M_PI, 2.f, fg_color);
+		if(*val)
+			nk_fill_arc(canv, cx, cy, r2 - 2, 0.f, 2*M_PI, fg_color);
+	}
+
+	return tmp != *val;
+}
+
+int32_t
+_check(struct nk_context *ctx, int32_t state)
+{
+	_dial_bool(ctx, &state, nk_rgb(0xff, 0xff, 0xff), true);
+
+	return state;
+}
+
 static LV2UI_Handle
 instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 	const char *bundle_path, LV2UI_Write_Function write_function,

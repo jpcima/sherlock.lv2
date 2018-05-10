@@ -483,28 +483,36 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			nk_list_view_end(&lview);
 		}
 
-		nk_layout_row_dynamic(ctx, widget_h, 3);
+		const float n = 3;
+		const float r0 = 1.f / n;
+		const float r1 = 0.1f / 3;
+		const float r2 = r0 - r1;
+		const float footer [6] = {r1, r2, r1, r2, r1, r2};
+		nk_layout_row(ctx, NK_DYNAMIC, widget_h, 6, footer);
 		{
-			const int32_t state_overwrite = nk_check_label(ctx, "overwrite", handle->state.overwrite);
+			const int32_t state_overwrite = _check(ctx, handle->state.overwrite);
 			if(state_overwrite != handle->state.overwrite)
 			{
 				handle->state.overwrite = state_overwrite;
 				_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
 			}
+			nk_label(ctx, "overwrite", NK_TEXT_LEFT);
 
-			const int32_t state_block = nk_check_label(ctx, "block", handle->state.block);
+			const int32_t state_block = _check(ctx, handle->state.block);
 			if(state_block != handle->state.block)
 			{
 				handle->state.block = state_block;
 				_toggle(handle, handle->urid.block, handle->state.block, true);
 			}
+			nk_label(ctx, "block", NK_TEXT_LEFT);
 
-			const int32_t state_follow = nk_check_label(ctx, "follow", handle->state.follow);
+			const int32_t state_follow = _check(ctx, handle->state.follow);
 			if(state_follow != handle->state.follow)
 			{
 				handle->state.follow = state_follow;
 				_toggle(handle, handle->urid.follow, handle->state.follow, true);
 			}
+			nk_label(ctx, "follow", NK_TEXT_LEFT);
 		}
 
 		const bool max_reached = handle->n_item >= MAX_LINES;
