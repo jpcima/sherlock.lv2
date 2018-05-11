@@ -184,7 +184,8 @@ run(LV2_Handle instance, uint32_t nsamples)
 	{
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
-		if(lv2_osc_is_message_or_bundle_type(&handle->osc_urid, obj->body.otype))
+		if(  lv2_atom_forge_is_object_type(&notify->forge, obj->atom.type)
+			&& lv2_osc_is_message_or_bundle_type(&handle->osc_urid, obj->body.otype) )
 		{
 			has_event = true;
 			if(notify->ref)
