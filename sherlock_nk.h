@@ -77,7 +77,9 @@ struct _plughandle_t {
 		LV2_URID block;
 		LV2_URID follow;
 		LV2_URID pretty;
-		LV2_URID time;
+		LV2_URID trace;
+		LV2_URID filter;
+		LV2_URID negate;
 	} urid;
 	state_t state;
 	state_t stash;
@@ -99,6 +101,9 @@ struct _plughandle_t {
 
 	bool shadow;
 	plugin_type_t type;
+
+	char filter_uri [1024];
+	LV2_URID filter;
 };
 
 extern const char *max_items [5];
@@ -117,7 +122,10 @@ void
 _empty(struct nk_context *ctx);
 
 void
-_toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool);
+_set_bool(plughandle_t *handle, LV2_URID property, int32_t val);
+
+void
+_set_urid(plughandle_t *handle, LV2_URID property, uint32_t val);
 
 void
 _clear(plughandle_t *handle);

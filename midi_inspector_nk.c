@@ -494,7 +494,7 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			if(state_overwrite != handle->state.overwrite)
 			{
 				handle->state.overwrite = state_overwrite;
-				_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
+				_set_bool(handle, handle->urid.overwrite, handle->state.overwrite);
 			}
 			nk_label(ctx, "overwrite", NK_TEXT_LEFT);
 
@@ -502,7 +502,7 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			if(state_block != handle->state.block)
 			{
 				handle->state.block = state_block;
-				_toggle(handle, handle->urid.block, handle->state.block, true);
+				_set_bool(handle, handle->urid.block, handle->state.block);
 			}
 			nk_label(ctx, "block", NK_TEXT_LEFT);
 
@@ -510,7 +510,7 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 			if(state_follow != handle->state.follow)
 			{
 				handle->state.follow = state_follow;
-				_toggle(handle, handle->urid.follow, handle->state.follow, true);
+				_set_bool(handle, handle->urid.follow, handle->state.follow);
 			}
 			nk_label(ctx, "follow", NK_TEXT_LEFT);
 		}

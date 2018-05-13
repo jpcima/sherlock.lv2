@@ -53,7 +53,7 @@ _discover(plughandle_t *handle)
 }
 
 void
-_toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool)
+_set_bool(plughandle_t *handle, LV2_URID property, int32_t val)
 {
 	ser_atom_t ser;
 
@@ -67,10 +67,33 @@ _toggle(plughandle_t *handle, LV2_URID property, int32_t val, bool is_bool)
 		lv2_atom_forge_urid(&handle->forge, property);
 
 		lv2_atom_forge_key(&handle->forge, handle->props.urid.patch_value);
-		if(is_bool)
-			lv2_atom_forge_bool(&handle->forge, val);
-		else
-			lv2_atom_forge_int(&handle->forge, val);
+		lv2_atom_forge_bool(&handle->forge, val);
+
+		lv2_atom_forge_pop(&handle->forge, &frame);
+
+		handle->write_function(handle->controller, 0, lv2_atom_total_size(ser_atom_get(&ser)),
+			handle->event_transfer, ser_atom_get(&ser));
+
+		ser_atom_deinit(&ser);
+	}
+}
+
+void
+_set_urid(plughandle_t *handle, LV2_URID property, uint32_t val)
+{
+	ser_atom_t ser;
+
+	if(ser_atom_init(&ser) == 0)
+	{
+		LV2_Atom_Forge_Frame frame;
+
+		ser_atom_reset(&ser, &handle->forge);
+		lv2_atom_forge_object(&handle->forge, &frame, 0, handle->props.urid.patch_set);
+		lv2_atom_forge_key(&handle->forge, handle->props.urid.patch_property);
+		lv2_atom_forge_urid(&handle->forge, property);
+
+		lv2_atom_forge_key(&handle->forge, handle->props.urid.patch_value);
+		lv2_atom_forge_urid(&handle->forge, val);
 
 		lv2_atom_forge_pop(&handle->forge, &frame);
 
@@ -300,11 +323,13 @@ instantiate(const LV2UI_Descriptor *descriptor, const char *plugin_uri,
 		return NULL;
 	}
 
-	handle->urid.overwrite = props_map(&handle->props, defs[0].property);;
-	handle->urid.block = props_map(&handle->props, defs[1].property);;
-	handle->urid.follow = props_map(&handle->props, defs[2].property);;
-	handle->urid.pretty = props_map(&handle->props, defs[3].property);;
-	handle->urid.time = props_map(&handle->props, defs[4].property);;
+	handle->urid.overwrite = props_map(&handle->props, SHERLOCK_URI"#overwrite");
+	handle->urid.block = props_map(&handle->props, SHERLOCK_URI"#block");
+	handle->urid.follow = props_map(&handle->props, SHERLOCK_URI"#follow");
+	handle->urid.pretty = props_map(&handle->props, SHERLOCK_URI"#pretty");
+	handle->urid.trace = props_map(&handle->props, SHERLOCK_URI"#trace");
+	handle->urid.filter = props_map(&handle->props, SHERLOCK_URI"#filter");
+	handle->urid.negate = props_map(&handle->props, SHERLOCK_URI"#negate");
 
 	nk_pugl_config_t *cfg = &handle->win.cfg;
 	cfg->height = 700;
@@ -434,7 +459,9 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 					LV2_Atom_Forge_Ref ref = lv2_atom_forge_sequence_head(&handle->forge, &frame, 0);
 
 					if(props_advance(&handle->props, &handle->forge, 0, buf, &ref))
+					{
 						nk_pugl_post_redisplay(&handle->win);
+					}
 
 					lv2_atom_forge_pop(&handle->forge, &frame);
 

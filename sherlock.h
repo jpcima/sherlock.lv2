@@ -66,8 +66,9 @@ struct _state_t {
 	int32_t block;
 	int32_t follow;
 	int32_t pretty;
-	int32_t time;
 	int32_t trace;
+	uint32_t filter;
+	int32_t negate;
 };
 
 struct _craft_t {
@@ -80,7 +81,7 @@ struct _craft_t {
 	};
 };
 
-#define MAX_NPROPS 6
+#define MAX_NPROPS 7
 
 static const props_def_t defs [MAX_NPROPS] = {
 	{
@@ -104,13 +105,18 @@ static const props_def_t defs [MAX_NPROPS] = {
 		.type = LV2_ATOM__Bool,
 	},
 	{
-		.property = SHERLOCK_URI"#time",
-		.offset = offsetof(state_t, time),
+		.property = SHERLOCK_URI"#trace",
+		.offset = offsetof(state_t, trace),
 		.type = LV2_ATOM__Bool,
 	},
 	{
-		.property = SHERLOCK_URI"#trace",
-		.offset = offsetof(state_t, trace),
+		.property = SHERLOCK_URI"#filter",
+		.offset = offsetof(state_t, filter),
+		.type = LV2_ATOM__URID,
+	},
+	{
+		.property = SHERLOCK_URI"#negate",
+		.offset = offsetof(state_t, negate),
 		.type = LV2_ATOM__Bool,
 	}
 };

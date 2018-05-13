@@ -135,7 +135,45 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 		nk_layout_row_dynamic(ctx, body_h, 2);
 		if(nk_group_begin(ctx, "Left", NK_WINDOW_NO_SCROLLBAR))
 		{
-			const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 4*group_padding.y - 2*widget_h;
+			{
+				// has filter URID been updated meanwhile ?
+				if(handle->filter != handle->state.filter)
+				{
+					const char *uri = handle->unmap->unmap(handle->unmap->handle, handle->state.filter);
+
+					if(uri)
+					{
+						strncpy(handle->filter_uri, uri, sizeof(handle->filter_uri) - 1);
+					}
+					else
+					{
+						handle->filter_uri[0] = '\0';
+					}
+
+					handle->filter = handle->state.filter;
+				}
+
+				nk_layout_row_dynamic(ctx, widget_h, 1);
+				const nk_flags flags = NK_EDIT_FIELD
+					| NK_EDIT_AUTO_SELECT
+					| NK_EDIT_SIG_ENTER;
+				//nk_edit_focus(ctx, flags);
+				nk_flags mode = nk_edit_string_zero_terminated(ctx, flags, handle->filter_uri, sizeof(handle->filter_uri) - 1, nk_filter_ascii);
+				if(mode & NK_EDIT_COMMITED)
+				{
+					if(strlen(handle->filter_uri) == 0)
+					{
+						strncpy(handle->filter_uri, LV2_TIME__Position, sizeof(handle->filter_uri) - 1);
+					}
+
+					handle->state.filter = handle->map->map(handle->map->handle, handle->filter_uri);
+
+					fprintf(stderr, "%s: %u\n", __func__, handle->state.filter);
+					_set_urid(handle, handle->urid.filter, handle->state.filter);
+				}
+			}
+
+			const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 5*group_padding.y - 3*widget_h;
 			nk_layout_row_dynamic(ctx, content_h, 1);
 			nk_flags flags = NK_WINDOW_BORDER;
 			if(handle->state.follow)
@@ -290,7 +328,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				if(state_overwrite != handle->state.overwrite)
 				{
 					handle->state.overwrite = state_overwrite;
-					_toggle(handle, handle->urid.overwrite, handle->state.overwrite, true);
+					_set_bool(handle, handle->urid.overwrite, handle->state.overwrite);
 				}
 				nk_label(ctx, "overwrite", NK_TEXT_LEFT);
 
@@ -298,7 +336,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				if(state_block != handle->state.block)
 				{
 					handle->state.block = state_block;
-					_toggle(handle, handle->urid.block, handle->state.block, true);
+					_set_bool(handle, handle->urid.block, handle->state.block);
 				}
 				nk_label(ctx, "block", NK_TEXT_LEFT);
 
@@ -306,7 +344,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				if(state_follow != handle->state.follow)
 				{
 					handle->state.follow = state_follow;
-					_toggle(handle, handle->urid.follow, handle->state.follow, true);
+					_set_bool(handle, handle->urid.follow, handle->state.follow);
 				}
 				nk_label(ctx, "follow", NK_TEXT_LEFT);
 
@@ -314,19 +352,19 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				if(state_pretty != handle->state.pretty)
 				{
 					handle->state.pretty = state_pretty;
-					_toggle(handle, handle->urid.pretty, handle->state.pretty, true);
+					_set_bool(handle, handle->urid.pretty, handle->state.pretty);
 
 					handle->ttl_dirty = true;
 				}
 				nk_label(ctx, "pretty", NK_TEXT_LEFT);
 
-				const int32_t state_time = _check(ctx, handle->state.time);
-				if(state_time != handle->state.time)
+				const int32_t state_negate = _check(ctx, handle->state.negate);
+				if(state_negate != handle->state.negate)
 				{
-					handle->state.time = state_time;
-					_toggle(handle, handle->urid.time, handle->state.time, true);
+					handle->state.negate = state_negate;
+					_set_bool(handle, handle->urid.negate, handle->state.negate);
 				}
-				nk_label(ctx, "time", NK_TEXT_LEFT);
+				nk_label(ctx, "negate", NK_TEXT_LEFT);
 			}
 
 			const bool max_reached = handle->n_item >= MAX_LINES;
@@ -367,14 +405,14 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 				handle->ttl_dirty = false;
 			}
 
-			const nk_flags flags = NK_EDIT_EDITOR;
+			const nk_flags flags = NK_EDIT_EDITOR
+				| NK_EDIT_READ_ONLY;
 			int len = nk_str_len(&handle->editor.string);
 
 			if(len > 0) //FIXME
 			{
 				const float content_h = nk_window_get_height(ctx) - 2*window_padding.y - 2*group_padding.y;
 				nk_layout_row_dynamic(ctx, content_h, 1);
-				nk_edit_focus(ctx, flags);
 				const nk_flags mode = nk_edit_buffer(ctx, flags, &handle->editor, nk_filter_default);
 				(void)mode;
 			}

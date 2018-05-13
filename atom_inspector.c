@@ -241,10 +241,12 @@ run(LV2_Handle instance, uint32_t nsamples)
 	{
 		const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
 
-		const bool is_time = lv2_atom_forge_is_object_type(&notify->forge, obj->atom.type)
-			&& (obj->body.otype == handle->time_position);
+		const bool type_matches = lv2_atom_forge_is_object_type(&notify->forge, obj->atom.type)
+			? (obj->body.otype == handle->state.filter)
+			: (obj->atom.type == handle->state.filter);
 
-		if(!(!handle->state.time && is_time))
+		if(  (!handle->state.negate && type_matches)
+			|| (handle->state.negate && !type_matches) )
 		{
 			has_event = true;
 			if(notify->ref)

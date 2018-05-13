@@ -80,16 +80,22 @@ sherlock:pretty
 	rdfs:comment "Toggle whether to pretty print or not" ;
 	rdfs:range atom:Bool .
 
-sherlock:time
-	a lv2:Parameter ;
-	rdfs:label "Time" ;
-	rdfs:comment "Toggle whether to show time events or not" ;
-	rdfs:range atom:Bool .
-
 sherlock:trace
 	a lv2:Parameter ;
 	rdfs:label "Trace" ;
 	rdfs:comment "Toggle whether to show trace output on console" ;
+	rdfs:range atom:Bool .
+
+sherlock:filter
+	a lv2:Parameter ;
+	rdfs:label "Filter" ;
+	rdfs:comment "Filter events according to type or object type" ;
+	rdfs:range atom:URID .
+
+sherlock:negate
+	a lv2:Parameter ;
+	rdfs:label "Negate" ;
+	rdfs:comment "Toggle negation of filter" ;
 	rdfs:range atom:Bool .
 
 # Atom Inspector Plugin
@@ -148,16 +154,18 @@ sherlock:atom_inspector
 		sherlock:block ,
 		sherlock:follow ,
 		sherlock:pretty ,
-		sherlock:time ,
-		sherlock:trace ;
+		sherlock:trace ,
+		sherlock:filter,
+		sherlock:negate ;
 
 	state:state [
 		sherlock:overwrite true ;
 		sherlock:block false ;
 		sherlock:follow true ;
 		sherlock:pretty true ;
-		sherlock:time false ;
 		sherlock:trace false ;
+		sherlock:filter time:Position ;
+		sherlock:negate false ;
 	] .
 
 # MIDI Inspector Plugin
