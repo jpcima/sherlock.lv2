@@ -168,7 +168,6 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 
 					handle->state.filter = handle->map->map(handle->map->handle, handle->filter_uri);
 
-					fprintf(stderr, "%s: %u\n", __func__, handle->state.filter);
 					_set_urid(handle, handle->urid.filter, handle->state.filter);
 				}
 			}
