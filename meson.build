@@ -10,7 +10,7 @@ cc = meson.get_compiler('c')
 m_dep = cc.find_library('m')
 lv2_dep = dependency('lv2', version : '>=1.14.0')
 sratom_dep = dependency('sratom-0', version : '>=0.6.0',
-	static : meson.is_cross_build())
+	static : meson.is_cross_build() and false) #FIXME
 
 dsp_deps = [m_dep, lv2_dep]
 ui_deps = [m_dep, lv2_dep, sratom_dep]
