@@ -59,13 +59,7 @@ ui_srcs = ['sherlock_nk.c',
 c_args = ['-fvisibility=hidden',
 	'-ffast-math']
 
-if host_machine.system() == 'linux'
-	conf_data.set('UI_TYPE', 'X11UI')
-	ui_deps += dependency('gl')
-	ui_deps += dependency('x11', version : '>=1.6.0')
-	ui_deps += dependency('xext', version : '>=1.3.0')
-	ui_srcs += 'pugl/pugl/pugl_x11.c'
-elif host_machine.system() == 'windows'
+if host_machine.system() == 'windows'
 	add_languages('cpp')
 	conf_data.set('UI_TYPE', 'WindowsUI')
 	ui_deps += cc.find_library('opengl32')
@@ -79,6 +73,12 @@ elif host_machine.system() == 'darwin'
 	#ui_deps += cc.find_library('gl')
 	#ui_deps += dependency('appleframeworks', modules : 'cocoa')
 	#ui_srcs += 'pugl/pugl/pugl_osx.m'
+else
+	conf_data.set('UI_TYPE', 'X11UI')
+	ui_deps += dependency('gl')
+	ui_deps += dependency('x11', version : '>=1.6.0')
+	ui_deps += dependency('xext', version : '>=1.3.0')
+	ui_srcs += 'pugl/pugl/pugl_x11.c'
 endif
 
 mod = shared_module('sherlock', dsp_srcs,
