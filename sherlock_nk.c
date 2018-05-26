@@ -405,11 +405,25 @@ static void
 _osc_bundle(plughandle_t *handle, const LV2_Atom_Object *obj);
 
 static void
+_osc_message(plughandle_t *handle, const LV2_Atom_Object *obj)
+{
+	const LV2_Atom_String *path = NULL;
+	const LV2_Atom_Tuple *args = NULL;
+	lv2_osc_message_get(&handle->osc_urid, obj, &path, &args);
+
+	LV2_ATOM_TUPLE_FOREACH(args, arg)
+	{
+		_append_item(handle, ITEM_TYPE_NONE, 0);
+	}
+}
+
+static void
 _osc_packet(plughandle_t *handle, const LV2_Atom_Object *obj)
 {
 	if(lv2_osc_is_message_type(&handle->osc_urid, obj->body.otype))
 	{
-		_append_item(handle, ITEM_TYPE_NONE, 0);
+		//_append_item(handle, ITEM_TYPE_NONE, 0);
+		_osc_message(handle, obj);
 	}
 	else if(lv2_osc_is_bundle_type(&handle->osc_urid, obj->body.otype))
 	{
@@ -548,6 +562,10 @@ port_event(LV2UI_Handle instance, uint32_t i, uint32_t size, uint32_t urid,
 						if(lv2_osc_is_bundle_type(&handle->osc_urid, obj->body.otype))
 						{
 							_osc_bundle(handle, obj);
+						}
+						else
+						{
+							_osc_message(handle, obj);
 						}
 					} break;
 					case SHERLOCK_MIDI_INSPECTOR:
