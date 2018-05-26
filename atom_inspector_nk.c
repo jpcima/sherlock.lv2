@@ -111,6 +111,25 @@ _set_string(struct nk_str *str, uint32_t size, const char *body)
 	nk_str_append_text_utf8(str, from, end-from);
 }
 
+static inline void
+_shadow(struct nk_context *ctx, bool *shadow)
+{
+	if(*shadow)
+	{
+		struct nk_style *style = &ctx->style;
+		const struct nk_vec2 group_padding = style->window.group_padding;
+		struct nk_command_buffer *canvas = nk_window_get_canvas(ctx);
+
+		struct nk_rect b = nk_widget_bounds(ctx);
+		b.x -= group_padding.x;
+		b.w *= 10;
+		b.w += 5*group_padding.x;
+		nk_fill_rect(canvas, b, 0.f, nk_rgb(0x28, 0x28, 0x28));
+	}
+
+	*shadow = !*shadow;
+}
+
 void
 _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data)
 {
@@ -236,14 +255,7 @@ _atom_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 							const float entry [4] = {0.1, 0.65, 0.15, 0.1};
 							nk_layout_row(ctx, NK_DYNAMIC, widget_h, 4, entry);
 							{
-								if(l % 2 == 0)
-								{
-									struct nk_rect b = nk_widget_bounds(ctx);
-									b.x -= group_padding.x;
-									b.w *= 10;
-									b.w += 8*group_padding.x;
-									nk_fill_rect(canvas, b, 0.f, nk_rgb(0x28, 0x28, 0x28));
-								}
+								_shadow(ctx, &handle->shadow);
 								nk_labelf_colored(ctx, NK_TEXT_LEFT, yellow, "+%04"PRIi64, frames);
 
 								if(nk_select_label(ctx, uri, NK_TEXT_LEFT, handle->selected == body))

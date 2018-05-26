@@ -352,6 +352,8 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 						nk_labelf_colored(ctx, NK_TEXT_LEFT, orange, "@%"PRIi64, itm->frame.offset);
 						nk_labelf_colored(ctx, NK_TEXT_CENTERED, green, "-%"PRIu32"-", itm->frame.counter);
 						nk_labelf_colored(ctx, NK_TEXT_RIGHT, violet, "%"PRIi32, itm->frame.nsamples);
+
+						handle->shadow = false;
 					} break;
 
 					case ITEM_TYPE_EVENT:
