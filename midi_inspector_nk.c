@@ -209,7 +209,7 @@ _shadow(struct nk_context *ctx, bool *shadow)
 		struct nk_rect b = nk_widget_bounds(ctx);
 		b.x -= group_padding.x;
 		b.w *= 10;
-		b.w += 8*group_padding.x;
+		b.w += 5*group_padding.x;
 		nk_fill_rect(canvas, b, 0.f, nk_rgb(0x28, 0x28, 0x28));
 	}
 
@@ -237,7 +237,13 @@ _midi_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *dat
 		nk_layout_row_dynamic(ctx, body_h, 1);
 		nk_flags flags = NK_WINDOW_BORDER;
 		if(handle->state.follow)
+		{
 			flags |= NK_WINDOW_NO_SCROLLBAR;
+		}
+		else
+		{
+			handle->shadow = false;
+		}
 		struct nk_list_view lview;
 		if(nk_list_view_begin(ctx, &lview, "Events", flags, widget_h, NK_MIN(handle->n_item, MAX_LINES)))
 		{

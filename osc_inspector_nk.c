@@ -342,7 +342,13 @@ _osc_inspector_expose(struct nk_context *ctx, struct nk_rect wbounds, void *data
 		nk_layout_row_dynamic(ctx, body_h, 1);
 		nk_flags flags = NK_WINDOW_BORDER;
 		if(handle->state.follow)
+		{
 			flags |= NK_WINDOW_NO_SCROLLBAR;
+		}
+		else
+		{
+			handle->shadow = false;
+		}
 		struct nk_list_view lview;
 		if(nk_list_view_begin(ctx, &lview, "Events", flags, widget_h, NK_MIN(handle->n_item, MAX_LINES)))
 		{
