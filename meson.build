@@ -5,12 +5,13 @@ project('sherlock.lv2', 'c', default_options : [
 	'b_lto=true',
 	'c_std=c11'])
 
+static_link = meson.is_cross_build()
+
 cc = meson.get_compiler('c')
 
 m_dep = cc.find_library('m')
 lv2_dep = dependency('lv2', version : '>=1.14.0')
-sratom_dep = dependency('sratom-0', version : '>=0.6.0',
-	static : meson.is_cross_build() and false) #FIXME
+sratom_dep = dependency('sratom-0', version : '>=0.6.0', static : static_link)
 
 dsp_deps = [m_dep, lv2_dep]
 ui_deps = [m_dep, lv2_dep, sratom_dep]
