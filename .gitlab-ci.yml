@@ -20,6 +20,7 @@ stages:
   <<: *common_definition
   before_script:
     - export PATH="/opt/lv2/bin:$PATH"
+    - sed -i -e '/Libs.private/d' "/opt/${CI_BUILD_NAME}/lib/pkgconfig/serd-0.pc"
   script:
     - meson --prefix="/opt/${CI_BUILD_NAME}" --libdir="lib" --cross-file "${CI_BUILD_NAME}" build
     - ninja -C build
