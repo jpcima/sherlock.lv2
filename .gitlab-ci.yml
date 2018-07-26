@@ -18,10 +18,13 @@ stages:
 
 .build_template: &build_definition
   <<: *common_definition
+  before_script:
+    - export PATH="/opt/lv2/bin:$PATH"
   script:
     - meson --prefix="/opt/${CI_BUILD_NAME}" --libdir="lib" --cross-file "${CI_BUILD_NAME}" build
     - ninja -C build
     - ninja -C build install
+    - ninja -C build test
     - mkdir -p "${BASE_NAME}-$(cat VERSION)/${CI_BUILD_NAME}/${BASE_NAME}"
     - cp -r "/opt/${CI_BUILD_NAME}/lib/lv2/${BASE_NAME}/" "${BASE_NAME}-$(cat VERSION)/${CI_BUILD_NAME}/"
 

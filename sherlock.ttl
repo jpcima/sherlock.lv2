@@ -90,7 +90,7 @@ sherlock:filter
 	a lv2:Parameter ;
 	rdfs:label "Filter" ;
 	rdfs:comment "Filter events according to type or object type" ;
-	rdfs:range atom:URID .
+	rdfs:range atom:URI .
 
 sherlock:negate
 	a lv2:Parameter ;
@@ -155,7 +155,7 @@ sherlock:atom_inspector
 		sherlock:follow ,
 		sherlock:pretty ,
 		sherlock:trace ,
-		sherlock:filter,
+		sherlock:filter ,
 		sherlock:negate ;
 
 	state:state [
